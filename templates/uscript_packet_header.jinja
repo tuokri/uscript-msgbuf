@@ -1,4 +1,4 @@
-    // Packet header.
+    // Encode packet header.
     Bytes[{{ pad(x, sz) }}{{ x }}] = {{ sz }};
     {% set x = x + 1 %}
     Bytes[{{ pad(x, sz) }}{{ x }}] = {{ 0 }};

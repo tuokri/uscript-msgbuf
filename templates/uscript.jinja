@@ -61,17 +61,24 @@ static final function byte {{ message.name }}_ToBytes(
     const out {{ message.name }} Msg,
     out byte Bytes[255])
 {
-    {% set sz = message.static_size %}
+    {% if message.has_float_fields %}
+    {% include "uscript_float_coding_variables.jinja" %}
+    {% endif -%}
+
+    {%- set sz = message.static_size %}
     {% set x = 0 %}
     {% include "uscript_packet_header.jinja" %}
     {% set x = var("x", "get") %}
 
-    // Packet payload.
+    // Encode packet payload.
     {%- for field in message.fields -%}
 
     {%- if field.type == "int" %}
-    {% include "uscript_static_bytes.jinja" %}
-    {% set x = var("x", "get") %}
+    {% include "uscript_encode_static_int.jinja" %}
+    {% set x = var("x", "get") -%}
+
+    {%- else if field.type == "float" %}
+    {% include "uscript_encode_static_float.jinja" %}
     {% endif -%}
 
 {%- endfor %}
@@ -105,6 +112,7 @@ static final function {{ message.name }}_FromBytes(
     out {{ message.name }} Msg,
     const out byte Bytes[255])
 {
+    // Decode packet payload.
 {% set x = 3 %}
 {% if message.always_single_part %}
     {% set sz = message.static_size %}
@@ -113,16 +121,10 @@ static final function {{ message.name }}_FromBytes(
 {% endif -%}
 
 {%- for field in message.fields %}
-    Msg.{{ field.name }} = (
-           (Bytes[{{ pad(x, sz) }}{{ x }}]        & 0xff)
-        {% set x = x + 1 %}
-        | ((Bytes[{{ pad(x, sz) }}{{ x }}] <<  8) & 0xff)
-        {% set x = x + 1 %}
-        | ((Bytes[{{ pad(x, sz) }}{{ x }}] << 16) & 0xff)
-        {% set x = x + 1 %}
-        | ((Bytes[{{ pad(x, sz) }}{{ x }}] << 24) & 0xff)
-        {% set x = x + 1 %}
-    );
+    {% if field.type == "int" %}
+    {% include "uscript_decode_static_int.jinja" %}
+    {% set x = var("x", "get") %}
+    {% endif %}
 {% endfor %}
 }
 

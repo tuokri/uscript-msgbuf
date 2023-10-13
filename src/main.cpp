@@ -20,12 +20,14 @@ static constexpr auto g_uscript_message_handler_template = "uscript_message_hand
 
 // Packet header size in bytes.
 static constexpr size_t g_header_size = 3;
+// Maximum packet payload size in bytes.
+static constexpr size_t g_payload_size = 252;
 
 // All types with known static sizes in bytes.
 static const std::unordered_map<std::string, size_t> g_static_types{
     {"byte",  1},
     {"int",   4},
-    {"float", 4},
+    {"float", 8}, // Floats are encoded as int+int (integer part + fractional part).
 };
 
 // Inja does not support Jinja macros so let's use these to
@@ -55,9 +57,13 @@ struct MsgAnalysisResult
     // with dynamically sized fields or unknown size fields.
     bool has_static_size{false};
     // Message's calculated static size. Sum of header size + static field sizes.
+    // Always 0 if message is dynamic. Always non-zero if message is static.
     size_t static_size{0};
-    // Message has static size and is always guaranteed to fit in a single packet.
+    // True if message has static size and is always guaranteed to fit in a single packet.
     bool always_single_part{false};
+    // True if message has float fields. Indicates the need for temporary
+    // helper variables for decoding and encoding in UnrealScript.
+    bool has_float_fields{false};
 };
 
 std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
@@ -67,6 +73,7 @@ std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
        << ", has_static_size: " << result.has_static_size
        << ", static_size: " << result.static_size
        << ", always_single_part: " << result.always_single_part
+       << ", has_float_fields: " << result.has_float_fields
        << " }";
     return os;
 }
@@ -104,13 +111,18 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         result.always_single_part = true;
     }
 
+    result.has_float_fields = std::any_of(types.cbegin(), types.cend(), [](const std::string& type)
+    {
+        return type == "float";
+    });
+
     return result;
 }
 
 static constexpr auto capitalize = [](inja::Arguments& args)
 {
     auto str = args.at(0)->get<std::string>();
-    str[0] = static_cast<char>(std::toupper(str[0]));
+    str.at(0) = static_cast<char>(std::toupper(str.at(0)));
     return str;
 };
 
@@ -145,6 +157,9 @@ static constexpr auto pad = [](inja::Arguments& args)
     return ret;
 };
 
+// Get and set global variables. Workaround for lack of
+// Jinja macro support in Inja. Can be used to pass variables
+// in and out of included templates.
 static constexpr auto var = [](inja::Arguments& args)
 {
     const auto var_name = args.at(0)->get<std::string>();
@@ -177,7 +192,7 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
     std::cout << "writing '" << out_file.string() << "'\n";
     fs::ofstream out{out_file};
-    out << r << std::endl;
+    out << r;
 }
 
 void render_cpp(inja::Environment& env, const std::string& file, const inja::json& data,
@@ -192,6 +207,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
 
     env.set_trim_blocks(true);
     env.set_lstrip_blocks(true);
+    env.set_throw_at_missing_includes(true);
 
     // TODO: add option to enable/disable this.
     env.add_callback("capitalize", 1, capitalize);
@@ -200,7 +216,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
 
     auto data = env.load_json(file);
     auto class_name = fs::path(file).stem().string();
-    class_name[0] = static_cast<char>(std::toupper(class_name[0]));
+    class_name.at(0) = static_cast<char>(std::toupper(class_name.at(0)));
     data["class_name"] = class_name;
 
     auto& messages = data["messages"];
@@ -212,6 +228,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
         message["has_static_size"] = result.has_static_size;
         message["always_single_part"] = result.always_single_part;
         message["static_size"] = result.static_size;
+        message["has_float_fields"] = result.has_float_fields;
     }
 
     data["uscript_message_type_prefix"] = "EMT";
