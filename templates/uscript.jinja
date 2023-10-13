@@ -3,6 +3,10 @@ class {{ class_name }} extends Object
     abstract
     notplaceable;
 
+const HEADER_SIZE = 3;
+const PAYLOAD_SIZE = 252;
+const PACKET_SIZE = 255;
+
 enum MessageType
 {
     {{ uscript_message_type_prefix }}_None,
@@ -32,7 +36,7 @@ struct Packet
     var MessageType Type;
 
     // Payload bytes. Contains an encoded MessageType message.
-    var byte Payload[252];
+    var byte Payload[PAYLOAD_SIZE];
 };
 
 struct Message
@@ -41,6 +45,7 @@ struct Message
     var MessageType Type;
     var bool HasStaticSize;
     var byte StaticSize;
+    var byte StaticPart;
     var bool AlwaysSinglePart;
 };
 
@@ -59,7 +64,7 @@ struct {{ message.name }} extends Message
 // Encode {{ message.name }} to bytes. Guaranteed to fit in a single packet.
 static final function byte {{ message.name }}_ToBytes(
     const out {{ message.name }} Msg,
-    out byte Bytes[255])
+    out byte Bytes[PACKET_SIZE])
 {
     {% if message.has_float_fields %}
     {% include "uscript_float_coding_variables.jinja" %}
@@ -67,19 +72,27 @@ static final function byte {{ message.name }}_ToBytes(
 
     {%- set sz = message.static_size %}
     {% set x = 0 %}
-    {% include "uscript_packet_header.jinja" %}
+    {% include "uscript_encode_static_packet_header.jinja" %}
     {% set x = var("x", "get") %}
 
     // Encode packet payload.
-    {%- for field in message.fields -%}
-
+    {%- for field in message.fields %}
+    // Field: {{ field.name }}.
     {%- if field.type == "int" %}
     {% include "uscript_encode_static_int.jinja" %}
     {% set x = var("x", "get") -%}
 
     {%- else if field.type == "float" %}
     {% include "uscript_encode_static_float.jinja" %}
-    {% endif -%}
+    {% set x = var("x", "get") -%}
+
+    {%- else if field.type == "byte" %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = Msg.{{ field.name }};
+
+    {%- else -%}
+    {{ error("invalid type: '", field.type, "' in ", message.name, "_ToBytes") }}
+
+    {%- endif -%}
 
 {%- endfor %}
 
@@ -87,38 +100,69 @@ static final function byte {{ message.name }}_ToBytes(
 }
 {% endif %}
 
-// Encode {{ message.name }} to bytes. Returns the total number of bytes.
+// Encode {{ message.name }} to bytes. If the message does not fit
+// in a single packet, the sender is responsible for splitting the
+// message into multiple packets. The output of this function is valid
+// input for {{ message.name }}_FromMultiBytes.
 {% if message.always_single_part %}
 // NOTE: This message is always guaranteed to fit in a single packet.
 // {{ message.name }}_ToBytes() should be used over this function.
 {% endif %}
-static final function int {{ message.name }}_ToMultiBytes(
+static final function {{ message.name }}_ToMultiBytes(
     const out {{ message.name }} Msg,
     out array<byte> Bytes)
 {
-{% if message.always_single_part %}
-    local byte B[255];
-    local int X;
-    X = {{ message.name }}_ToBytes(Msg, B);
-    Bytes[0] = 1; // TODO
-    return X;
+{% if message.has_string_fields %}
+    {% include "uscript_string_coding_variables.jinja" %}
+{% endif %}
+{% if message.always_single_part %} {# Just copy buffer for single-part messages. #}
+{% set sz = message.static_size %}
+    local byte B[PACKET_SIZE];
+    Bytes.Length = {{ sz }};
+    {{ message.name }}_ToBytes(Msg, B);
+{% for i in range(sz) %}
+    Bytes[{{ pad(i, sz) }}{{ i }}] = B[{{ pad(i, sz) }}{{ i }}];
+{% endfor %}
+{% else %} {# Multipart messages. #}
+
+    // Encode packet payload.
+{% set sz = message.static_part %}
+{% if message.has_float_fields %}
+    {% include "uscript_float_coding_variables.jinja" %}
+{% endif %}
+    local int I;
+    I = 1; // Skip size until it's known.
+    // Reserve at least static_part bytes. Grow dynamically if needed.
+    Bytes.Length = {{ sz }};
+    {% include "uscript_encode_dynamic_packet_header.jinja" %}
+{%- for field in message.fields %}
+    // Field: {{ field.name }}.
+{%- if field.type == "int" %}
+    {% include "uscript_encode_dynamic_int.jinja" %}
+{% else if field.type == "byte" %}
+    Bytes[I++] = Msg.{{ field.name }};
+{% else if field.type == "float" %}
+    {% include "uscript_encode_dynamic_float.jinja" %}
+{% else if field.type == "string" %}
+    {% include "uscript_encode_dynamic_string.jinja" %}
 {% else %}
-    return -1;
+    {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
+{%- endif -%}
+
+{%- endfor %}
+    Bytes[0] = I;
 {% endif %}
 }
 
+{% if message.always_single_part %}
 // Decode single-part {{ message.name }} from bytes.
 static final function {{ message.name }}_FromBytes(
     out {{ message.name }} Msg,
-    const out byte Bytes[255])
+    const out byte Bytes[PACKET_SIZE])
 {
     // Decode packet payload.
-{% set x = 3 %}
-{% if message.always_single_part %}
+    {% set x = 3 %}
     {% set sz = message.static_size %}
-{% else %}
-    {% set sz = 255 %}
-{% endif -%}
 
 {%- for field in message.fields %}
     {% if field.type == "int" %}
@@ -127,12 +171,17 @@ static final function {{ message.name }}_FromBytes(
     {% endif %}
 {% endfor %}
 }
+{% endif -%}
 
 // Decode {{ message.name }} from bytes. Decodes both, single-part and multipart messages.
+// When decoding multipart messages, Bytes should only contain the packet header once.
+// When receiving multipart messages from a socket, the receiver is responsible
+// for stripping all "separator" headers. The output of {{ message.name }}_ToMultiBytes
+// is a valid input for this function.
 static final function {{ message.name }}_FromMultiBytes(
     out {{ message.name }} Msg,
     const out array<byte> Bytes)
 {
 }
 
-{% endfor %}
+{%- endfor %}

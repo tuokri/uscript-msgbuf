@@ -1,0 +1,4 @@
+    Bytes[I++] = (Msg.{{ field.name }}       ) & 0xff;
+    Bytes[I++] = (Msg.{{ field.name }} >>>  8) & 0xff;
+    Bytes[I++] = (Msg.{{ field.name }} >>> 16) & 0xff;
+    Bytes[I++] = (Msg.{{ field.name }} >>> 24) & 0xff;

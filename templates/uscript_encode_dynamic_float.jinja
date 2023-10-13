@@ -1,0 +1,10 @@
+    IntPart = Msg.{{ field.name }};
+    FracPart = (Msg.{{ field.name }} - IntPart) * 10000000;
+    Bytes[I++] = (IntPart       ) & 0xff;
+    Bytes[I++] = (IntPart >>>  8) & 0xff;
+    Bytes[I++] = (IntPart >>> 16) & 0xff;
+    Bytes[I++] = (IntPart >>> 24) & 0xff;
+    Bytes[I++] = (FracPart       ) & 0xff;
+    Bytes[I++] = (FracPart >>>  8) & 0xff;
+    Bytes[I++] = (FracPart >>> 16) & 0xff;
+    Bytes[I++] = (FracPart >>> 24) & 0xff;

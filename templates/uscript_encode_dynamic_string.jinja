@@ -1,0 +1,11 @@
+    StrLen = Len(Msg.{{ field.name }});
+    Bytes.Length = Bytes.Length + StrLen + 1;
+    Bytes[I++] = StrLen;
+    for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
+    {
+        Char = Asc(Msg.{{ field.name }});
+        Bytes[I++] = (Char       ) & 0xff;
+        Bytes[I++] = (Char >>>  8) & 0xff;
+        Bytes[I++] = (Char >>> 16) & 0xff;
+        Bytes[I++] = (Char >>> 24) & 0xff;
+    }

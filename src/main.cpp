@@ -59,11 +59,16 @@ struct MsgAnalysisResult
     // Message's calculated static size. Sum of header size + static field sizes.
     // Always 0 if message is dynamic. Always non-zero if message is static.
     size_t static_size{0};
+    // Size of the static part for dynamic messages. 0 for fully static messages.
+    size_t static_part{0};
     // True if message has static size and is always guaranteed to fit in a single packet.
     bool always_single_part{false};
     // True if message has float fields. Indicates the need for temporary
     // helper variables for decoding and encoding in UnrealScript.
     bool has_float_fields{false};
+    // True if message has string fields. Indicates the need for temporary
+    // helper variables for decoding and encoding in UnrealScript.
+    bool has_string_fields{false};
 };
 
 std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
@@ -74,6 +79,8 @@ std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
        << ", static_size: " << result.static_size
        << ", always_single_part: " << result.always_single_part
        << ", has_float_fields: " << result.has_float_fields
+       << ", static_part: " << result.static_part
+       << ", has_string_fields: " << result.has_string_fields
        << " }";
     return os;
 }
@@ -97,13 +104,22 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         return ::g_static_types.contains(type);
     });
 
+    auto static_size = ::g_header_size;
+    for (const auto& type: types)
+    {
+        if (::g_static_types.contains(type))
+        {
+            static_size += ::g_static_types.at(type);
+        }
+    }
+
     if (result.has_static_size)
     {
-        result.static_size = ::g_header_size;
-        for (const auto& type: types)
-        {
-            result.static_size += ::g_static_types.at(type);
-        }
+        result.static_size = static_size;
+    }
+    else
+    {
+        result.static_part = static_size;
     }
 
     if (result.has_static_size && result.static_size <= 255)
@@ -114,6 +130,11 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     result.has_float_fields = std::any_of(types.cbegin(), types.cend(), [](const std::string& type)
     {
         return type == "float";
+    });
+
+    result.has_string_fields = std::any_of(types.cbegin(), types.cend(), [](const std::string& type)
+    {
+        return type == "string";
     });
 
     return result;
@@ -182,6 +203,16 @@ static constexpr auto var = [](inja::Arguments& args)
     }
 };
 
+static constexpr auto error = [](inja::Arguments& args)
+{
+    std::stringstream ss;
+    for (const auto& arg: args)
+    {
+        ss << arg->get<std::string>();
+    }
+    throw std::invalid_argument(ss.str());
+};
+
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
                     const std::string& uscript_out_dir)
 {
@@ -213,6 +244,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     env.add_callback("capitalize", 1, capitalize);
     env.add_callback("pad", 2, pad);
     env.add_callback("var", var);
+    env.add_void_callback("error", error);
 
     auto data = env.load_json(file);
     auto class_name = fs::path(file).stem().string();
@@ -228,7 +260,9 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
         message["has_static_size"] = result.has_static_size;
         message["always_single_part"] = result.always_single_part;
         message["static_size"] = result.static_size;
+        message["static_part"] = result.static_part;
         message["has_float_fields"] = result.has_float_fields;
+        message["has_string_fields"] = result.has_string_fields;
     }
 
     data["uscript_message_type_prefix"] = "EMT";
