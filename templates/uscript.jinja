@@ -57,7 +57,7 @@ struct {{ message.name }} extends Message
 {% endfor %}
 };
 
-{% endfor %}
+{% endfor -%}
 
 {% for message in messages %}
 {% if message.always_single_part %}
@@ -68,17 +68,14 @@ static final function byte {{ message.name }}_ToBytes(
 {
     {% set sz = message.static_size %}
     {% set x = 0 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ sz }};
-    {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ 0 }};
-    {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = byte({{ uscript_message_type_prefix }}_{{ message.name }});
-    {% set x = x + 1 -%}
+    {% include "uscript_packet_header.jinja" %}
+    {% set x = var("x", 0, 0) %}
 
     {%- for field in message.fields -%}
 
     {%- if field.type == "int" %}
     {% include "uscript_static_bytes.jinja" %}
+    {% set x = var("x", 0, 0) %}
     {% endif -%}
 
     {%- endfor %}

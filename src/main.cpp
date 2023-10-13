@@ -27,6 +27,19 @@ static const std::unordered_map<std::string, size_t> g_static_types{
     {"float", 4},
 };
 
+// Inja does not support Jinja macros so using these to "return"
+// variables out of include blocks.
+static std::unordered_map<std::string, size_t> g_variables{
+    {"x", 0},
+    {"sz", 0},
+};
+
+enum class VarAction
+{
+    GET = 0,
+    SET = 1,
+};
+
 struct MsgAnalysisResult
 {
     friend std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result);
@@ -127,6 +140,25 @@ static constexpr auto pad = [](inja::Arguments& args)
     return ret;
 };
 
+static constexpr auto var = [](inja::Arguments& args)
+{
+    auto var_name = args.at(0)->get<std::string>();
+    auto action = args.at(1)->get<VarAction>();
+    auto value = args.at(2)->get<size_t>();
+
+    switch (action)
+    {
+        case VarAction::GET:
+            return ::g_variables.at(var_name);
+        case VarAction::SET:
+            ::g_variables.at(var_name) = value;
+            return value;
+        default:
+            throw std::invalid_argument(
+                "invalid VarAction: " + std::to_string(static_cast<int>(action)));
+    }
+};
+
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
                     const std::string& uscript_out_dir)
 {
@@ -155,6 +187,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     // TODO: add option to enable/disable this.
     env.add_callback("capitalize", 1, capitalize);
     env.add_callback("pad", 2, pad);
+    env.add_callback("var", 3, var);
 
     auto data = env.load_json(file);
     data["class_name"] = file;
