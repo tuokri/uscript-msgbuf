@@ -1,0 +1,8 @@
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }}       ) & 0xff;
+    {% set x = x + 1 %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>>  8) & 0xff;
+    {% set x = x + 1 %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>> 16) & 0xff;
+    {% set x = x + 1 %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>> 24) & 0xff;
+    {% set x = x + 1 %}

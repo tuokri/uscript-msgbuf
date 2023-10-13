@@ -5,7 +5,7 @@ class {{ class_name }} extends Object
 
 enum MessageType
 {
-{{ uscript_message_type_prefix }}_None,
+    {{ uscript_message_type_prefix }}_None,
 {% for message in messages %}
     {{ uscript_message_type_prefix }}_{{ message.name }},
 {% endfor %}
@@ -78,14 +78,7 @@ static final function byte {{ message.name }}_ToBytes(
     {%- for field in message.fields -%}
 
     {%- if field.type == "int" %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }}       ) & 0xff;
-    {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>>  8) & 0xff;
-    {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>> 16) & 0xff;
-    {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>> 24) & 0xff;
-    {% set x = x + 1 %}
+    {% include "uscript_static_bytes.jinja" %}
     {% endif -%}
 
     {%- endfor %}
