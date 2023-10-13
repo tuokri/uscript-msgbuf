@@ -22,7 +22,7 @@ find_package(
 
 add_executable(
     uscript_msgbuf_generator
-    main.cpp
+    src/main.cpp
 )
 
 target_link_libraries(
