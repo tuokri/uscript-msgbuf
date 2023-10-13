@@ -1,10 +1,15 @@
 # uscript-msgbuf
 
 Lightweight messaging protocol code generator for UnrealScript and C++.
+Think Protobuf, but specialized for a single application domain.
 The project goal is to generate bandwidth-optimized message handling code,
-where the messages take as few bytes as possible.
+where the messages take as few bytes as possible. Network packets are built to
+fit in 255 bytes, which is the limit imposed by UnrealScript's `TcpLink` class,
+specifically the `SendBinary` function.
 
-## Dependencies
+## Building
+
+### Dependencies
 
 - [Inja](https://github.com/pantor/inja)
 - [Boost (Program Options, Filesystem)](https://www.boost.org/)
