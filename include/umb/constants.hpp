@@ -36,6 +36,7 @@ constexpr auto g_float_multiplier = 10000000;
 constexpr size_t g_sizeof_byte = 1;
 constexpr size_t g_sizeof_int = 4;
 constexpr size_t g_sizeof_float = 8;
+constexpr size_t g_size_of_uscript_char = 2;
 
 // All types with known static sizes in bytes.
 static const std::unordered_map<std::string, size_t> g_static_types{
