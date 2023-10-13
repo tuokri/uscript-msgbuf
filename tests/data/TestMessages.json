@@ -1,0 +1,106 @@
+{
+  "cpp_namespace": "testmessages::umb",
+  "class_name": "TestMessages",
+  "messages": [
+    {
+      "name": "GetSomeStuff",
+      "fields": [
+        {
+          "type": "int",
+          "name": "session"
+        }
+      ]
+    },
+    {
+      "name": "GetSomeStuffResp",
+      "fields": [
+        {
+          "type": "int",
+          "name": "session"
+        },
+        {
+          "type": "int",
+          "name": "userid"
+        }
+      ]
+    },
+    {
+      "name": "JustAnotherTestMessage",
+      "fields": [
+        {
+          "type": "float",
+          "name": "some_floatVAR"
+        },
+        {
+          "type": "byte",
+          "name": "ByteVarX"
+        }
+      ]
+    },
+    {
+      "name": "testmsg",
+      "fields": [
+        {
+          "type": "float",
+          "name": "one"
+        },
+        {
+          "type": "float",
+          "name": "asd"
+        },
+        {
+          "type": "float",
+          "name": "fasd"
+        },
+        {
+          "type": "float",
+          "name": "sdf"
+        },
+        {
+          "type": "float",
+          "name": "dger"
+        },
+        {
+          "type": "float",
+          "name": "dfgdf3"
+        },
+        {
+          "type": "float",
+          "name": "vbnvbn3"
+        },
+        {
+          "type": "float",
+          "name": "sdfg345"
+        },
+        {
+          "type": "float",
+          "name": "nnnffgg"
+        },
+        {
+          "type": "float",
+          "name": "adssdassdaads"
+        },
+        {
+          "type": "float",
+          "name": "dyhrthrs556t"
+        },
+        {
+          "type": "float",
+          "name": "nfghmfghj3452345"
+        },
+        {
+          "type": "byte",
+          "name": "nmmmgfgg234"
+        },
+        {
+          "type": "int",
+          "name": "aa"
+        },
+        {
+          "type": "string",
+          "name": "ffffff"
+        }
+      ]
+    }
+  ]
+}

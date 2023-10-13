@@ -12,11 +12,11 @@ specifically the `SendBinary` function.
 ### Dependencies
 
 - [Inja](https://github.com/pantor/inja)
-- [Boost (Program Options, Filesystem)](https://www.boost.org/)
+- [Boost (Program Options, Filesystem, Algorithm)](https://www.boost.org/)
     - Tested with Boost versions 1.82 and 1.83.
 
 Install using vcpkg:
 
 ```shell
-vcpkg install inja boost-program-options boost-filesystem
+vcpkg install inja boost-program-options boost-filesystem boost-algorithm
 ```

@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 3.25)
 project(uscript-msgbuf)
 
-set(CMAKE_CXX_STANDARD 20)
+set(Boost_USE_DEBUG_LIBS $<$<CONFIG:Debug>:ON,OFF>)
+set(Boost_USE_MULTITHREADED ON)
 
 find_package(
     inja
     CONFIG
     REQUIRED
 )
+
 find_package(
     Boost
     COMPONENTS
@@ -29,6 +31,19 @@ target_link_libraries(
     Boost::program_options
 )
 
+target_compile_features(
+    uscript_msgbuf_generator
+    PRIVATE
+    cxx_std_23
+)
+
+# TODO: temporary for testing.
+target_include_directories(
+    uscript_msgbuf_generator
+    PRIVATE
+    include/
+)
+
 # Build list of file paths to copy templates to.
 file(GLOB TEMPLATE_FILES templates/*.jinja)
 set(TEMPLATE_FILE_OUTPUTS "")
@@ -46,9 +61,34 @@ endforeach ()
 add_custom_target(copy_templates ALL DEPENDS ${TEMPLATE_FILE_OUTPUTS})
 add_custom_command(
     OUTPUT ${TEMPLATE_FILE_OUTPUTS}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/templates/
     COMMAND ${CMAKE_COMMAND} -E copy ${TEMPLATE_FILES}
     ${CMAKE_CURRENT_BINARY_DIR}/templates/
     DEPENDS ${TEMPLATE_FILES}
 )
 
 add_dependencies(uscript_msgbuf_generator copy_templates)
+
+if (MSVC)
+    target_compile_options(
+        uscript_msgbuf_generator
+        PRIVATE
+        /W4
+    )
+else ()
+    target_compile_options(
+        uscript_msgbuf_generator
+        PRIVATE
+        -Wall
+        -pedantic
+        -Wpedantic
+        -Wextra
+    )
+endif ()
+
+option(BUILD_TESTS "build tests" OFF)
+
+if (BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif ()

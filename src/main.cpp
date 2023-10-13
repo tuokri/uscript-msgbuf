@@ -10,25 +10,13 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/program_options.hpp>
 
+#include "umb/constants.hpp"
+#include "umb/message.hpp"
+
+static umb::SomeMessage msg;
+
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
-
-static constexpr auto g_template_dir = "templates";
-static constexpr auto g_cpp_template = "cpp.jinja";
-static constexpr auto g_uscript_template = "uscript.jinja";
-static constexpr auto g_uscript_message_handler_template = "uscript_message_handler.jinja";
-
-// Packet header size in bytes.
-static constexpr size_t g_header_size = 3;
-// Maximum packet payload size in bytes.
-static constexpr size_t g_payload_size = 252;
-
-// All types with known static sizes in bytes.
-static const std::unordered_map<std::string, size_t> g_static_types{
-    {"byte",  1},
-    {"int",   4},
-    {"float", 8}, // Floats are encoded as int+int (integer part + fractional part).
-};
 
 // Inja does not support Jinja macros so let's use these to
 // pass variables in and out of include blocks.
@@ -60,6 +48,8 @@ struct MsgAnalysisResult
     // Always 0 if message is dynamic. Always non-zero if message is static.
     size_t static_size{0};
     // Size of the static part for dynamic messages. 0 for fully static messages.
+    // This includes the sizes of all known static fields plus the sizes of all
+    // size header fields for dynamic fields. (See: g_dynamic_field_header_size).
     size_t static_part{0};
     // True if message has static size and is always guaranteed to fit in a single packet.
     bool always_single_part{false};
@@ -85,6 +75,12 @@ std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
     return os;
 }
 
+template<typename T>
+inline bool in_vector(const std::vector<T>& v, T t)
+{
+    return std::find(v.cbegin(), v.cend(), t) != v.cend();
+}
+
 MsgAnalysisResult analyze_message(const inja::json& data)
 {
     MsgAnalysisResult result;
@@ -101,15 +97,15 @@ MsgAnalysisResult analyze_message(const inja::json& data)
 
     result.has_static_size = std::all_of(types.cbegin(), types.cend(), [](const std::string& type)
     {
-        return ::g_static_types.contains(type);
+        return ::umb::g_static_types.contains(type);
     });
 
-    auto static_size = ::g_header_size;
+    auto static_size = ::umb::g_header_size;
     for (const auto& type: types)
     {
-        if (::g_static_types.contains(type))
+        if (::umb::g_static_types.contains(type))
         {
-            static_size += ::g_static_types.at(type);
+            static_size += ::umb::g_static_types.at(type);
         }
     }
 
@@ -120,6 +116,13 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     else
     {
         result.static_part = static_size;
+        for (const auto& type: types)
+        {
+            if (in_vector(::umb::g_dynamic_types, type))
+            {
+                result.static_part += ::umb::g_dynamic_field_header_size;
+            }
+        }
     }
 
     if (result.has_static_size && result.static_size <= 255)
@@ -140,7 +143,7 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     return result;
 }
 
-static constexpr auto capitalize = [](inja::Arguments& args)
+constexpr auto capitalize = [](inja::Arguments& args)
 {
     auto str = args.at(0)->get<std::string>();
     str.at(0) = static_cast<char>(std::toupper(str.at(0)));
@@ -155,7 +158,7 @@ static constexpr auto capitalize = [](inja::Arguments& args)
 // Bytes[ 10]
 // ...
 // Bytes[101]
-static constexpr auto pad = [](inja::Arguments& args)
+constexpr auto pad = [](inja::Arguments& args)
 {
     const auto index = args.at(0)->get<size_t>();
     const auto size = args.at(1)->get<size_t>();
@@ -170,7 +173,7 @@ static constexpr auto pad = [](inja::Arguments& args)
     const auto pad_count = max_pad - std::to_string(index).size();
 
     std::stringstream ss;
-    for (int i = 0; i < pad_count; ++i)
+    for (unsigned i = 0; i < pad_count; ++i)
     {
         ss << " ";
     }
@@ -203,7 +206,7 @@ static constexpr auto var = [](inja::Arguments& args)
     }
 };
 
-static constexpr auto error = [](inja::Arguments& args)
+constexpr auto error = [](inja::Arguments& args)
 {
     std::stringstream ss;
     for (const auto& arg: args)
@@ -272,19 +275,30 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
         data["uscript_message_handler_class"] = "MessageHandler";
     }
 
-    fs::path template_dir{::g_template_dir};
-    fs::path us_template = template_dir / ::g_uscript_template;
-    fs::path cpp_template = template_dir / ::g_cpp_template;
+    data["cpp_hdr_extension"] = ::umb::g_cpp_hdr_extension;
+    data["cpp_src_extension"] = ::umb::g_cpp_src_extension;
+
+    data["header_size"] = ::umb::g_header_size;
+    data["payload_size"] = ::umb::g_payload_size;
+    data["packet_size"] = ::umb::g_packet_size;
+    data["float_multiplier"] = ::umb::g_float_multiplier;
+
+    fs::path template_dir{::umb::g_template_dir};
+    fs::path us_template = template_dir / ::umb::g_uscript_template;
+    fs::path cpp_hdr_template = template_dir / ::umb::g_cpp_hdr_template;
 
     std::cout << "rendering '" << file << "'\n";
     render_uscript(env, us_template.string(), data, uscript_out_dir);
-    render_cpp(env, cpp_template.string(), data, cpp_out_dir);
+    render_cpp(env, cpp_hdr_template.string(), data, cpp_out_dir);
 }
 
 int main(int argc, char* argv[])
 {
     try
     {
+        std::vector<uint8_t> v{0};
+        msg.from_bytes(v);
+
         const auto default_out_dir = fs::current_path().parent_path();
 
         po::options_description desc("Options");
