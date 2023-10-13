@@ -9,15 +9,10 @@ find_package(
     REQUIRED
 )
 find_package(
-    nlohmann_json
-    CONFIG
-    REQUIRED
-)
-find_package(
     Boost
     COMPONENTS
-    program_options
     filesystem
+    program_options
     REQUIRED
 )
 
@@ -30,9 +25,8 @@ target_link_libraries(
     uscript_msgbuf_generator
     PRIVATE
     pantor::inja
-    nlohmann_json::nlohmann_json
-    Boost::program_options
     Boost::filesystem
+    Boost::program_options
 )
 
 # Build list of file paths to copy templates to.

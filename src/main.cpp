@@ -5,6 +5,7 @@
 
 #include <inja/inja.hpp>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/program_options.hpp>
@@ -27,17 +28,21 @@ static const std::unordered_map<std::string, size_t> g_static_types{
     {"float", 4},
 };
 
-// Inja does not support Jinja macros so using these to "return"
-// variables out of include blocks.
+// Inja does not support Jinja macros so let's use these to
+// pass variables in and out of include blocks.
 static std::unordered_map<std::string, size_t> g_variables{
     {"x", 0},
-    {"sz", 0},
 };
 
 enum class VarAction
 {
     GET = 0,
     SET = 1,
+};
+
+const static std::unordered_map<std::string, VarAction> g_str_to_varaction{
+    {"GET", VarAction::GET},
+    {"SET", VarAction::SET},
 };
 
 struct MsgAnalysisResult
@@ -82,15 +87,15 @@ MsgAnalysisResult analyze_message(const inja::json& data)
 
     result.has_static_size = std::all_of(types.cbegin(), types.cend(), [](const std::string& type)
     {
-        return g_static_types.contains(type);
+        return ::g_static_types.contains(type);
     });
 
     if (result.has_static_size)
     {
-        result.static_size = g_header_size;
+        result.static_size = ::g_header_size;
         for (const auto& type: types)
         {
-            result.static_size += g_static_types.at(type);
+            result.static_size += ::g_static_types.at(type);
         }
     }
 
@@ -142,20 +147,23 @@ static constexpr auto pad = [](inja::Arguments& args)
 
 static constexpr auto var = [](inja::Arguments& args)
 {
-    auto var_name = args.at(0)->get<std::string>();
-    auto action = args.at(1)->get<VarAction>();
-    auto value = args.at(2)->get<size_t>();
+    const auto var_name = args.at(0)->get<std::string>();
+    auto action = args.at(1)->get<std::string>();
+    size_t value;
 
-    switch (action)
+    boost::algorithm::to_upper(action);
+    VarAction va = g_str_to_varaction.at(action);
+
+    switch (va)
     {
         case VarAction::GET:
             return ::g_variables.at(var_name);
         case VarAction::SET:
+            value = args.at(2)->get<size_t>();
             ::g_variables.at(var_name) = value;
             return value;
         default:
-            throw std::invalid_argument(
-                "invalid VarAction: " + std::to_string(static_cast<int>(action)));
+            throw std::invalid_argument("invalid VarAction: " + action);
     }
 };
 
@@ -164,7 +172,8 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
 {
     const auto r = env.render_file(file, data);
     std::cout << r << "\n";
-    fs::path out_filename = fs::path(file).filename().replace_extension(".uc");
+    fs::path out_filename = fs::path(file).replace_filename(
+        data["class_name"].get<std::string>()).filename().replace_extension(".uc");
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
     std::cout << "writing '" << out_file.string() << "'\n";
     fs::ofstream out{out_file};
@@ -187,10 +196,12 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     // TODO: add option to enable/disable this.
     env.add_callback("capitalize", 1, capitalize);
     env.add_callback("pad", 2, pad);
-    env.add_callback("var", 3, var);
+    env.add_callback("var", var);
 
     auto data = env.load_json(file);
-    data["class_name"] = file;
+    auto class_name = fs::path(file).stem().string();
+    class_name[0] = static_cast<char>(std::toupper(class_name[0]));
+    data["class_name"] = class_name;
 
     auto& messages = data["messages"];
 
@@ -210,9 +221,9 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
         data["uscript_message_handler_class"] = "MessageHandler";
     }
 
-    fs::path template_dir{g_template_dir};
-    fs::path us_template = template_dir / g_uscript_template;
-    fs::path cpp_template = template_dir / g_cpp_template;
+    fs::path template_dir{::g_template_dir};
+    fs::path us_template = template_dir / ::g_uscript_template;
+    fs::path cpp_template = template_dir / ::g_cpp_template;
 
     std::cout << "rendering '" << file << "'\n";
     render_uscript(env, us_template.string(), data, uscript_out_dir);

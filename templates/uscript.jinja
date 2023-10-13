@@ -11,11 +11,6 @@ enum MessageType
 {% endfor %}
 };
 
-struct ByteWrapper
-{
-    var byte Bytes[255];
-}
-
 // Describes the wire format used by this library.
 struct Packet
 {
@@ -69,32 +64,40 @@ static final function byte {{ message.name }}_ToBytes(
     {% set sz = message.static_size %}
     {% set x = 0 %}
     {% include "uscript_packet_header.jinja" %}
-    {% set x = var("x", 0, 0) %}
+    {% set x = var("x", "get") %}
 
+    // Packet payload.
     {%- for field in message.fields -%}
 
     {%- if field.type == "int" %}
     {% include "uscript_static_bytes.jinja" %}
-    {% set x = var("x", 0, 0) %}
+    {% set x = var("x", "get") %}
     {% endif -%}
 
-    {%- endfor %}
+{%- endfor %}
 
     return {{ x }};
 }
 {% endif %}
 
-// Encode {{ message.name }} to bytes. Returns 255 if the message fits in a single packet.
-// For multipart messages, returns the number of parts (2-254).
+// Encode {{ message.name }} to bytes. Returns the total number of bytes.
 {% if message.always_single_part %}
 // NOTE: This message is always guaranteed to fit in a single packet.
 // {{ message.name }}_ToBytes() should be used over this function.
 {% endif %}
-static final function byte {{ message.name }}_ToMultiBytes(
+static final function int {{ message.name }}_ToMultiBytes(
     const out {{ message.name }} Msg,
-    out array<ByteWrapper> Bytes)
+    out array<byte> Bytes)
 {
-    return 255;
+{% if message.always_single_part %}
+    local byte B[255];
+    local int X;
+    X = {{ message.name }}_ToBytes(Msg, B);
+    Bytes[0] = 1; // TODO
+    return X;
+{% else %}
+    return -1;
+{% endif %}
 }
 
 // Decode single-part {{ message.name }} from bytes.
@@ -102,12 +105,31 @@ static final function {{ message.name }}_FromBytes(
     out {{ message.name }} Msg,
     const out byte Bytes[255])
 {
+{% set x = 3 %}
+{% if message.always_single_part %}
+    {% set sz = message.static_size %}
+{% else %}
+    {% set sz = 255 %}
+{% endif -%}
+
+{%- for field in message.fields %}
+    Msg.{{ field.name }} = (
+           (Bytes[{{ pad(x, sz) }}{{ x }}]        & 0xff)
+        {% set x = x + 1 %}
+        | ((Bytes[{{ pad(x, sz) }}{{ x }}] <<  8) & 0xff)
+        {% set x = x + 1 %}
+        | ((Bytes[{{ pad(x, sz) }}{{ x }}] << 16) & 0xff)
+        {% set x = x + 1 %}
+        | ((Bytes[{{ pad(x, sz) }}{{ x }}] << 24) & 0xff)
+        {% set x = x + 1 %}
+    );
+{% endfor %}
 }
 
 // Decode {{ message.name }} from bytes. Decodes both, single-part and multipart messages.
 static final function {{ message.name }}_FromMultiBytes(
     out {{ message.name }} Msg,
-    const out array<ByteWrapper> Bytes)
+    const out array<byte> Bytes)
 {
 }
 

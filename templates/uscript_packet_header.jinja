@@ -1,7 +1,8 @@
+    // Packet header.
     Bytes[{{ pad(x, sz) }}{{ x }}] = {{ sz }};
     {% set x = x + 1 %}
     Bytes[{{ pad(x, sz) }}{{ x }}] = {{ 0 }};
     {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = byte({{ uscript_message_type_prefix }}_{{ message.name }});
+    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ uscript_message_type_prefix }}_{{ message.name }};
     {% set x = x + 1 -%}
-    {% set x = var("x", 1, x) -%}
+    {% set x = var("x", "set", x) -%}
