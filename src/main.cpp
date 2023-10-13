@@ -97,6 +97,29 @@ void render(const std::string& file)
         return str;
     });
 
+    env.add_callback("pad", 2, [](inja::Arguments& args)
+    {
+        const auto index = args.at(0)->get<size_t>();
+        const auto size = args.at(1)->get<size_t>();
+        std::string ret;
+
+        if (size < 10)
+        {
+            return ret;
+        }
+
+        const auto max_pad = std::to_string(size).size();
+        const auto pad_count = max_pad - std::to_string(index).size();
+
+        std::stringstream ss;
+        for (int i = 0; i < pad_count; ++i)
+        {
+            ss << " ";
+        }
+        ret = ss.str();
+        return ret;
+    });
+
     auto data = env.load_json(
         R"(C:\Users\tkrii\Documents\My Games\Rising Storm 2\ROGame\Src\VOIPTest\Messages.json)");
     data["class_name"] = file;

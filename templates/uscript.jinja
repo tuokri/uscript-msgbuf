@@ -66,17 +66,30 @@ static final function byte {{ message.name }}_ToBytes(
     const out {{ message.name }} Msg,
     out byte Bytes[255])
 {
+    {% set sz = message.static_size %}
     {% set x = 0 %}
-    Bytes[{{ x }}] = {{ message.static_size }};
+    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ sz }};
     {% set x = x + 1 %}
-    Bytes[{{ x }}] = {{ 0 }};
+    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ 0 }};
     {% set x = x + 1 %}
-    Bytes[{{ x }}] = byte({{ uscript_message_type_prefix }}_{{ message.name }});
+    Bytes[{{ pad(x, sz) }}{{ x }}] = byte({{ uscript_message_type_prefix }}_{{ message.name }});
+    {% set x = x + 1 -%}
+
+    {%- for field in message.fields -%}
+
+    {%- if field.type == "int" %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }}       ) & 0xff;
     {% set x = x + 1 %}
-    {% for field in message.fields %}
-    Bytes[{{ x }}] = 255; // TODO
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>>  8) & 0xff;
     {% set x = x + 1 %}
-    {% endfor %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>> 16) & 0xff;
+    {% set x = x + 1 %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (Msg.{{ field.name }} >>> 24) & 0xff;
+    {% set x = x + 1 %}
+    {% endif -%}
+
+    {%- endfor %}
+
     return {{ x }};
 }
 {% endif %}
