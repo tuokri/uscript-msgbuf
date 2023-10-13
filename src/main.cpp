@@ -9,9 +9,11 @@
 
 namespace po = boost::program_options;
 
+static constexpr size_t header_size = 3;
+
 static std::unordered_map<std::string, size_t> static_types{
-    {"byte", 1},
-    {"int", 4},
+    {"byte",  1},
+    {"int",   4},
     {"float", 4},
 };
 
@@ -54,6 +56,7 @@ MsgAnalysisResult analyze_message(const inja::json& data)
 
     if (result.has_static_size)
     {
+        result.static_size = header_size;
         for (const auto& type: types)
         {
             result.static_size += static_types.at(type);
@@ -68,9 +71,15 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     return result;
 }
 
-void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data)
+void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
+                    const std::string& uscript_out_dir = "")
 {
     std::cout << env.render_file(file, data) << "\n";
+}
+
+void render_cpp(inja::Environment& env, const std::string& file, const inja::json& data,
+                const std::string& cpp_out_dir = "")
+{
 }
 
 void render(const std::string& file)
@@ -105,8 +114,14 @@ void render(const std::string& file)
 
     data["uscript_message_type_prefix"] = "EMT";
 
+    if (!data.contains("uscript_message_handler_class"))
+    {
+        data["uscript_message_handler_class"] = "MessageHandler";
+    }
+
     std::cout << "rendering '" << file << "'\n";
     render_uscript(env, file, data);
+    render_cpp(env, file, data);
 }
 
 int main(int argc, char* argv[])

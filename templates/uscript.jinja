@@ -19,19 +19,21 @@ struct ByteWrapper
 // Describes the wire format used by this library.
 struct Packet
 {
-    // Total size of this packet. Packets larger than 255 are sent as multi-part
-    // packets. Multi-part packets must be sent in a sequence, until all parts
-    // are sent. Multi-part parsing is interrupted if single-part messages are
-    // sent while a multi-part message is being parsed. To indicate the end of
-    // multi-part sequence, a packet with an empty payload with the following values
+    // Total size of this packet. Packets larger than 255 are sent as multipart
+    // packets. multipart packets must be sent in a sequence, until all parts
+    // are sent. multipart parsing is interrupted if single-part messages are
+    // sent while a multipart message is being parsed. To indicate the end of
+    // multipart sequence, a packet with an empty payload with the following values
     // should be sent: Size=0, Part=0, Type=0 (None).
     var byte Size;
 
-    // 255 for single-part messages. 0-254 for multi-part messages. Incremented
+    // 255 for single-part messages. 0-254 for multipart messages. Incremented
     // for each part. Parts must be sent in an order that matches this field.
+    // The final multipart sequence indicator message has Part set to 0.
     var byte Part;
 
     // Byte field. Maximum number of supported messages is 254.
+    // 0 is reserved for None.
     var MessageType Type;
 
     // Payload bytes. Contains an encoded MessageType message.
@@ -42,6 +44,9 @@ struct Message
 {
     // TODO: is this unneeded overhead?
     var MessageType Type;
+    var bool HasStaticSize;
+    var byte StaticSize;
+    var bool AlwaysSinglePart;
 };
 
 {% for message in messages %}
@@ -57,15 +62,27 @@ struct {{ message.name }} extends Message
 {% for message in messages %}
 {% if message.always_single_part %}
 // Encode {{ message.name }} to bytes. Guaranteed to fit in a single packet.
-static final function {{ message.name }}_ToBytes(
+static final function byte {{ message.name }}_ToBytes(
     const out {{ message.name }} Msg,
     out byte Bytes[255])
 {
+    {% set x = 0 %}
+    Bytes[{{ x }}] = {{ message.static_size }};
+    {% set x = x + 1 %}
+    Bytes[{{ x }}] = {{ 0 }};
+    {% set x = x + 1 %}
+    Bytes[{{ x }}] = byte({{ uscript_message_type_prefix }}_{{ message.name }});
+    {% set x = x + 1 %}
+    {% for field in message.fields %}
+    Bytes[{{ x }}] = 255; // TODO
+    {% set x = x + 1 %}
+    {% endfor %}
+    return {{ x }};
 }
 {% endif %}
 
 // Encode {{ message.name }} to bytes. Returns 255 if the message fits in a single packet.
-// For multi-part messages, returns the number of parts (2-254).
+// For multipart messages, returns the number of parts (2-254).
 {% if message.always_single_part %}
 // NOTE: This message is always guaranteed to fit in a single packet.
 // {{ message.name }}_ToBytes() should be used over this function.
@@ -84,7 +101,7 @@ static final function {{ message.name }}_FromBytes(
 {
 }
 
-// Decode {{ message.name }} from bytes. Decodes both, single-part and multi-part messages.
+// Decode {{ message.name }} from bytes. Decodes both, single-part and multipart messages.
 static final function {{ message.name }}_FromMultiBytes(
     out {{ message.name }} Msg,
     const out array<ByteWrapper> Bytes)
