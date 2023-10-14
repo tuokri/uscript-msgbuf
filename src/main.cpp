@@ -317,6 +317,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     data["payload_size"] = ::umb::g_payload_size;
     data["packet_size"] = ::umb::g_packet_size;
     data["float_multiplier"] = ::umb::g_float_multiplier;
+    data["size_of_uscript_char"] = ::umb::g_size_of_uscript_char;
 
     fs::path template_dir{::umb::g_template_dir};
     fs::path us_template = template_dir / ::umb::g_uscript_template;

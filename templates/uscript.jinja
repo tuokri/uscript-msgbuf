@@ -113,7 +113,7 @@ static final function {{ message.name }}_ToMultiBytes(
     out array<byte> Bytes)
 {
 {% if message.has_string_fields %}
-    {% include "uscript_string_coding_variables.jinja" %}
+    {% include "uscript_string_encoding_variables.jinja" %}
 {% endif %}
 {% if message.always_single_part %} {# Just copy buffer for single-part messages. #}
 {% set sz = message.static_size %}
@@ -182,6 +182,51 @@ static final function {{ message.name }}_FromMultiBytes(
     out {{ message.name }} Msg,
     const out array<byte> Bytes)
 {
+{% if message.has_string_fields %}
+    {% include "uscript_string_decoding_variables.jinja" %}
+{% endif %}
+    local int I;
+    I = 2;
+{% for field in message.fields %}
+    {% if field.type == "int" %}
+    Msg.{{ field.name }} = (
+        Bytes[I++]
+        | Bytes[I++] << 8
+        | Bytes[I++] << 16
+        | Bytes[I++] << 24
+    );
+    {% else if field.type == "byte" %}
+    Msg.{{ field.name }} = Bytes[I++];
+    {% else if field.type == "float" %}
+    Msg.{{ field.name }} = (
+        (
+            Bytes[I++]
+            | (Bytes[I++] << 8)
+            | (Bytes[I++] << 16)
+            | (Bytes[I++] << 24)
+        ) + ((
+            Bytes[I++]
+            | (Bytes[I++] << 8)
+            | (Bytes[I++] << 16)
+            | (Bytes[I++] << 24)
+        ) / {{ float_multiplier }})
+    );
+    {% else if field.type == "string" %}
+    StrLen = Bytes[I++] >>> 1; // x / 2
+    for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
+    {
+        Msg.{{ field.name }} $= (Bytes[I++] | (Bytes[I++] << 8));
+    }
+    {% else if field.type == "bytes" %}
+    StrLen = Bytes[I++];
+    for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
+    {
+        Msg.{{ field.name }} = Bytes[I++];
+    }
+    {% else %}
+    {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
+    {% endif %}
+{% endfor %}
 }
 
 {%- endfor %}

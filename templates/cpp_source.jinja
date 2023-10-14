@@ -74,7 +74,7 @@ size_t {{ message.name }}::serialized_size() const
 }
 
 {% for field in message.fields %}
-{{ cpp_type(field.type) }} {{ message.name }}::get_{{ field.name }}() const
+{{ cpp_type(field.type) }} {{ message.name }}::{{ field.name }}() const
 {
     return m_{{ field.name }};
 }

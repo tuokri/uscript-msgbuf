@@ -1,6 +1,6 @@
     StrLen = Len(Msg.{{ field.name }});
     Bytes.Length = Bytes.Length + StrLen + 1;
-    Bytes[I++] = StrLen;
+    Bytes[I++] = StrLen * {{ size_of_uscript_char }};
     for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
     {
         Char = Asc(Msg.{{ field.name }});

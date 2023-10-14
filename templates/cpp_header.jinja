@@ -20,7 +20,7 @@ public:
     bool from_bytes(const std::span<const ::umb::byte> bytes) override;
     [[nodiscard]] size_t serialized_size() const override;
     {% for field in message.fields %}
-    {{ cpp_type(field.type) }} get_{{ field.name }}() const;
+    {{ cpp_type(field.type) }} {{ field.name }}() const;
     void set_{{ field.name }}({{ cpp_type_arg(field.type) }});
     {% endfor %}
 
