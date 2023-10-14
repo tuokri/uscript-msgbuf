@@ -33,22 +33,34 @@ constexpr size_t g_dynamic_field_header_size = 1;
 // Fractional part "precision" when coding floats.
 constexpr auto g_float_multiplier = 10000000;
 
+// Max size of dynamic field payload part.
+constexpr auto g_max_dynamic_size = 255;
+
 constexpr size_t g_sizeof_byte = 1;
 constexpr size_t g_sizeof_int = 4;
+// Floats are encoded as int+int (integer part + fractional part).
 constexpr size_t g_sizeof_float = 8;
 constexpr size_t g_size_of_uscript_char = 2;
 
 // All types with known static sizes in bytes.
 static const std::unordered_map<std::string, size_t> g_static_types{
-    {"byte",  1},
-    {"int",   4},
-    {"float", 8}, // Floats are encoded as int+int (integer part + fractional part).
+    {"byte",  g_sizeof_byte},
+    {"int",   g_sizeof_int},
+    {"float", g_sizeof_float},
 };
 
 // All dynamic types with variable size i.e. header + data.
 static const std::vector<std::string> g_dynamic_types{
     "string",
     "bytes",
+};
+
+static const std::unordered_map<std::string, std::string> g_type_to_cpp_type{
+    {"byte",   "::umb::byte"},
+    {"int",    "int32_t"},
+    {"float",  "float"},
+    {"bytes",  "std::vector<::umb::byte>"},
+    {"string", "std::u16string"},
 };
 
 } // namespace umb

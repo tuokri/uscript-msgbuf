@@ -3,9 +3,10 @@
 
 #pragma once
 
+#include <format>
 #include <span>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace umb
 {
@@ -20,10 +21,7 @@ inline constexpr void check_bounds(
     const auto d = std::distance(bytes.cbegin(), i) + field_size;
     if (d <= 0 || d > (bsize))
     {
-        // TODO: use fmtlib...
-        const std::string msg =
-            caller + ": not enough bytes " + std::to_string(d) + " " +
-            std::to_string(bsize);
+        const auto msg = std::format("{}: not enough bytes {} {}", caller, d, bsize);
         throw std::out_of_range(msg);
     }
 }
@@ -61,7 +59,7 @@ inline constexpr auto decode_float(
         | static_cast<int32_t>(*i++) << 16
         | static_cast<int32_t>(*i++) << 24
     );
-    out = int_part + (frac_part / ::umb::g_float_multiplier);
+    out = int_part + (frac_part / g_float_multiplier);
     return i;
 }
 
@@ -95,7 +93,7 @@ inline constexpr auto decode_string(
         );
         str.append(&c);
     }
-    out = str;
+    out = std::move(str);
     return i;
 }
 
@@ -105,15 +103,71 @@ inline constexpr auto decode_bytes(
     std::vector<byte>& out)
 {
     byte size;
-    check_bounds(i, bytes, g_sizeof_byte);
     decode_byte(i, bytes, size);
+    check_bounds(i, bytes, size);
     std::vector<byte> b;
     b.reserve(size);
     for (const auto& byte = *i; i < (i + size); ++i)
     {
         b.emplace_back(byte);
     }
+    out = std::move(b);
     return i;
+}
+
+inline constexpr void encode_int(int32_t i, std::span<byte>::iterator bytes)
+{
+    *bytes++ = i & 0xff;
+    *bytes++ = (i >> 8) & 0xff;
+    *bytes++ = (i >> 16) & 0xff;
+    *bytes++ = (i >> 24) & 0xff;
+}
+
+inline constexpr void encode_float(float f, std::span<byte>::iterator bytes)
+{
+    const auto int_part = static_cast<int32_t>(f);
+    const auto frac_part =
+        static_cast<int32_t>(f - static_cast<float>(int_part)) * g_float_multiplier;
+    *bytes++ = int_part & 0xff;
+    *bytes++ = (int_part >> 8) & 0xff;
+    *bytes++ = (int_part >> 16) & 0xff;
+    *bytes++ = (int_part >> 24) & 0xff;
+    *bytes++ = frac_part & 0xff;
+    *bytes++ = (frac_part >> 8) & 0xff;
+    *bytes++ = (frac_part >> 16) & 0xff;
+    *bytes++ = (frac_part >> 24) & 0xff;
+}
+
+inline constexpr void check_dynamic_length(size_t size)
+{
+    if (size > g_max_dynamic_size)
+    {
+        throw std::invalid_argument(std::format("dynamic field too large: {}", size));
+    }
+}
+
+inline constexpr void encode_string(const std::u16string& str, std::span<byte>::iterator bytes)
+{
+    const auto size = str.size();
+    check_dynamic_length(size);
+    *bytes++ = static_cast<byte>(size);
+    for (const auto& c: str)
+    {
+        *bytes++ = static_cast<byte>(c & 0xff);
+        *bytes++ = static_cast<byte>((c >> 8) & 0xff);
+    }
+}
+
+inline constexpr void
+encode_bytes(const std::span<const byte> bytes_in, std::span<byte>::iterator bytes)
+{
+    const auto size = bytes_in.size();
+    check_dynamic_length(size);
+    *bytes++ = static_cast<byte>(size);
+    for (const auto& b: bytes_in)
+    {
+        *bytes++ = b;
+    }
 }
 
 } // namespace umb

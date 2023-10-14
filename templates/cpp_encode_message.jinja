@@ -1,0 +1,11 @@
+{% for field in message.fields %}
+    {% if field.type == "int" %}
+
+    {% else if field.type == "byte" %}
+    {% else if field.type == "float" %}
+    {% else if field.type == "bytes" %}
+    {% else if field.type == "string" %}
+    {% else %}
+        {{ error("invalid type: '", field.type, "' in ", message.name) }}
+    {% endif %}
+{% endfor %}

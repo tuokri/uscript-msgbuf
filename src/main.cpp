@@ -13,8 +13,6 @@
 #include "umb/constants.hpp"
 #include "umb/message.hpp"
 
-static umb::SomeMessage msg;
-
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 
@@ -67,16 +65,16 @@ std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
        << " name: " << result.name
        << ", has_static_size: " << result.has_static_size
        << ", static_size: " << result.static_size
+       << ", static_part: " << result.static_part
        << ", always_single_part: " << result.always_single_part
        << ", has_float_fields: " << result.has_float_fields
-       << ", static_part: " << result.static_part
        << ", has_string_fields: " << result.has_string_fields
        << " }";
     return os;
 }
 
 template<typename T>
-inline bool in_vector(const std::vector<T>& v, T t)
+inline constexpr bool in_vector(const std::vector<T>& v, T t)
 {
     return std::find(v.cbegin(), v.cend(), t) != v.cend();
 }
@@ -216,12 +214,18 @@ constexpr auto error = [](inja::Arguments& args)
     throw std::invalid_argument(ss.str());
 };
 
+constexpr auto cpp_type = [](inja::Arguments& args)
+{
+    const auto type = args.at(0)->get<std::string>();
+    return ::umb::g_type_to_cpp_type.at(type);
+};
+
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
                     const std::string& uscript_out_dir)
 {
     const auto r = env.render_file(file, data);
     std::cout << r << "\n";
-    fs::path out_filename = fs::path(file).replace_filename(
+    fs::path out_filename = fs::path(
         data["class_name"].get<std::string>()).filename().replace_extension(".uc");
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
     std::cout << "writing '" << out_file.string() << "'\n";
@@ -229,9 +233,25 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
     out << r;
 }
 
-void render_cpp(inja::Environment& env, const std::string& file, const inja::json& data,
+void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
+                const std::string& src_template_file, const inja::json& data,
                 const std::string& cpp_out_dir)
 {
+    const auto hdr = env.render_file(hdr_template_file, data);
+    const auto src = env.render_file(src_template_file, data);
+    std::cout << hdr << "\n";
+    std::cout << src << "\n";
+    fs::path out_filename = fs::path(data["class_name"].get<std::string>()).filename();
+    fs::path hdr_out_file =
+        fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_hdr_extension);
+    fs::path src_out_file =
+        fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_src_extension);;
+    std::cout << "writing '" << hdr_out_file.string() << "'\n";
+    std::cout << "writing '" << src_out_file.string() << "'\n";
+    fs::ofstream hdr_out{hdr_out_file};
+    fs::ofstream src_out{src_out_file};
+    hdr_out << hdr;
+    src_out << src;
 }
 
 void
@@ -247,6 +267,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     env.add_callback("capitalize", 1, capitalize);
     env.add_callback("pad", 2, pad);
     env.add_callback("var", var);
+    env.add_callback("cpp_type", 1, cpp_type);
     env.add_void_callback("error", error);
 
     auto data = env.load_json(file);
@@ -286,19 +307,17 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     fs::path template_dir{::umb::g_template_dir};
     fs::path us_template = template_dir / ::umb::g_uscript_template;
     fs::path cpp_hdr_template = template_dir / ::umb::g_cpp_hdr_template;
+    fs::path cpp_src_template = template_dir / ::umb::g_cpp_src_template;
 
     std::cout << "rendering '" << file << "'\n";
     render_uscript(env, us_template.string(), data, uscript_out_dir);
-    render_cpp(env, cpp_hdr_template.string(), data, cpp_out_dir);
+    render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir);
 }
 
 int main(int argc, char* argv[])
 {
     try
     {
-        std::vector<uint8_t> v{0};
-        msg.from_bytes(v);
-
         const auto default_out_dir = fs::current_path().parent_path();
 
         po::options_description desc("Options");
