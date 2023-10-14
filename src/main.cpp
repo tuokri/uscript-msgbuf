@@ -220,6 +220,18 @@ constexpr auto cpp_type = [](inja::Arguments& args)
     return ::umb::g_type_to_cpp_type.at(type);
 };
 
+constexpr auto cpp_type_arg = [](inja::Arguments& args)
+{
+    const auto type = args.at(0)->get<std::string>();
+    return ::umb::g_type_to_cpp_type_arg.at(type);
+};
+
+constexpr auto cpp_default_value = [](inja::Arguments& args)
+{
+    const auto type = args.at(0)->get<std::string>();
+    return ::umb::g_cpp_default_value.at(type);
+};
+
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
                     const std::string& uscript_out_dir)
 {
@@ -268,6 +280,8 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     env.add_callback("pad", 2, pad);
     env.add_callback("var", var);
     env.add_callback("cpp_type", 1, cpp_type);
+    env.add_callback("cpp_type_arg", 1, cpp_type_arg);
+    env.add_callback("cpp_default_value", 1, cpp_default_value);
     env.add_void_callback("error", error);
 
     auto data = env.load_json(file);

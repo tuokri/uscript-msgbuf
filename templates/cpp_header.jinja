@@ -19,6 +19,10 @@ public:
     virtual bool to_bytes(std::span<::umb::byte> bytes) const override;
     bool from_bytes(const std::span<const ::umb::byte> bytes) override;
     [[nodiscard]] size_t serialized_size() const override;
+    {% for field in message.fields %}
+    {{ cpp_type(field.type) }} get_{{ field.name }}() const;
+    void set_{{ field.name }}({{ cpp_type_arg(field.type) }});
+    {% endfor %}
 
 private:
     {% for field in message.fields %}

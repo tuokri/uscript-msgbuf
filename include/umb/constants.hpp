@@ -4,8 +4,9 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace umb
 {
@@ -61,6 +62,22 @@ static const std::unordered_map<std::string, std::string> g_type_to_cpp_type{
     {"float",  "float"},
     {"bytes",  "std::vector<::umb::byte>"},
     {"string", "std::u16string"},
+};
+
+static const std::unordered_map<std::string, std::string> g_type_to_cpp_type_arg{
+    {"byte",   "::umb::byte"},
+    {"int",    "int32_t"},
+    {"float",  "float"},
+    {"bytes",  "const std::vector<::umb::byte>&"},
+    {"string", "const std::u16string&"},
+};
+
+static const std::unordered_map<std::string, std::string> g_cpp_default_value{
+    {"byte",   "0"},
+    {"int",    "0"},
+    {"float",  "0"},
+    {"bytes",  ""},
+    {"string", ""},
 };
 
 } // namespace umb

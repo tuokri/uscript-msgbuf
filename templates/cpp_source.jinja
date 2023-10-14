@@ -8,7 +8,7 @@ namespace {{ cpp_namespace }}
 {% for message in messages %}
 {{ message.name }}::{{ message.name }}()
 {% for field in message.fields %}
-    {% if loop.is_first %} : {% else %} , {% endif %} m_{{ field.name }}()
+    {% if loop.is_first %} : {% else %} , {% endif %} m_{{ field.name }}({{ cpp_default_value(field.type) }})
 {% endfor %}
 {
 }
@@ -16,17 +16,38 @@ namespace {{ cpp_namespace }}
 std::vector<::umb::byte> {{ message.name }}::to_bytes() const
 {
     std::vector<::umb::byte> v;
-    v.reserve(0);
+    auto vi = std::span{v}.begin();
+    v.reserve(serialized_size());
     {% include "cpp_encode_message.jinja" %}
     return v;
 }
 
 bool {{ message.name }}::to_bytes(std::span<::umb::byte> bytes) const
 {
+    if (!::umb::check_bounds_no_throw(bytes.cbegin(), bytes, serialized_size()))
+    {
+        return false;
+    }
+
+    auto vi = bytes.begin();
+    {% include "cpp_encode_message.jinja" %}
+
+    return true;
 }
 
 bool {{ message.name }}::from_bytes(const std::span<const ::umb::byte> bytes)
 {
+    // TODO: do this without the try-catch?
+    try
+    {
+        auto vi = bytes.cbegin();
+    {% include "cpp_decode_message.jinja" %}
+        return true;
+    }
+    catch (const std::out_of_range&)
+    {
+        return false;
+    }
 }
 
 size_t {{ message.name }}::serialized_size() const
@@ -51,6 +72,19 @@ size_t {{ message.name }}::serialized_size() const
 {% endfor %}
     return size;
 }
+
+{% for field in message.fields %}
+{{ cpp_type(field.type) }} {{ message.name }}::get_{{ field.name }}() const
+{
+    return m_{{ field.name }};
+}
+
+void {{ message.name }}::set_{{ field.name }}({{ cpp_type_arg(field.type) }} value)
+{
+    m_{{ field.name }} = value;
+}
+
+{% endfor %}
 
 {% endfor %}
 

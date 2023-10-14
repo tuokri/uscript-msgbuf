@@ -11,22 +11,34 @@
 namespace umb
 {
 
-inline constexpr void check_bounds(
-    std::span<const byte>::const_iterator i,
-    const std::span<const byte> bytes,
-    size_t field_size,
-    const std::string& caller = __builtin_FUNCTION())
+template<typename T = const byte>
+inline constexpr bool check_bounds_no_throw(
+    typename std::span<T>::const_iterator i,
+    const std::span<T> bytes,
+    size_t field_size) noexcept
 {
     const auto bsize = bytes.size();
     const auto d = std::distance(bytes.cbegin(), i) + field_size;
-    if (d <= 0 || d > (bsize))
+    return (d > 0 && (d <= bsize));
+}
+
+template<typename T = const byte>
+inline constexpr void check_bounds(
+    typename std::span<T>::const_iterator i,
+    const std::span<T> bytes,
+    size_t field_size,
+    const std::string& caller = __builtin_FUNCTION())
+{
+    if (!check_bounds_no_throw(i, bytes, field_size))
     {
+        const auto bsize = bytes.size();
+        const auto d = std::distance(bytes.cbegin(), i) + field_size;
         const auto msg = std::format("{}: not enough bytes {} {}", caller, d, bsize);
         throw std::out_of_range(msg);
     }
 }
 
-inline constexpr auto decode_int(
+inline constexpr void decode_int(
     std::span<const byte>::const_iterator i,
     const std::span<const byte> bytes,
     int32_t& out)
@@ -38,10 +50,9 @@ inline constexpr auto decode_int(
         | static_cast<int32_t>(*i++) << 16
         | static_cast<int32_t>(*i++) << 24
     );
-    return i;
 }
 
-inline constexpr auto decode_float(
+inline constexpr void decode_float(
     std::span<const byte>::const_iterator i,
     const std::span<const byte> bytes,
     float& out)
@@ -60,20 +71,18 @@ inline constexpr auto decode_float(
         | static_cast<int32_t>(*i++) << 24
     );
     out = int_part + (frac_part / g_float_multiplier);
-    return i;
 }
 
-inline constexpr auto decode_byte(
+inline constexpr void decode_byte(
     std::span<const byte>::const_iterator i,
     const std::span<const byte> bytes,
     byte& out)
 {
     check_bounds(i, bytes, g_sizeof_byte);
     out = *i++;
-    return i;
 }
 
-inline constexpr auto decode_string(
+inline constexpr void decode_string(
     std::span<const byte>::const_iterator i,
     const std::span<const byte> bytes,
     std::u16string& out)
@@ -94,10 +103,9 @@ inline constexpr auto decode_string(
         str.append(&c);
     }
     out = std::move(str);
-    return i;
 }
 
-inline constexpr auto decode_bytes(
+inline constexpr void decode_bytes(
     std::span<const byte>::const_iterator i,
     const std::span<const byte> bytes,
     std::vector<byte>& out)
@@ -112,7 +120,11 @@ inline constexpr auto decode_bytes(
         b.emplace_back(byte);
     }
     out = std::move(b);
-    return i;
+}
+
+inline constexpr void encode_byte(byte b, std::span<byte>::iterator bytes)
+{
+    *bytes++ = b;
 }
 
 inline constexpr void encode_int(int32_t i, std::span<byte>::iterator bytes)

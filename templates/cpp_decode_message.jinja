@@ -1,14 +1,14 @@
 {% for field in message.fields %}
     {% if field.type == "int" %}
-        ::umb::encode_int(m_{{ field.name }}, vi);
+        ::umb::decode_int(vi, bytes, m_{{ field.name }});
     {% else if field.type == "byte" %}
-        ::umb::encode_byte(m_{{ field.name }}, vi);
+        ::umb::decode_byte(vi, bytes, m_{{ field.name }});
     {% else if field.type == "float" %}
-        ::umb::encode_float(m_{{ field.name }}, vi);
+        ::umb::decode_float(vi, bytes, m_{{ field.name }});
     {% else if field.type == "bytes" %}
-        ::umb::encode_bytes(m_{{ field.name }}, vi);
+        ::umb::decode_bytes(vi, bytes, m_{{ field.name }});
     {% else if field.type == "string" %}
-        ::umb::encode_string(m_{{ field.name }}, vi);
+        ::umb::decode_string(vi, bytes, m_{{ field.name }});
     {% else %}
         {{ error("invalid type: '", field.type, "' in ", message.name) }}
     {% endif %}
