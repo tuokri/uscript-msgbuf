@@ -27,13 +27,29 @@ add_executable(
     src/main.cpp
 )
 
+if (MSVC)
+    set(
+        UMB_GENERATOR_LINK_LIBS
+        umb
+        pantor::inja
+        Boost::filesystem
+        Boost::program_options
+    )
+else ()
+    set(
+        UMB_GENERATOR_LINK_LIBS
+        umb
+        pantor::inja
+        Boost::filesystem
+        Boost::program_options
+        dl
+    )
+endif ()
+
 target_link_libraries(
     uscript_msgbuf_generator
     PRIVATE
-    umb
-    pantor::inja
-    Boost::filesystem
-    Boost::program_options
+    ${UMB_GENERATOR_LINK_LIBS}
 )
 
 target_compile_features(
@@ -51,7 +67,7 @@ target_compile_features(
 # Build list of file paths to copy templates to.
 file(GLOB TEMPLATE_FILES templates/*.jinja)
 set(TEMPLATE_FILE_OUTPUTS "")
-foreach (template_file in ${TEMPLATE_FILES})
+foreach (template_file ${TEMPLATE_FILES})
     cmake_path(GET template_file FILENAME template_filename)
     cmake_path(
         SET

@@ -20,5 +20,6 @@ by UnrealScript's `TcpLink` class, specifically the `SendBinary` function.
 Install using vcpkg:
 
 ```shell
-vcpkg install inja boost-program-options boost-filesystem boost-algorithm
+vcpkg install inja boost-program-options 
+boost-filesystem boost-algorithm boost-dll doctest
 ```

@@ -9,9 +9,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/program_options.hpp>
+#include <boost/dll.hpp>
 
 #include "umb/constants.hpp"
-#include "umb/message.hpp"
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -264,6 +264,9 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
     fs::path out_filename = fs::path(data["class_name"].get<std::string>()).filename();
     fs::path hdr_out_file =
         fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_hdr_extension);
+    // Reset extension to avoid double extension (umb.umb.cpp).
+    out_filename.replace_extension("");
+    out_filename.replace_extension("");
     fs::path src_out_file =
         fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_src_extension);;
     std::cout << "writing '" << hdr_out_file.string() << "'\n";
@@ -327,7 +330,8 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     data["float_multiplier"] = ::umb::g_float_multiplier;
     data["size_of_uscript_char"] = ::umb::g_size_of_uscript_char;
 
-    fs::path template_dir{::umb::g_template_dir};
+    const auto prog_dir = boost::dll::program_location().parent_path();
+    fs::path template_dir = prog_dir / ::umb::g_template_dir;
     fs::path us_template = template_dir / ::umb::g_uscript_template;
     fs::path cpp_hdr_template = template_dir / ::umb::g_cpp_hdr_template;
     fs::path cpp_src_template = template_dir / ::umb::g_cpp_src_template;

@@ -52,7 +52,7 @@ bool {{ message.name }}::from_bytes(const std::span<const ::umb::byte> bytes)
 
 size_t {{ message.name }}::serialized_size() const
 {
-    size_t size;
+    size_t size = 0;
 {% for field in message.fields %}
     {% if field.type == "int" %}
     size += ::umb::g_sizeof_int; // {{ field.name }}
