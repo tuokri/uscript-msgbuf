@@ -66,7 +66,7 @@ target_compile_features(
 
 # Build list of file paths to copy templates to.
 file(GLOB TEMPLATE_FILES templates/*.jinja)
-set(TEMPLATE_FILE_OUTPUTS "")
+set(TEMPLATE_FILES ${TEMPLATE_FILES})
 foreach (template_file ${TEMPLATE_FILES})
     cmake_path(GET template_file FILENAME template_filename)
     cmake_path(
@@ -109,7 +109,6 @@ target_compile_options(
     PRIVATE
     ${UMB_COMPILE_OPTIONS}
 )
-
 
 target_compile_options(
     umb
