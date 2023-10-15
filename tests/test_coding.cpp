@@ -1,4 +1,7 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedMacroInspection"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#pragma clang diagnostic pop
 
 #include "doctest/doctest.h"
 

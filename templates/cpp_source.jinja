@@ -15,6 +15,7 @@ namespace {{ cpp_namespace }}
 
 std::vector<::umb::byte> {{ message.name }}::to_bytes() const
 {
+    // TODO: include packet header here?
     std::vector<::umb::byte> v;
     v.resize(serialized_size());
     auto vi = std::span{v}.begin();
@@ -85,6 +86,15 @@ void {{ message.name }}::set_{{ field.name }}({{ cpp_type_arg(field.type) }} val
 }
 
 {% endfor %}
+
+bool {{ message.name }}::operator==(const {{ message.name }}& lhs)
+{
+    return (
+{% for field in message.fields %}
+        (m_{{ field.name }} == lhs.{{ field.name }}()) {% if not loop.is_last %} && {% endif %}
+{% endfor %}
+    );
+}
 
 {% endfor %}
 

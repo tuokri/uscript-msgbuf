@@ -23,6 +23,7 @@ public:
     {{ cpp_type(field.type) }} {{ field.name }}() const;
     void set_{{ field.name }}({{ cpp_type_arg(field.type) }});
     {% endfor %}
+    bool operator==(const {{ message.name }}&);
 
 private:
     {% for field in message.fields %}
