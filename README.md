@@ -15,6 +15,7 @@ by UnrealScript's `TcpLink` class, specifically the `SendBinary` function.
 - [Inja](https://github.com/pantor/inja)
 - [Boost (Program Options, Filesystem, Algorithm)](https://www.boost.org/)
     - Tested with Boost versions 1.82 and 1.83.
+- [doctest](https://github.com/doctest/doctest) (for testing)
 
 Install using vcpkg:
 

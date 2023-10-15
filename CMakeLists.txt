@@ -18,6 +18,10 @@ find_package(
     REQUIRED
 )
 
+add_library(umb INTERFACE)
+
+target_include_directories(umb INTERFACE include)
+
 add_executable(
     uscript_msgbuf_generator
     src/main.cpp
@@ -26,6 +30,7 @@ add_executable(
 target_link_libraries(
     uscript_msgbuf_generator
     PRIVATE
+    umb
     pantor::inja
     Boost::filesystem
     Boost::program_options
@@ -37,11 +42,10 @@ target_compile_features(
     cxx_std_23
 )
 
-# TODO: temporary for testing.
-target_include_directories(
-    uscript_msgbuf_generator
-    PRIVATE
-    include/
+target_compile_features(
+    umb
+    INTERFACE
+    cxx_std_23
 )
 
 # Build list of file paths to copy templates to.
@@ -70,21 +74,32 @@ add_custom_command(
 add_dependencies(uscript_msgbuf_generator copy_templates)
 
 if (MSVC)
-    target_compile_options(
-        uscript_msgbuf_generator
-        PRIVATE
+    set(
+        UMB_COMPILE_OPTIONS
         /W4
     )
 else ()
-    target_compile_options(
-        uscript_msgbuf_generator
-        PRIVATE
+    set(
+        UMB_COMPILE_OPTIONS
         -Wall
         -pedantic
         -Wpedantic
         -Wextra
     )
 endif ()
+
+target_compile_options(
+    uscript_msgbuf_generator
+    PRIVATE
+    ${UMB_COMPILE_OPTIONS}
+)
+
+
+target_compile_options(
+    umb
+    INTERFACE
+    ${UMB_COMPILE_OPTIONS}
+)
 
 option(BUILD_TESTS "build tests" OFF)
 

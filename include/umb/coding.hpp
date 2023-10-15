@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "umb/constants.hpp"
+
 namespace umb
 {
 

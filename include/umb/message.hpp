@@ -5,8 +5,8 @@
 
 #include <cstdint>
 #include <span>
+#include <vector>
 
-#include "umb/constants.hpp"
 #include "umb/coding.hpp"
 
 namespace umb

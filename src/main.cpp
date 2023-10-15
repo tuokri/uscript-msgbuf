@@ -246,9 +246,17 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
 }
 
 void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
-                const std::string& src_template_file, const inja::json& data,
+                const std::string& src_template_file, inja::json& data,
                 const std::string& cpp_out_dir)
 {
+    if (!data.contains("cpp_namespace"))
+    {
+        auto class_name = data["class_name"].get<std::string>();
+        boost::to_lower(class_name);
+        const auto cn = std::format("{}::umb", class_name);
+        data["cpp_namespace"] = cn;
+    }
+
     const auto hdr = env.render_file(hdr_template_file, data);
     const auto src = env.render_file(src_template_file, data);
     std::cout << hdr << "\n";
