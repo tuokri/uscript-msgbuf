@@ -34,3 +34,8 @@
 # JetBrains
 .idea/
 cmake-build-*
+
+# Generated
+*.uc
+*.umb.cpp
+*.umb.hpp
