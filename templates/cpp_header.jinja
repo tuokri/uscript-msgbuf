@@ -10,26 +10,37 @@
 namespace {{ cpp_namespace }}
 {
 
+enum class MessageType : ::umb::byte
+{
 {% for message in messages %}
+    {{ message.name }},
+{% endfor %}
+};
+
+{% for message in messages %}
+// TODO: avoid clashes with message field names and reserved identifiers here.
 class {{ message.name }} : public ::umb::Message
 {
 public:
-    {{ message.name  }}();
+    {{ message.name }}();
     [[nodiscard]] std::vector<::umb::byte> to_bytes() const override;
-    virtual bool to_bytes(std::span<::umb::byte> bytes) const override;
-    bool from_bytes(const std::span<const ::umb::byte> bytes) override;
+    [[nodiscard]] bool to_bytes(std::span<::umb::byte> bytes) const override;
+    bool from_bytes(std::span<const ::umb::byte> bytes) override;
     [[nodiscard]] size_t serialized_size() const override;
     {% for field in message.fields %}
-    {{ cpp_type(field.type) }} {{ field.name }}() const;
+    [[nodiscard]] {{ cpp_type(field.type) }} {{ field.name }}() const;
     void set_{{ field.name }}({{ cpp_type_arg(field.type) }});
     {% endfor %}
-    bool operator==(const {{ message.name }}&);
+    friend bool operator==(const {{ message.name }}&, const {{ message.name }}&);
+    [[nodiscard]] constexpr MessageType type() const { return MessageType::{{ message.name }}; };
+    // TODO: add reflection.
 
 private:
     {% for field in message.fields %}
     {{ cpp_type(field.type) }} m_{{ field.name }};
     {% endfor %}
 };
+
 {% endfor %}
 
 } // {{ cpp_namespace }}

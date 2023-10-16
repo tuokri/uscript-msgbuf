@@ -1,0 +1,7 @@
+    BLen = Msg.{{ field.name }}.Length;
+    Bytes.Length = Bytes.Length + BLen + 1;
+    Bytes[I++] = BLen;
+    for (BIdx = 0; BIdx < BLen; ++BIdx)
+    {
+        Bytes[I++] = Msg.{{ field.name }}[BIdx];
+    }

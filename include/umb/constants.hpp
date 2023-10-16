@@ -81,6 +81,10 @@ static const std::unordered_map<std::string, std::string> g_cpp_default_value{
     {"string", ""},
 };
 
+static const std::unordered_map<std::string, std::string> g_type_to_uscript_type{
+    {"bytes", "array<byte>"},
+};
+
 } // namespace umb
 
 #endif // USCRIPT_MSGBUF_CONSTANTS_HPP

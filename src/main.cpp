@@ -1,3 +1,4 @@
+#include <format>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -57,6 +58,9 @@ struct MsgAnalysisResult
     // True if message has string fields. Indicates the need for temporary
     // helper variables for decoding and encoding in UnrealScript.
     bool has_string_fields{false};
+    // True if message has bytes fields. Indicates the need for temporary
+    // helper variables for decoding and encoding in UnrealScript.
+    bool has_bytes_fields{false};
 };
 
 std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
@@ -69,6 +73,7 @@ std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
        << ", always_single_part: " << result.always_single_part
        << ", has_float_fields: " << result.has_float_fields
        << ", has_string_fields: " << result.has_string_fields
+       << ", has_bytes_fields: " << result.has_bytes_fields
        << " }";
     return os;
 }
@@ -138,6 +143,11 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         return type == "string";
     });
 
+    result.has_bytes_fields = std::any_of(types.cbegin(), types.cend(), [](const std::string& type)
+    {
+        return type == "bytes";
+    });
+
     return result;
 }
 
@@ -204,7 +214,7 @@ static constexpr auto var = [](inja::Arguments& args)
     }
 };
 
-constexpr auto error = [](inja::Arguments& args)
+constexpr auto error = [](const inja::Arguments& args)
 {
     std::stringstream ss;
     for (const auto& arg: args)
@@ -230,6 +240,16 @@ constexpr auto cpp_default_value = [](inja::Arguments& args)
 {
     const auto type = args.at(0)->get<std::string>();
     return ::umb::g_cpp_default_value.at(type);
+};
+
+constexpr auto uscript_type = [](inja::Arguments& args)
+{
+    auto type = args.at(0)->get<std::string>();
+    if (!::umb::g_type_to_uscript_type.contains(type))
+    {
+        return type;
+    }
+    return ::umb::g_type_to_uscript_type.at(type);
 };
 
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
@@ -275,6 +295,8 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
     fs::ofstream src_out{src_out_file};
     hdr_out << hdr;
     src_out << src;
+
+    // TODO: run clang-format on generated files.
 }
 
 void
@@ -293,6 +315,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     env.add_callback("cpp_type", 1, cpp_type);
     env.add_callback("cpp_type_arg", 1, cpp_type_arg);
     env.add_callback("cpp_default_value", 1, cpp_default_value);
+    env.add_callback("uscript_type", 1, uscript_type);
     env.add_void_callback("error", error);
 
     auto data = env.load_json(file);
@@ -312,6 +335,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
         message["static_part"] = result.static_part;
         message["has_float_fields"] = result.has_float_fields;
         message["has_string_fields"] = result.has_string_fields;
+        message["has_bytes_fields"] = result.has_bytes_fields;
     }
 
     data["uscript_message_type_prefix"] = "EMT";

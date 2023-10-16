@@ -99,6 +99,10 @@
         {
           "type": "string",
           "name": "ffffff"
+        },
+        {
+          "type": "bytes",
+          "name": "a_field_with_some_bytes_that_do_some_things"
         }
       ]
     }

@@ -1,5 +1,5 @@
     IntPart = Msg.{{ field.name }};
-    FracPart = (Msg.{{ field.name }} - IntPart) * {{ float_multiplier }};
+    FracPart = (Msg.{{ field.name }} - IntPart) * FLOAT_MULTIPLIER;
     Bytes[I++] = (IntPart       ) & 0xff;
     Bytes[I++] = (IntPart >>>  8) & 0xff;
     Bytes[I++] = (IntPart >>> 16) & 0xff;

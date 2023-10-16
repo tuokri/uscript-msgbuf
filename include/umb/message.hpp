@@ -21,7 +21,7 @@ public:
     //   if span has enough space to write to?
     [[nodiscard]] virtual std::vector<byte> to_bytes() const = 0;
 
-    virtual bool to_bytes(std::span<byte> bytes) const = 0;
+    [[nodiscard]] virtual bool to_bytes(std::span<byte> bytes) const = 0;
 
     virtual bool from_bytes(std::span<const byte> bytes) = 0;
 

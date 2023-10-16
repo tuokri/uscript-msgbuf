@@ -6,6 +6,7 @@ class {{ class_name }} extends Object
 const HEADER_SIZE = {{ header_size }};
 const PAYLOAD_SIZE = {{ payload_size }};
 const PACKET_SIZE = {{ packet_size }};
+const FLOAT_MULTIPLIER = {{ float_multiplier }};
 
 enum MessageType
 {
@@ -53,7 +54,7 @@ struct Message
 struct {{ message.name }} extends Message
 {
 {% for field in message.fields %}
-    var {{ field.type }} {{ capitalize(field.name) }};
+    var {{ uscript_type(field.type) }} {{ capitalize(field.name) }};
 {% endfor %}
 };
 
@@ -115,6 +116,9 @@ static final function {{ message.name }}_ToMultiBytes(
 {% if message.has_string_fields %}
     {% include "uscript_string_encoding_variables.jinja" %}
 {% endif %}
+{% if message.has_bytes_fields %}
+    {% include "uscript_bytes_coding_variables.jinja" %}
+{% endif %}
 {% if message.always_single_part %} {# Just copy buffer for single-part messages. #}
 {% set sz = message.static_size %}
     local byte B[PACKET_SIZE];
@@ -145,6 +149,8 @@ static final function {{ message.name }}_ToMultiBytes(
     {% include "uscript_encode_dynamic_float.jinja" %}
 {% else if field.type == "string" %}
     {% include "uscript_encode_dynamic_string.jinja" %}
+{% else if field.type == "bytes" %}
+    {% include "uscript_encode_dynamic_bytes.jinja" %}
 {% else %}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
 {%- endif -%}
@@ -185,6 +191,9 @@ static final function {{ message.name }}_FromMultiBytes(
 {% if message.has_string_fields %}
     {% include "uscript_string_decoding_variables.jinja" %}
 {% endif %}
+{% if message.has_bytes_fields %}
+    {% include "uscript_bytes_coding_variables.jinja" %}
+{% endif %}
     local int I;
     I = 2;
 {% for field in message.fields %}
@@ -209,7 +218,7 @@ static final function {{ message.name }}_FromMultiBytes(
             | (Bytes[I++] << 8)
             | (Bytes[I++] << 16)
             | (Bytes[I++] << 24)
-        ) / {{ float_multiplier }})
+        ) / FLOAT_MULTIPLIER)
     );
     {% else if field.type == "string" %}
     StrLen = Bytes[I++] >>> 1; // x / 2
@@ -218,10 +227,11 @@ static final function {{ message.name }}_FromMultiBytes(
         Msg.{{ field.name }} $= (Bytes[I++] | (Bytes[I++] << 8));
     }
     {% else if field.type == "bytes" %}
-    StrLen = Bytes[I++];
-    for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
+    BLen = Bytes[I++];
+    Msg.{{ field.name }}.Length = BLen;
+    for (BIdx = 0; BIdx < BLen; ++BIdx)
     {
-        Msg.{{ field.name }} = Bytes[I++];
+        Msg.{{ field.name }}[BIdx] = Bytes[I++];
     }
     {% else %}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}

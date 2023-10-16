@@ -1,4 +1,5 @@
 find_package(doctest REQUIRED)
+find_package(ICU REQUIRED COMPONENTS uc io)
 
 add_executable(test_coding test_coding.cpp)
 target_link_libraries(test_coding PRIVATE doctest::doctest umb test_msg_library)
@@ -32,7 +33,11 @@ add_dependencies(generate_test_data copy_templates)
 
 add_library(test_msg_library ${UMB_GENERATED_OUTPUT_TEST_FILES})
 target_include_directories(test_msg_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/out)
-target_link_libraries(test_msg_library PUBLIC umb)
-add_dependencies(test_msg_library uscript_msgbuf_generator copy_templates generate_test_data)
+target_link_libraries(test_msg_library PUBLIC umb ICU::uc ICU::io)
+add_dependencies(
+    test_msg_library
+    uscript_msgbuf_generator
+    copy_templates generate_test_data
+)
 
 # TODO: clean up all the unneeded dependency links. The graph is a mess.
