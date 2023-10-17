@@ -1,3 +1,5 @@
+include(CTest)
+
 find_package(doctest REQUIRED)
 find_package(ICU REQUIRED COMPONENTS uc dt in io)
 
