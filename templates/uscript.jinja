@@ -8,23 +8,20 @@ const PAYLOAD_SIZE = {{ payload_size }};
 const PACKET_SIZE = {{ packet_size }};
 const FLOAT_MULTIPLIER = {{ float_multiplier }};
 
-enum MessageType
-{
-    {{ uscript_message_type_prefix }}_None,
+const {{ uscript_message_type_prefix }}_None = 0;
 {% for message in messages %}
-    {{ uscript_message_type_prefix }}_{{ message.name }},
+const {{ uscript_message_type_prefix }}_{{ message.name }} = {{ loop.index }};
 {% endfor %}
-};
 
 // Describes the wire format used by this library.
 struct Packet
 {
-    // Total size of this packet. Packets larger than 255 are sent as multipart
+    // Total size of this packet. Packets larger than {{ packet_size }} are sent as multipart
     // packets. multipart packets must be sent in a sequence, until all parts
     // are sent. multipart parsing is interrupted if single-part messages are
     // sent while a multipart message is being parsed. To indicate the end of
     // multipart sequence, a packet with an empty payload with the following values
-    // should be sent: Size=0, Part=0, Type=0 (None).
+    // should be sent: Size=0, Part=0, Type=0 ({{ uscript_message_type_prefix }}_None).
     var byte Size;
 
     // 255 for single-part messages. 0-254 for multipart messages. Incremented
@@ -32,18 +29,18 @@ struct Packet
     // The final multipart sequence indicator message has Part set to 0.
     var byte Part;
 
-    // Byte field. Maximum number of supported messages is 254.
-    // 0 is reserved for None.
-    var MessageType Type;
+    // 16 bit field. 2 bytes. Maximum number of supported messages
+    // is {{ max_message_count }}. 0 is reserved for {{ uscript_message_type_prefix }}_None.
+    var int Type;
 
-    // Payload bytes. Contains an encoded MessageType message.
+    // Payload bytes. Contains encoded payload bytes of a Message.
     var byte Payload[PAYLOAD_SIZE];
 };
 
 struct Message
 {
-    // TODO: is this unneeded overhead?
-    var MessageType Type;
+    // TODO: is this reflection unneeded overhead? How much do we need?
+    var int Type;
     var bool HasStaticSize;
     var byte StaticSize;
     var byte StaticPart;
@@ -89,6 +86,10 @@ static final function byte {{ message.name }}_ToBytes(
 
     {%- else if field.type == "byte" %}
     Bytes[{{ pad(x, sz) }}{{ x }}] = Msg.{{ field.name }};
+
+    {%- else if field.type == "bool" %}
+    // TODO: bit-packing for bools. {# TODO: bit-packing for bools. #}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = bool(Msg.{{ field.name }});
 
     {%- else -%}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToBytes") }}
@@ -151,6 +152,9 @@ static final function {{ message.name }}_ToMultiBytes(
     {% include "uscript_encode_dynamic_string.jinja" %}
 {% else if field.type == "bytes" %}
     {% include "uscript_encode_dynamic_bytes.jinja" %}
+{% else if field.type == "bool" %}
+    // TODO: bit-packing for bools. {# TODO: bit-packing for bools. #}
+    Bytes[I++] = bool(Msg.{{ field.name }};
 {% else %}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
 {%- endif -%}
@@ -169,6 +173,8 @@ static final function {{ message.name }}_FromBytes(
     // Decode packet payload.
     {% set x = 3 %}
     {% set sz = message.static_size %}
+
+    // TODO: finish static decoding. {# TODO: finish static decoding. #}
 
 {%- for field in message.fields %}
     {% if field.type == "int" %}
@@ -233,6 +239,9 @@ static final function {{ message.name }}_FromMultiBytes(
     {
         Msg.{{ field.name }}[BIdx] = Bytes[I++];
     }
+    {% else if field.type == "bool" %}
+    // TODO: finish static decoding. {# TODO: finish static decoding. #}
+    Msg.{{ field.name }} = bool(B[I++]);
     {% else %}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
     {% endif %}

@@ -1,3 +1,4 @@
     // Encode packet header. Set size later.
-    Bytes[I++] = {{ 0 }};
+    Bytes[I++] = {{ 0 }}; // Part.
     Bytes[I++] = {{ uscript_message_type_prefix }}_{{ message.name }};
+    Bytes[I++] = ({{ uscript_message_type_prefix }}_{{ message.name }} << 8) & 0xff;

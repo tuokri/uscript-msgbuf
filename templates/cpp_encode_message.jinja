@@ -1,11 +1,13 @@
+{% set in_pack = false %}
     // TODO: for multipart packets, the sender is responsible for splitting the
     //   messages. Document this requirement better somewhere.
-    *vi++ = static_cast<::umb::byte>(std::clamp(size, 0ULL, ::umb::g_packet_size));
-    *vi++ = static_cast<::umb::byte>(type());
-    *vi++ = 0;
+    *vi++ = static_cast<::umb::byte>(std::clamp(size, _ZERO, ::umb::g_packet_size));
+    const auto message_type = static_cast<uint16_t>(type());
+    ::umb::encode_uint16(message_type, vi);
+    *vi++ = 0; // Part.
 {% for field in message.fields %}
     {% if field.type == "int" %}
-        ::umb::encode_int(m_{{ field.name }}, vi);
+        ::umb::encode_int32(m_{{ field.name }}, vi);
     {% else if field.type == "byte" %}
         ::umb::encode_byte(m_{{ field.name }}, vi);
     {% else if field.type == "float" %}
@@ -14,6 +16,22 @@
         ::umb::encode_bytes(m_{{ field.name }}, vi);
     {% else if field.type == "string" %}
         ::umb::encode_string(m_{{ field.name }}, vi);
+    {% else if field.type == "bool" %}
+        {% if bp_is_packed(message, field.name) %}
+            {% if not in_pack %}
+                {% set in_pack = true %}
+                ::umb::encode_packed_bools(vi,
+                    m_{{ field.name }},
+            {% else %}
+                    m_{{ field.name }}{% if not bp_is_last(message.bool_packs, field.name) %},{% endif %}
+               {% if bp_is_last(message.bool_packs, field.name) %}
+                    );
+                    {% set in_pack = false %}
+               {% endif %}
+            {% endif %}
+        {% else %}
+            ::umb::encode_bool(m_{{ field.name }}, vi);
+        {% endif %}
     {% else %}
         {{ error("invalid type: '", field.type, "' in ", message.name) }}
     {% endif %}

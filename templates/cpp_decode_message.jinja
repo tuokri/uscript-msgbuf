@@ -1,6 +1,7 @@
+{% set in_pack = false %}
 {% for field in message.fields %}
     {% if field.type == "int" %}
-        ::umb::decode_int(vi, bytes, m_{{ field.name }});
+        ::umb::decode_int32(vi, bytes, m_{{ field.name }});
     {% else if field.type == "byte" %}
         ::umb::decode_byte(vi, bytes, m_{{ field.name }});
     {% else if field.type == "float" %}
@@ -9,6 +10,22 @@
         ::umb::decode_bytes(vi, bytes, m_{{ field.name }});
     {% else if field.type == "string" %}
         ::umb::decode_string(vi, bytes, m_{{ field.name }});
+    {% else if field.type == "bool" %}
+        {% if bp_is_packed(message, field.name) %}
+            {% if not in_pack %}
+                {% set in_pack = true %}
+                ::umb::decode_packed_bools(vi, bytes,
+                    m_{{ field.name }},
+            {% else %}
+                    m_{{ field.name }}{% if not bp_is_last(message.bool_packs, field.name) %},{% endif %}
+               {% if bp_is_last(message.bool_packs, field.name) %}
+                    );
+                    {% set in_pack = false %}
+               {% endif %}
+            {% endif %}
+        {% else %}
+            ::umb::decode_bool(vi, bytes, m_{{ field.name }});
+        {% endif %}
     {% else %}
         {{ error("invalid type: '", field.type, "' in ", message.name) }}
     {% endif %}

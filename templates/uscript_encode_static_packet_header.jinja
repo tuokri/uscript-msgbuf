@@ -1,8 +1,10 @@
     // Encode packet header.
     Bytes[{{ pad(x, sz) }}{{ x }}] = {{ sz }};
     {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ 0 }};
+    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ 0 }}; // Part.
     {% set x = x + 1 %}
     Bytes[{{ pad(x, sz) }}{{ x }}] = {{ uscript_message_type_prefix }}_{{ message.name }};
+    {% set x = x + 1 %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = ({{ uscript_message_type_prefix }}_{{ message.name }} << 8) & 0xff;
     {% set x = x + 1 -%}
     {% set x = var("x", "set", x) -%}

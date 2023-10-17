@@ -1,12 +1,13 @@
-# uscript-msgbuf
+# UScript-MsgBuf
 
-Lightweight messaging protocol code generator for UnrealScript and C++.
-Think Protobuf, but specialized for a single application domain.
-The project goal is to generate bandwidth-optimized message handling code,
-where the messages take as few bytes as possible, while keeping UnrealScript
-restrictions in mind. UnrealScript performance is the priority concern.
-Network packets are built to fit in 255 bytes, which is the limit imposed 
-by UnrealScript's `TcpLink` class, specifically the `SendBinary` function.
+UScript-MsgBuf (UMB) is a lightweight messaging protocol code generator
+for UnrealScript and C++. Think Protobuf, but specialized for a single
+application domain. The project goal is to generate bandwidth-optimized
+message handling code, where the messages take as few bytes as possible,
+while keeping UnrealScript restrictions in mind. UnrealScript performance
+is the priority concern. Network packets are built to fit in 255 bytes,
+which is the limit imposed by UnrealScript's `TcpLink` class, specifically
+the `SendBinary` function.
 
 ## Building
 

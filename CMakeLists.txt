@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
 project(uscript-msgbuf)
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 set(Boost_USE_DEBUG_LIBS $<$<CONFIG:Debug>:ON,OFF>)
 set(Boost_USE_MULTITHREADED ON)
 

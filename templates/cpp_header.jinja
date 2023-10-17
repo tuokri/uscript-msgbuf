@@ -10,10 +10,11 @@
 namespace {{ cpp_namespace }}
 {
 
-enum class MessageType : ::umb::byte
+enum class MessageType : uint16_t
 {
+    None = 0,
 {% for message in messages %}
-    {{ message.name }},
+    {{ message.name }} = {{ loop.index1 }},
 {% endfor %}
 };
 

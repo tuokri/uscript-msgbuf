@@ -105,6 +105,99 @@
           "name": "a_field_with_some_bytes_that_do_some_things"
         }
       ]
+    },
+    {
+      "name": "BoolPackingMessage",
+      "fields": [
+        {
+          "type": "bool",
+          "name": "pack_start_0"
+        },
+        {
+          "type": "bool",
+          "name": "pack1"
+        },
+        {
+          "type": "bool",
+          "name": "pack2"
+        },
+        {
+          "type": "bool",
+          "name": "pack_end_byte_3"
+        },
+        {
+          "type": "int",
+          "name": "int_pack_delimiter"
+        },
+        {
+          "type": "bool",
+          "name": "unoptimized_lone_bool"
+        },
+        {
+          "type": "byte",
+          "name": "some_byte_delimiter"
+        },
+        {
+          "type": "float",
+          "name": "float_delimiter_asd"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__0"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__1"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__2"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__3"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__4"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__5"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__6"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__7"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__8"
+        },
+        {
+          "type": "bool",
+          "name": "bool_10_part_pack__9"
+        },
+        {
+          "type": "int",
+          "name": "int_after_long_pack"
+        },
+        {
+          "type": "bool",
+          "name": "partial_byte_pack_start_0"
+        },
+        {
+          "type": "bool",
+          "name": "partial_byte_pack_end_1"
+        },
+        {
+          "type": "string",
+          "name": "end_msg_with_some_dynamic_stuff"
+        }
+      ]
     }
   ]
 }

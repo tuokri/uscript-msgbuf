@@ -5,7 +5,6 @@
 
 #include <cstdint>
 #include <string>
-#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -23,14 +22,19 @@ constexpr auto g_uscript_template = "uscript.jinja";
 constexpr auto g_uscript_message_handler_template = "uscript_message_handler.jinja";
 
 // Packet header size in bytes.
-constexpr size_t g_header_size = 3;
+constexpr size_t g_header_size = 4;
 // Maximum packet payload size in bytes.
-constexpr size_t g_payload_size = 252;
+constexpr size_t g_payload_size = 251;
 // Total size of the packet.
 constexpr size_t g_packet_size = g_header_size + g_payload_size;
 // Size of the size field of dynamic fields in bytes.
 // E.g. the size header field in front of dynamic string fields.
 constexpr size_t g_dynamic_field_header_size = 1;
+// How many bools can be packed in a byte.
+constexpr size_t g_bools_in_byte = 8;
+// Maximum number of different message types.
+// 2 bytes - the reserved None message.
+constexpr uint16_t g_max_message_count = std::numeric_limits<uint16_t>::max() - 1;
 
 // Fractional part "precision" when coding floats.
 constexpr auto g_float_multiplier = 10000000;
@@ -39,15 +43,16 @@ constexpr auto g_float_multiplier = 10000000;
 constexpr auto g_max_dynamic_size = 255;
 
 constexpr size_t g_sizeof_byte = 1;
-constexpr size_t g_sizeof_int = 4;
-// Floats are encoded as int+int (integer part + fractional part).
+constexpr size_t g_sizeof_int32 = 4;
+constexpr size_t g_sizeof_uint16 = 2;
+// Floats are encoded as int32+int32 (integer part + fractional part).
 constexpr size_t g_sizeof_float = 8;
-constexpr size_t g_size_of_uscript_char = 2;
+constexpr size_t g_sizeof_uscript_char = 2;
 
 // All types with known static sizes in bytes.
 static const std::unordered_map<std::string, size_t> g_static_types{
     {"byte",  g_sizeof_byte},
-    {"int",   g_sizeof_int},
+    {"int",   g_sizeof_int32},
     {"float", g_sizeof_float},
 };
 
@@ -61,6 +66,7 @@ static const std::unordered_map<std::string, std::string> g_type_to_cpp_type{
     {"byte",   "::umb::byte"},
     {"int",    "int32_t"},
     {"float",  "float"},
+    {"bool",   "bool"},
     {"bytes",  "std::vector<::umb::byte>"},
     {"string", "std::u16string"},
 };
@@ -69,6 +75,7 @@ static const std::unordered_map<std::string, std::string> g_type_to_cpp_type_arg
     {"byte",   "::umb::byte"},
     {"int",    "int32_t"},
     {"float",  "float"},
+    {"bool",   "bool"},
     {"bytes",  "const std::vector<::umb::byte>&"},
     {"string", "const std::u16string&"},
 };
@@ -77,6 +84,7 @@ static const std::unordered_map<std::string, std::string> g_cpp_default_value{
     {"byte",   "0"},
     {"int",    "0"},
     {"float",  "0"},
+    {"bool",   "false"},
     {"bytes",  ""},
     {"string", ""},
 };

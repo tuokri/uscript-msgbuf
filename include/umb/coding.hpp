@@ -3,19 +3,22 @@
 
 #pragma once
 
+#include <concepts>
 #include <format>
 #include <span>
 #include <string>
 #include <vector>
-#include <ranges>
 
 #include "umb/constants.hpp"
 
 namespace umb
 {
 
+template<typename T = bool>
+concept BoolType = std::is_convertible_v<T, bool>;
+
 template<typename T = const byte>
-inline constexpr bool check_bounds_no_throw(
+inline constexpr bool _check_bounds_no_throw_impl(
     const typename std::span<T>::const_iterator& i,
     const std::span<T> bytes,
     size_t field_size) noexcept
@@ -25,16 +28,23 @@ inline constexpr bool check_bounds_no_throw(
     return (d > 0 && (d <= bsize));
 }
 
-// TODO: fix this shit, supposed overflow.
+template<typename T = const byte>
+inline constexpr bool check_bounds_no_throw(
+    const typename std::span<T>::const_iterator& i,
+    const std::span<T> bytes,
+    size_t field_size) noexcept
+{
+    return _check_bounds_no_throw_impl(i, bytes, field_size);
+}
+
 template<typename T = const byte>
 inline constexpr bool check_bounds_no_throw(
     const typename std::span<T>::const_iterator&& i,
     const std::span<T> bytes,
     size_t field_size) noexcept
 {
-    return check_bounds_no_throw(
-        // std::forward<const typename std::span<T>::const_iterator&>(i),
-        std::move(i),
+    return _check_bounds_no_throw_impl(
+        std::forward<const typename std::span<T>::const_iterator>(i),
         bytes,
         field_size);
 }
@@ -63,19 +73,91 @@ inline constexpr void check_bounds(
     const std::string& caller = __builtin_FUNCTION())
 {
     check_bounds(
-        // std::forward<const typename std::span<T>::const_iterator&>(i),
-        std::move(i),
+        std::forward<const typename std::span<T>::const_iterator>(i),
         bytes,
         field_size,
         caller);
 }
 
-inline constexpr void decode_int(
+inline constexpr void decode_bool(
+    std::span<const byte>::const_iterator& i,
+    const std::span<const byte> bytes,
+    bool& out)
+{
+    check_bounds(i, bytes, g_sizeof_byte);
+    out = *i++;
+}
+
+template<BoolType B, std::integral T>
+inline constexpr void _read_bool_single_byte(
+    byte b,
+    T& index,
+    B& out)
+{
+    out = static_cast<bool>(b & 1 << index++);
+}
+
+template<BoolType B, std::integral T>
+inline constexpr void _read_bool_many_bytes(
+    byte& b,
+    T& index,
+    B& out,
+    std::span<const byte>::const_iterator& i)
+{
+    _read_bool_single_byte(b, index, out);
+    if ((index % g_bools_in_byte) == 0)
+    {
+        b = *i++;
+    }
+}
+
+template<BoolType... Bools>
+inline constexpr void decode_packed_bools(
+    std::span<const byte>::const_iterator& i,
+    const std::span<const byte> bytes,
+    Bools& ... out)
+{
+    constexpr size_t num_bools = sizeof...(out);
+    constexpr size_t bytes_to_read = (num_bools / g_bools_in_byte) + 1;
+    check_bounds(i, bytes, bytes_to_read);
+    auto b = *i++;
+    auto index = 0;
+
+    // Get bit as bool.
+    if constexpr (bytes_to_read > 1)
+    {
+        ([&]
+        {
+            _read_bool_many_bytes(b, index, out, i);
+        }(), ...);
+    }
+    else
+    {
+        ([&]
+        {
+            _read_bool_single_byte(b, index, out);
+        }(), ...);
+    }
+}
+
+inline constexpr void decode_uint16(
+    std::span<const byte>::const_iterator& i,
+    const std::span<const byte> bytes,
+    uint16_t& out)
+{
+    check_bounds(i, bytes, g_sizeof_uint16);
+    out = (
+        static_cast<uint16_t>(*i++)
+        | static_cast<uint16_t>(*i++) << 8
+    );
+}
+
+inline constexpr void decode_int32(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     int32_t& out)
 {
-    check_bounds(i, bytes, g_sizeof_int);
+    check_bounds(i, bytes, g_sizeof_int32);
     out = (
         static_cast<int32_t>(*i++)
         | static_cast<int32_t>(*i++) << 8
@@ -128,7 +210,7 @@ inline constexpr void decode_string(
         return;
     }
 
-    const auto payload_size = str_size * g_size_of_uscript_char;
+    const auto payload_size = str_size * g_sizeof_uscript_char;
     check_bounds(i, bytes, payload_size);
 
     const auto ps = static_cast<std::span<const byte>::difference_type>(payload_size);
@@ -182,12 +264,72 @@ inline constexpr void decode_bytes(
     out = std::move(b);
 }
 
+inline constexpr void encode_bool(bool b, std::span<byte>::iterator& bytes)
+{
+    *bytes++ = b;
+}
+
+template<BoolType B, std::integral T>
+inline constexpr void _write_bool_single_byte(
+    byte& byte_out,
+    T& index,
+    B in)
+{
+    byte_out |= static_cast<byte>(in) << index++;
+}
+
+template<BoolType B, std::integral T>
+inline constexpr void _write_bool_many_bytes(
+    byte& byte_out,
+    T& index,
+    B in,
+    std::span<byte>::iterator& bytes)
+{
+    _write_bool_single_byte(byte_out, index, in);
+    if ((index % g_bools_in_byte) == 0)
+    {
+        byte_out = *bytes++;
+    }
+}
+
+// TODO: this has to use different parameter order due to how parameter packs work.
+// TODO: normalize signatures across all encoding functions to take the iterator first?
+template<BoolType... Bools>
+inline constexpr void encode_packed_bools(std::span<byte>::iterator& bytes, Bools... bools)
+{
+    byte& byte_out = *bytes++;
+    constexpr size_t num_bools = sizeof...(bools);
+    constexpr size_t bytes_to_write = (num_bools / g_bools_in_byte) + 1;
+    auto index = 0;
+
+    if constexpr (bytes_to_write > 1)
+    {
+        ([&]()
+        {
+            _write_bool_many_bytes(byte_out, index, bools, bytes);
+        }(), ...);
+    }
+    else
+    {
+        ([&]()
+        {
+            _write_bool_single_byte(byte_out, index, bools);
+        }(), ...);
+    }
+}
+
 inline constexpr void encode_byte(byte b, std::span<byte>::iterator& bytes)
 {
     *bytes++ = b;
 }
 
-inline constexpr void encode_int(int32_t i, std::span<byte>::iterator& bytes)
+inline constexpr void encode_uint16(uint16_t i, std::span<byte>::iterator& bytes)
+{
+    *bytes++ = i & 0xff;
+    *bytes++ = (i >> 8) & 0xff;
+}
+
+inline constexpr void encode_int32(int32_t i, std::span<byte>::iterator& bytes)
 {
     *bytes++ = i & 0xff;
     *bytes++ = (i >> 8) & 0xff;
@@ -212,7 +354,7 @@ inline constexpr void encode_float(float f, std::span<byte>::iterator& bytes)
 
 inline constexpr void check_dynamic_length(size_t str_size)
 {
-    // Max string payload is (g_max_dynamic_size * g_size_of_uscript_char).
+    // Max string payload is (g_max_dynamic_size * g_sizeof_uscript_char).
     // Max bytes payload is simply g_max_dynamic_size.
     if (str_size > g_max_dynamic_size)
     {

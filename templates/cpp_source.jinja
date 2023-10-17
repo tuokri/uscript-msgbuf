@@ -7,6 +7,13 @@
 namespace {{ cpp_namespace }}
 {
 
+// TODO: just use static_cast<size_t>(0)?
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+constexpr auto _ZERO = 0ULL;
+#else
+constexpr auto _ZERO = 0UL;
+#endif
+
 {% for message in messages %}
 {{ message.name }}::{{ message.name }}()
 {% for field in message.fields %}
@@ -63,9 +70,10 @@ bool {{ message.name }}::from_bytes(const std::span<const ::umb::byte> bytes)
 size_t {{ message.name }}::serialized_size() const
 {
     size_t size = ::umb::g_header_size;
+{% set num_packed_bools = 0 %}
 {% for field in message.fields %}
     {% if field.type == "int" %}
-    size += ::umb::g_sizeof_int; // {{ field.name }}
+    size += ::umb::g_sizeof_int32; // {{ field.name }}
     {% else if field.type == "byte" %}
     size += ::umb::g_sizeof_byte; // {{ field.name }}
     {% else if field.type == "float" %}
@@ -75,7 +83,20 @@ size_t {{ message.name }}::serialized_size() const
     size += m_{{ field.name }}.size(); // {{ field.name }}
     {% else if field.type == "string" %}
     size += ::umb::g_dynamic_field_header_size;
-    size += m_{{ field.name }}.size() * ::umb::g_size_of_uscript_char; // {{ field.name }}
+    size += m_{{ field.name }}.size() * ::umb::g_sizeof_uscript_char; // {{ field.name }}
+    {% else if field.type == "bool" %}
+        {% if bp_is_packed(message, field.name) %}
+            {% set pi = bp_pack_index(message.bool_packs, field.name) %}
+            {% if bp_is_last(message.bool_packs, field.name) == true %}
+                size += ::umb::g_sizeof_byte * static_cast<size_t>({{ num_packed_bools }} / {{ bools_in_byte }}) + 1; // {{ field.name }} packed {{ pi }}
+                {% set num_packed_bools = 0 %}
+            {% else %}
+                // {{ field.name }} packed {{ pi }}
+                {% set num_packed_bools = num_packed_bools + 1 %}
+            {% endif %}
+        {% else %}
+            size += ::umb::g_sizeof_byte; // {{ field.name }}
+        {% endif %}
     {% else %}
         {{ error("invalid type: '", field.type, "' in ", message.name) }}
     {% endif %}

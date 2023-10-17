@@ -82,3 +82,28 @@ TEST_CASE("encode decode message with dynamic data")
     const auto bytes2 = msg4.to_bytes();
     CHECK_NE(bytes, bytes2);
 }
+
+TEST_CASE("encode decode boolean packing message")
+{
+    testmessages::umb::BoolPackingMessage bpm1;
+    testmessages::umb::BoolPackingMessage bpm2;
+
+    bpm1.set_bool_10_part_pack__0(false);
+    bpm1.set_bool_10_part_pack__5(false);
+    bpm1.set_pack2(false);
+    bpm1.set_pack1(true);
+    bpm1.set_int_pack_delimiter(69);
+    bpm1.set_end_msg_with_some_dynamic_stuff(u"(asd)");
+
+    std::vector<::umb::byte> vec;
+    const auto ss = bpm1.serialized_size();
+    vec.resize(ss);
+    bool ok = bpm1.to_bytes(vec);
+    const auto vec2 = bpm1.to_bytes();
+    CHECK(ok);
+    CHECK_EQ(vec, vec2);
+
+    ok = bpm2.from_bytes(vec);
+    CHECK(ok);
+    CHECK_EQ(bpm1, bpm2);
+}

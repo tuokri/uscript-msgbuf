@@ -12,7 +12,7 @@
 #include <boost/program_options.hpp>
 #include <boost/dll.hpp>
 
-#include "umb/constants.hpp"
+#include "umb/umb.hpp"
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -32,6 +32,22 @@ enum class VarAction
 const static std::unordered_map<std::string, VarAction> g_str_to_varaction{
     {"GET", VarAction::GET},
     {"SET", VarAction::SET},
+};
+
+struct BoolPack
+{
+    // Name of this field in the message.
+    std::string field_name{};
+    // Index of this field in the message.
+    size_t field_index{0};
+    // Index into the packed byte. 0-3.
+    ::umb::byte pack_index{0};
+    // If this bool is part of a bool sequence
+    // longer than a single byte, indicates which
+    // byte this bool should be packed into.
+    ::umb::byte byte{0};
+    // True if this is the last bool a packed byte.
+    bool last{false};
 };
 
 struct MsgAnalysisResult
@@ -61,6 +77,8 @@ struct MsgAnalysisResult
     // True if message has bytes fields. Indicates the need for temporary
     // helper variables for decoding and encoding in UnrealScript.
     bool has_bytes_fields{false};
+    // Hints for packing consecutive boolean fields into byte bitfields.
+    std::vector<BoolPack> bool_packs{};
 };
 
 std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
@@ -91,12 +109,60 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     result.name = data["name"];
 
     const auto& fields = data["fields"];
-    std::vector<std::string> types;
-    types.reserve(fields.size());
+
+    std::deque<BoolPack> bool_packs;
+    auto consecutive = 0;
+    ::umb::byte pack_idx = 0;
+    auto i = 0;
     for (const auto& field: fields)
     {
-        types.emplace_back(field["type"]);
+        if (field["type"] == "bool")
+        {
+            BoolPack bp;
+            bp.field_name = field["name"];
+            bp.field_index = i;
+            bp.pack_index = pack_idx;
+            bp.byte = static_cast<::umb::byte>(consecutive / ::umb::g_bools_in_byte);
+
+            ++consecutive;
+            pack_idx = (pack_idx + 1) % static_cast<::umb::byte>(::umb::g_bools_in_byte);
+
+            // TODO: this is actually not desired, at least not for C++
+            //   generation. Check again for UnrealScript later.
+            // // We always know this is the last bool of a pack.
+            // if ((consecutive % ::umb::g_bools_in_byte) == 0)
+            // {
+            //     bp.last = true;
+            // }
+
+            bool_packs.emplace_back(bp);
+        }
+        else
+        {
+            // Started a bool pack "range" earlier, but it turned
+            // out to be a single bool. Drop it.
+            if (consecutive == 1)
+            {
+                bool_packs.pop_back();
+            }
+            else if (consecutive > 1)
+            {
+                bool_packs.back().last = true;
+            }
+            consecutive = 0;
+            pack_idx = 0;
+        }
+        ++i;
     }
+    result.bool_packs.reserve(bool_packs.size());
+    result.bool_packs.insert(result.bool_packs.end(), bool_packs.cbegin(), bool_packs.cend());
+
+    std::vector<std::string> types;
+    types.reserve(fields.size());
+    std::transform(fields.cbegin(), fields.cend(), std::back_inserter(types), [](const auto& field)
+    {
+        return field["type"];
+    });
 
     result.has_static_size = std::all_of(types.cbegin(), types.cend(), [](const std::string& type)
     {
@@ -128,7 +194,7 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         }
     }
 
-    if (result.has_static_size && result.static_size <= 255)
+    if (result.has_static_size && result.static_size <= ::umb::g_packet_size)
     {
         result.always_single_part = true;
     }
@@ -151,7 +217,7 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     return result;
 }
 
-constexpr auto capitalize = [](inja::Arguments& args)
+constexpr auto capitalize = [](const inja::Arguments& args)
 {
     auto str = args.at(0)->get<std::string>();
     str.at(0) = static_cast<char>(std::toupper(str.at(0)));
@@ -166,10 +232,10 @@ constexpr auto capitalize = [](inja::Arguments& args)
 // Bytes[ 10]
 // ...
 // Bytes[101]
-constexpr auto pad = [](inja::Arguments& args)
+constexpr auto pad = [](const inja::Arguments& args)
 {
-    const auto index = args.at(0)->get<size_t>();
-    const auto size = args.at(1)->get<size_t>();
+    const auto& index = args.at(0)->get<size_t>();
+    const auto& size = args.at(1)->get<size_t>();
     std::string ret;
 
     if (size < 10)
@@ -192,9 +258,9 @@ constexpr auto pad = [](inja::Arguments& args)
 // Get and set global variables. Workaround for lack of
 // Jinja macro support in Inja. Can be used to pass variables
 // in and out of included templates.
-static constexpr auto var = [](inja::Arguments& args)
+static constexpr auto var = [](const inja::Arguments& args)
 {
-    const auto var_name = args.at(0)->get<std::string>();
+    const auto& var_name = args.at(0)->get<std::string>();
     auto action = args.at(1)->get<std::string>();
     size_t value;
 
@@ -224,27 +290,27 @@ constexpr auto error = [](const inja::Arguments& args)
     throw std::invalid_argument(ss.str());
 };
 
-constexpr auto cpp_type = [](inja::Arguments& args)
+constexpr auto cpp_type = [](const inja::Arguments& args)
 {
-    const auto type = args.at(0)->get<std::string>();
+    const auto& type = args.at(0)->get<std::string>();
     return ::umb::g_type_to_cpp_type.at(type);
 };
 
-constexpr auto cpp_type_arg = [](inja::Arguments& args)
+constexpr auto cpp_type_arg = [](const inja::Arguments& args)
 {
-    const auto type = args.at(0)->get<std::string>();
+    const auto& type = args.at(0)->get<std::string>();
     return ::umb::g_type_to_cpp_type_arg.at(type);
 };
 
-constexpr auto cpp_default_value = [](inja::Arguments& args)
+constexpr auto cpp_default_value = [](const inja::Arguments& args)
 {
-    const auto type = args.at(0)->get<std::string>();
+    const auto& type = args.at(0)->get<std::string>();
     return ::umb::g_cpp_default_value.at(type);
 };
 
-constexpr auto uscript_type = [](inja::Arguments& args)
+constexpr auto uscript_type = [](const inja::Arguments& args)
 {
-    auto type = args.at(0)->get<std::string>();
+    const auto& type = args.at(0)->get<std::string>();
     if (!::umb::g_type_to_uscript_type.contains(type))
     {
         return type;
@@ -252,11 +318,51 @@ constexpr auto uscript_type = [](inja::Arguments& args)
     return ::umb::g_type_to_uscript_type.at(type);
 };
 
+constexpr auto bp_is_packed = [](const inja::Arguments& args)
+{
+    const auto& msg = args.at(0)->get<inja::json>();
+    const auto& name = args.at(1)->get<std::string>();
+    const auto& bps = msg["bool_packs"].get<std::vector<inja::json>>();
+
+    return std::any_of(bps.cbegin(), bps.cend(), [&name](const inja::json& bp)
+    {
+        return name == bp["field_name"].get<std::string>();
+    });
+};
+
+constexpr auto bp_pack_index = [](const inja::Arguments& args)
+{
+    const auto& bps = args.at(0)->get<std::vector<inja::json>>();
+    const auto& name = args.at(1)->get<std::string>();
+    for (const auto& bp: bps)
+    {
+        if (bp["field_name"] == name)
+        {
+            return bp["pack_index"];
+        }
+    }
+    throw std::invalid_argument(std::format("cannot find 'pack_index' for {}", name));
+};
+
+constexpr auto bp_is_last = [](const inja::Arguments& args)
+{
+    const auto& bps = args.at(0)->get<std::vector<inja::json>>();
+    const auto& name = args.at(1)->get<std::string>();
+    for (const auto& bp: bps)
+    {
+        if (bp["field_name"] == name)
+        {
+            return bp["last"].get<bool>();
+        }
+    }
+    throw std::invalid_argument(std::format("cannot find 'last' for {}", name));
+};
+
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
                     const std::string& uscript_out_dir)
 {
     const auto r = env.render_file(file, data);
-    std::cout << r << "\n";
+    // std::cout << r << "\n";
     fs::path out_filename = fs::path(
         data["class_name"].get<std::string>()).filename().replace_extension(".uc");
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
@@ -279,8 +385,8 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
 
     const auto hdr = env.render_file(hdr_template_file, data);
     const auto src = env.render_file(src_template_file, data);
-    std::cout << hdr << "\n";
-    std::cout << src << "\n";
+    // std::cout << hdr << "\n";
+    // std::cout << src << "\n";
     fs::path out_filename = fs::path(data["class_name"].get<std::string>()).filename();
     fs::path hdr_out_file =
         fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_hdr_extension);
@@ -308,7 +414,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     env.set_lstrip_blocks(true);
     env.set_throw_at_missing_includes(true);
 
-    // TODO: add option to enable/disable this.
+    // TODO: add option to enable/disable this?
     env.add_callback("capitalize", 1, capitalize);
     env.add_callback("pad", 2, pad);
     env.add_callback("var", var);
@@ -316,6 +422,9 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     env.add_callback("cpp_type_arg", 1, cpp_type_arg);
     env.add_callback("cpp_default_value", 1, cpp_default_value);
     env.add_callback("uscript_type", 1, uscript_type);
+    env.add_callback("bp_is_packed", 2, bp_is_packed);
+    env.add_callback("bp_pack_index", 2, bp_pack_index);
+    env.add_callback("bp_is_last", 2, bp_is_last);
     env.add_void_callback("error", error);
 
     auto data = env.load_json(file);
@@ -336,6 +445,18 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
         message["has_float_fields"] = result.has_float_fields;
         message["has_string_fields"] = result.has_string_fields;
         message["has_bytes_fields"] = result.has_bytes_fields;
+
+        message["bool_packs"] = std::vector<inja::json>{};
+        for (const auto& bp: result.bool_packs)
+        {
+            auto bp_json = inja::json{};
+            bp_json["field_name"] = bp.field_name;
+            bp_json["field_index"] = bp.field_index;
+            bp_json["pack_index"] = bp.pack_index;
+            bp_json["byte"] = bp.byte;
+            bp_json["last"] = bp.last;
+            message["bool_packs"].emplace_back(bp_json);
+        }
     }
 
     data["uscript_message_type_prefix"] = "EMT";
@@ -348,11 +469,13 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     data["cpp_hdr_extension"] = ::umb::g_cpp_hdr_extension;
     data["cpp_src_extension"] = ::umb::g_cpp_src_extension;
 
+    data["bools_in_byte"] = ::umb::g_bools_in_byte;
+    data["max_message_count"] = ::umb::g_max_message_count;
     data["header_size"] = ::umb::g_header_size;
     data["payload_size"] = ::umb::g_payload_size;
     data["packet_size"] = ::umb::g_packet_size;
     data["float_multiplier"] = ::umb::g_float_multiplier;
-    data["size_of_uscript_char"] = ::umb::g_size_of_uscript_char;
+    data["size_of_uscript_char"] = ::umb::g_sizeof_uscript_char;
 
     const auto prog_dir = boost::dll::program_location().parent_path();
     fs::path template_dir = prog_dir / ::umb::g_template_dir;
