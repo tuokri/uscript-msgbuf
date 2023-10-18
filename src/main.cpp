@@ -475,7 +475,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     data["payload_size"] = ::umb::g_payload_size;
     data["packet_size"] = ::umb::g_packet_size;
     data["float_multiplier"] = ::umb::g_float_multiplier;
-    data["size_of_uscript_char"] = ::umb::g_sizeof_uscript_char;
+    data["sizeof_uscript_char"] = ::umb::g_sizeof_uscript_char;
 
     const auto prog_dir = boost::dll::program_location().parent_path();
     fs::path template_dir = prog_dir / ::umb::g_template_dir;
