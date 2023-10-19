@@ -48,6 +48,7 @@ constexpr size_t g_sizeof_byte = 1;
 constexpr size_t g_sizeof_int32 = 4;
 constexpr size_t g_sizeof_uint16 = 2;
 // Floats are encoded as int32+int32 (integer part + fractional part).
+// TODO: we don't actually need 4 bytes for the fractional part!
 constexpr size_t g_sizeof_float = 8;
 constexpr size_t g_sizeof_uscript_char = 2;
 
