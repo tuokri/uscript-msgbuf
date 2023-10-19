@@ -1,12 +1,24 @@
 {% set in_pack = false %}
 {% if bp_is_packed(message, field.name) %}
+    // bool_out = byte & 1 << pack_index;
     Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}]; // TODO: get correct bit.
     {% if not in_pack %}
         {% set in_pack = true %}
     {% else %}
-       {% if bp_is_last(message.bool_packs, field.name) %}
+        {% if bp_is_last(message.bool_packs, field.name) %}
+            {# True final bool in a (multi-byte) pack. E.g.: #}
+            {# true for all `B`, false for all `b`: #}
+            {# [bbbb|bbbb|bbbb|bbbB] #}
+            {# [bbbB] #}
             {% set in_pack = false %}
-       {% endif %}
+            {% set x = x + 1 %}
+        {# else if bp_is_multi_pack_boundary(...) #}
+            {# Final bool in a packed byte, where the byte #}
+            {# belongs to a multi-byte pack. But NOT the true #}
+            {# final bool of the entire multi-byte pack. #}
+            {# E.g.: [bbbB|bbbB|bbbb] #}
+            {# True for all `B`, false for all `b`. #}
+        {% endif %}
     {% endif %}
 {% else %}
     Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}];

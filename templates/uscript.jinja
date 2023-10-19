@@ -88,7 +88,8 @@ static final function byte {{ message.name }}_ToBytes(
     Bytes[{{ pad(x, sz) }}{{ x }}] = Msg.{{ field.name }};
 
     {%- else if field.type == "bool" %}
-    // TODO: bit-packing for bools. {# TODO: bit-packing for bools. #}
+    // TODO: bit-packing for bools.
+    {# TODO: bit-packing for bools. #}
     Bytes[{{ pad(x, sz) }}{{ x }}] = bool(Msg.{{ field.name }});
 
     {%- else -%}

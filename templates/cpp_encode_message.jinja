@@ -24,10 +24,10 @@
                     m_{{ field.name }},
             {% else %}
                     m_{{ field.name }}{% if not bp_is_last(message.bool_packs, field.name) %},{% endif %}
-               {% if bp_is_last(message.bool_packs, field.name) %}
-                    );
-                    {% set in_pack = false %}
-               {% endif %}
+                {% if bp_is_last(message.bool_packs, field.name) %}
+                     );
+                     {% set in_pack = false %}
+                {% endif %}
             {% endif %}
         {% else %}
             ::umb::encode_bool(m_{{ field.name }}, vi);

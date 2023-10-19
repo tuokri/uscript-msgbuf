@@ -18,10 +18,10 @@
                     m_{{ field.name }},
             {% else %}
                     m_{{ field.name }}{% if not bp_is_last(message.bool_packs, field.name) %},{% endif %}
-               {% if bp_is_last(message.bool_packs, field.name) %}
-                    );
-                    {% set in_pack = false %}
-               {% endif %}
+                {% if bp_is_last(message.bool_packs, field.name) %}
+                     );
+                     {% set in_pack = false %}
+                {% endif %}
             {% endif %}
         {% else %}
             ::umb::decode_bool(vi, bytes, m_{{ field.name }});
