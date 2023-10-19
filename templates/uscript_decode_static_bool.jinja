@@ -1,3 +1,4 @@
+{% set in_pack = false %}
 {% if bp_is_packed(message, field.name) %}
     Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}]; // TODO: get correct bit.
     {% if not in_pack %}
