@@ -149,6 +149,12 @@ MsgAnalysisResult analyze_message(const inja::json& data)
             // {
             //     bp.last = true;
             // }
+            // TODO: add another field that denotes "pack boundary"
+            //   for long packs that span multiple bytes. It's actually
+            //   needed for UScript generation. E.g.:
+            //   for a 3-byte pack that has 12 booleans: [bbbb|bbbb|bbbb],
+            //   we need a flag that denotes last boolean in each 1-byte pack
+            //   before the | delimiter.
 
             bool_packs.emplace_back(bp);
         }
