@@ -30,3 +30,5 @@ vcpkg install inja boost-program-options \
 
 - Probably have to force some more dependencies since unit test messages
   are sometimes not regenerated even though the templates or generator changes.
+
+- Allow setting default values for fields?
