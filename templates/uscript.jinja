@@ -186,7 +186,7 @@ static final function {{ message.name }}_FromBytes(
 
     {%- else if field.type == "byte" %}
     Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}];
-    {% set x = x + 1 %}
+    {% set x = x + 1 -%}
 
     {%- else if field.type == "bool" %}
     {% include "uscript_decode_static_bool.jinja" %}
