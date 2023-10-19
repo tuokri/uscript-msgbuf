@@ -1,7 +1,7 @@
 {% set in_pack = false %}
     // TODO: for multipart packets, the sender is responsible for splitting the
     //   messages. Document this requirement better somewhere.
-    *vi++ = static_cast<::umb::byte>(std::clamp(size, _ZERO, ::umb::g_packet_size));
+    *vi++ = static_cast<::umb::byte>(std::clamp(size, ZERO_SIZE, ::umb::g_packet_size));
     const auto message_type = static_cast<uint16_t>(type());
     ::umb::encode_uint16(message_type, vi);
     *vi++ = 0; // Part.

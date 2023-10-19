@@ -21,6 +21,8 @@ constexpr auto g_cpp_src_template = "cpp_source.jinja";
 constexpr auto g_uscript_template = "uscript.jinja";
 constexpr auto g_uscript_message_handler_template = "uscript_message_handler.jinja";
 
+constexpr auto g_default_clang_format_config = ".umb.output.clang-format";
+
 // Packet header size in bytes.
 constexpr size_t g_header_size = 4;
 // Maximum packet payload size in bytes.
@@ -54,6 +56,10 @@ static const std::unordered_map<std::string, size_t> g_static_types{
     {"byte",  g_sizeof_byte},
     {"int",   g_sizeof_int32},
     {"float", g_sizeof_float},
+    // NOTE: consecutive bools are packed as bit fields in bytes, thus
+    //       the size of a bool in the packet can vary. However, it will
+    //       always be known at message generation time.
+    {"bool",  g_sizeof_byte},
 };
 
 // All dynamic types with variable size i.e. header + data.

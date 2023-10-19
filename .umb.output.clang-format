@@ -1,0 +1,75 @@
+---
+BasedOnStyle: LLVM
+AccessModifierOffset: -4
+AlignArrayOfStructures: Right
+AlignOperands: Align
+AllowShortEnumsOnASingleLine: false
+AlwaysBreakAfterReturnType: All
+AlwaysBreakTemplateDeclarations: Yes
+AllowShortLambdasOnASingleLine: All
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  BeforeWhile: true
+  IndentBraces: true
+FixNamespaceComments: true
+BreakAfterAttributes: Always
+BreakBeforeBraces: Allman
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+ColumnLimit: 100
+IndentWidth: 4
+ObjCBlockIndentWidth: 4
+PackConstructorInitializers: CurrentLine
+PenaltyBreakAssignment: 4
+TabWidth: 4
+UseCRLF: false
+AllowAllConstructorInitializersOnNextLine: true
+SeparateDefinitionBlocks: Always
+MaxEmptyLinesToKeep: 1
+AlignAfterOpenBracket: AlwaysBreak
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDefinitionName: false
+  AfterFunctionDeclarationName: false
+  BeforeNonEmptyParentheses: false
+
+BreakBeforeConceptDeclarations: Always
+BinPackArguments: false
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: true
+SpaceAfterTemplateKeyword: false
+SpacesInAngles: false
+SpacesInConditionalStatement: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+PointerAlignment: Left
+InsertNewlineAtEOF: True
+
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"(boiler)/'
+    Priority: 2
+    SortPriority: 2
+    CaseSensitive: true
+  - Regex: '^((<|")(boost)/)'
+    Priority: 1
+    SortPriority: 1
+    CaseSensitive: true
+  - Regex: '<[^./]+>' # C++ STL includes.
+    Priority: 0
+    SortPriority: 0
+    CaseSensitive: true

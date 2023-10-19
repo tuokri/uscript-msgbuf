@@ -153,7 +153,8 @@ static final function {{ message.name }}_ToMultiBytes(
 {% else if field.type == "bytes" %}
     {% include "uscript_encode_dynamic_bytes.jinja" %}
 {% else if field.type == "bool" %}
-    // TODO: bit-packing for bools. {# TODO: bit-packing for bools. #}
+    // TODO: bit-packing for bools.
+    {# TODO: bit-packing for bools. #}
     Bytes[I++] = bool(Msg.{{ field.name }};
 {% else %}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
@@ -172,18 +173,40 @@ static final function {{ message.name }}_FromBytes(
 {
     // Decode packet payload.
     {% set x = 3 %}
-    {% set sz = message.static_size %}
-
-    // TODO: finish static decoding. {# TODO: finish static decoding. #}
+    {% set sz = message.static_size -%}
 
 {%- for field in message.fields %}
     {% if field.type == "int" %}
     {% include "uscript_decode_static_int.jinja" %}
-    {% set x = var("x", "get") %}
-    {% endif %}
+    {% set x = var("x", "get") -%}
+
+    {%- else if field.type == "float" %}
+    {% include "uscript_decode_static_float.jinja" %}
+    {% set x = var("x", "get") -%}
+
+    {%- else if field.type == "byte" %}
+    Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}];
+    {% set x = x + 1 %}
+
+    {%- else if field.type == "bool" %}
+    {% include "uscript_decode_static_bool.jinja" %}
+    {% set x = var("x", "get") -%}
+
+    {%- else if field.type == "string" %}
+    {{ error("string not allowed in static message, type: '",
+       field.type, "' in ", message.name, "_FromBytes") }}
+
+    {%- else if field.type == "bytes" %}
+    {{ error("bytes not allowed in static message, type: '",
+       field.type, "' in ", message.name, "_FromBytes") }}
+
+    {%- else  %}
+    {{ error("invalid type: '", field.type, "' in ", message.name, "_FromBytes") }}
+
+    {%- endif %}
 {% endfor %}
 }
-{% endif -%}
+{% endif %}
 
 // Decode {{ message.name }} from bytes. Decodes both, single-part and multipart messages.
 // When decoding multipart messages, Bytes should only contain the packet header once.
@@ -240,7 +263,8 @@ static final function {{ message.name }}_FromMultiBytes(
         Msg.{{ field.name }}[BIdx] = Bytes[I++];
     }
     {% else if field.type == "bool" %}
-    // TODO: finish static decoding. {# TODO: finish static decoding. #}
+    // TODO: finish packed decoding.
+    {# TODO: finish packed decoding. #}
     Msg.{{ field.name }} = bool(B[I++]);
     {% else %}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}

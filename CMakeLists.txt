@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.25)
 project(uscript-msgbuf)
 
+include(CMakePrintHelpers)
+
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 set(Boost_USE_DEBUG_LIBS $<$<CONFIG:Debug>:ON,OFF>)
 set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_LIBS ON)
 
 find_package(
     inja
@@ -15,6 +18,7 @@ find_package(
 find_package(
     Boost
     COMPONENTS
+    system
     filesystem
     program_options
     REQUIRED
@@ -34,6 +38,8 @@ if (MSVC)
         UMB_GENERATOR_LINK_LIBS
         umb
         pantor::inja
+        Boost::boost
+        Boost::system
         Boost::filesystem
         Boost::program_options
     )
@@ -42,6 +48,8 @@ else ()
         UMB_GENERATOR_LINK_LIBS
         umb
         pantor::inja
+        Boost::boost
+        Boost::system
         Boost::filesystem
         Boost::program_options
         dl
@@ -91,6 +99,21 @@ add_custom_command(
 
 add_dependencies(uscript_msgbuf_generator copy_templates)
 
+cmake_path(SET UMB_CLANG_FORMAT_CONFIG_FILE NORMALIZE ${CMAKE_SOURCE_DIR}/.umb.output.clang-format)
+cmake_path(SET UMB_CLANG_FORMAT_CONFIG_FILE_COPY_DEST NORMALIZE ${CMAKE_CURRENT_BINARY_DIR}/.umb.output.clang-format)
+cmake_print_variables(UMB_CLANG_FORMAT_CONFIG_FILE)
+cmake_print_variables(UMB_CLANG_FORMAT_CONFIG_FILE_COPY_DEST)
+add_custom_target(copy_clang_format_config ALL DEPENDS ${UMB_CLANG_FORMAT_CONFIG_FILE_COPY_DEST})
+add_custom_command(
+    OUTPUT ${UMB_CLANG_FORMAT_CONFIG_FILE_COPY_DEST}
+    COMMAND ${CMAKE_COMMAND} -E copy ${UMB_CLANG_FORMAT_CONFIG_FILE}
+    ${UMB_CLANG_FORMAT_CONFIG_FILE_COPY_DEST}
+    DEPENDS ${UMB_CLANG_FORMAT_CONFIG_FILE}
+)
+
+add_dependencies(copy_templates copy_clang_format_config)
+add_dependencies(uscript_msgbuf_generator copy_clang_format_config)
+
 if (MSVC)
     set(
         UMB_COMPILE_OPTIONS
@@ -105,6 +128,7 @@ else ()
         -Wextra
     )
 endif ()
+cmake_print_variables(UMB_COMPILE_OPTIONS)
 
 target_compile_options(
     uscript_msgbuf_generator

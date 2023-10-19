@@ -1,10 +1,5 @@
-#ifdef __clang__
-#pragma clang diagnostic push
-#endif
-#pragma ide diagnostic ignored "OCUnusedMacroInspection"
+#ifndef __JETBRAINS_IDE__
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#ifdef __clang__
-#pragma clang diagnostic pop
 #endif
 
 #include <unicode/unistr.h>

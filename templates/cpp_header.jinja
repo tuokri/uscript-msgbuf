@@ -34,7 +34,7 @@ public:
     {% endfor %}
     friend bool operator==(const {{ message.name }}&, const {{ message.name }}&);
     [[nodiscard]] constexpr MessageType type() const { return MessageType::{{ message.name }}; };
-    // TODO: add reflection.
+    // TODO: add reflection?
 
 private:
     {% for field in message.fields %}

@@ -1,3 +1,11 @@
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+
+// Silence "Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately".
+#include <SDKDDKVer.h>
+
+#endif
+
+#include <chrono>
 #include <format>
 #include <iostream>
 #include <string>
@@ -7,15 +15,18 @@
 #include <inja/inja.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/asio.hpp>
+#include <boost/dll.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/process/v2.hpp>
 #include <boost/program_options.hpp>
-#include <boost/dll.hpp>
 
 #include "umb/umb.hpp"
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
+namespace bp = boost::process::v2;
 
 // Inja does not support Jinja macros so let's use these to
 // pass variables in and out of include blocks.
@@ -42,9 +53,11 @@ struct BoolPack
     size_t field_index{0};
     // Index into the packed byte. 0-3.
     ::umb::byte pack_index{0};
-    // If this bool is part of a bool sequence
-    // longer than a single byte, indicates which
-    // byte this bool should be packed into.
+    // Indicates which byte this bool belongs to.
+    // For this value, lone bools are also counted, thus
+    // e.g. a message that has 2 bool packs that are both
+    // 1 byte wide, but with a lone unpacked bool between
+    // them somewhere, the value for the final pack is 2.
     ::umb::byte byte{0};
     // True if this is the last bool a packed byte.
     bool last{false};
@@ -111,8 +124,9 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     const auto& fields = data["fields"];
 
     std::deque<BoolPack> bool_packs;
-    auto consecutive = 0;
-    ::umb::byte pack_idx = 0;
+    auto consecutive = 0; // Length of current consecutive bool pack.
+    auto consecutive_all = 0; // Total length of all bool packs AND "LONE" BOOLS.
+    ::umb::byte pack_idx = 0; // Index of this bool in this pack i.e. nth bit.
     auto i = 0;
     for (const auto& field: fields)
     {
@@ -122,8 +136,9 @@ MsgAnalysisResult analyze_message(const inja::json& data)
             bp.field_name = field["name"];
             bp.field_index = i;
             bp.pack_index = pack_idx;
-            bp.byte = static_cast<::umb::byte>(consecutive / ::umb::g_bools_in_byte);
+            bp.byte = static_cast<::umb::byte>(consecutive_all / ::umb::g_bools_in_byte);
 
+            consecutive_all = consecutive;
             ++consecutive;
             pack_idx = (pack_idx + 1) % static_cast<::umb::byte>(::umb::g_bools_in_byte);
 
@@ -144,6 +159,9 @@ MsgAnalysisResult analyze_message(const inja::json& data)
             if (consecutive == 1)
             {
                 bool_packs.pop_back();
+                // NOTE: not decrementing consecutive_all on purpose here to
+                // get the total size used by bools, including both packed and
+                // lone bools.
             }
             else if (consecutive > 1)
             {
@@ -154,8 +172,26 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         }
         ++i;
     }
+    // Ensure trailing bool pack's final bool is marked as final.
+    if (!bool_packs.empty())
+    {
+        bool_packs.back().last = true;
+    }
     result.bool_packs.reserve(bool_packs.size());
     result.bool_packs.insert(result.bool_packs.end(), bool_packs.cbegin(), bool_packs.cend());
+
+    const auto max_byte_bp = std::max_element(
+        bool_packs.cbegin(), bool_packs.cend(),
+        [](const BoolPack& first, const BoolPack& second)
+        {
+            return first.byte < second.byte;
+        });
+    auto num_packed_bytes = 0;
+    if (max_byte_bp != bool_packs.cend())
+    {
+        num_packed_bytes = max_byte_bp->byte;
+    }
+    const auto total_pack_size = num_packed_bytes * ::umb::g_sizeof_byte;
 
     std::vector<std::string> types;
     types.reserve(fields.size());
@@ -169,10 +205,11 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         return ::umb::g_static_types.contains(type);
     });
 
-    auto static_size = ::umb::g_header_size;
+    auto static_size = ::umb::g_header_size + total_pack_size;
     for (const auto& type: types)
     {
-        if (::umb::g_static_types.contains(type))
+        // Total size of all bools is included in total_pack_size.
+        if (type != "bool" && ::umb::g_static_types.contains(type))
         {
             static_size += ::umb::g_static_types.at(type);
         }
@@ -371,6 +408,32 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
     out << r;
 }
 
+// TODO: add option for passing in custom .clang-format file.
+void clang_format(const std::vector<fs::path>& paths)
+{
+    const auto cf_prog = bp::environment::find_executable("clang-format");
+    if (cf_prog.empty())
+    {
+        std::cout << "clang-format not found, not formatting generated C++ code\n";
+        return;
+    }
+
+    std::cout << std::format("using clang-format from: '{}'\n", cf_prog.string());
+
+    const auto prog_dir = boost::dll::program_location().parent_path();
+    const auto cf_cfg_file = prog_dir / ::umb::g_default_clang_format_config;
+
+    boost::asio::io_context ctx;
+    for (const auto& path: paths)
+    {
+        const auto style_arg = std::format("--style=file:{}", cf_cfg_file.string());
+        const auto& pstr = path.string();
+        std::cout << std::format("running clang-format on '{}'\n", pstr);
+        bp::execute(bp::process(ctx, cf_prog, {pstr, style_arg, "-i", "--Werror"}));
+    }
+    ctx.run();
+}
+
 void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
                 const std::string& src_template_file, inja::json& data,
                 const std::string& cpp_out_dir)
@@ -385,8 +448,6 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
 
     const auto hdr = env.render_file(hdr_template_file, data);
     const auto src = env.render_file(src_template_file, data);
-    // std::cout << hdr << "\n";
-    // std::cout << src << "\n";
     fs::path out_filename = fs::path(data["class_name"].get<std::string>()).filename();
     fs::path hdr_out_file =
         fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_hdr_extension);
@@ -394,7 +455,7 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
     out_filename.replace_extension("");
     out_filename.replace_extension("");
     fs::path src_out_file =
-        fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_src_extension);;
+        fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_src_extension);
     std::cout << "writing '" << hdr_out_file.string() << "'\n";
     std::cout << "writing '" << src_out_file.string() << "'\n";
     fs::ofstream hdr_out{hdr_out_file};
@@ -402,7 +463,7 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
     hdr_out << hdr;
     src_out << src;
 
-    // TODO: run clang-format on generated files.
+    clang_format({hdr_out_file, src_out_file});
 }
 
 void

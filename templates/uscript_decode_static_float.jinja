@@ -1,0 +1,22 @@
+    // IntPart + (FloatPart / FLOAT_MULTIPLIER).
+    Msg.{{ field.name }} = ((
+               Bytes[{{ pad(x, sz) }}{{ x }}]
+            {% set x = x + 1 %}
+            | (Bytes[{{ pad(x, sz) }}{{ x }}] <<  8)
+            {% set x = x + 1 %}
+            | (Bytes[{{ pad(x, sz) }}{{ x }}] << 16)
+            {% set x = x + 1 %}
+            | (Bytes[{{ pad(x, sz) }}{{ x }}] << 24)
+            {% set x = x + 1 %}
+        ) + ((
+               Bytes[{{ pad(x, sz) }}{{ x }}]
+            {% set x = x + 1 %}
+            | (Bytes[{{ pad(x, sz) }}{{ x }}] <<  8)
+            {% set x = x + 1 %}
+            | (Bytes[{{ pad(x, sz) }}{{ x }}] << 16)
+            {% set x = x + 1 %}
+            | (Bytes[{{ pad(x, sz) }}{{ x }}] << 24)
+            {% set x = x + 1 %}
+        ) / FLOAT_MULTIPLIER)
+    );
+    {% set x = var("x", "set", x) -%}

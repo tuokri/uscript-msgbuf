@@ -7,12 +7,7 @@
 namespace {{ cpp_namespace }}
 {
 
-// TODO: just use static_cast<size_t>(0)?
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-constexpr auto _ZERO = 0ULL;
-#else
-constexpr auto _ZERO = 0UL;
-#endif
+constexpr auto ZERO_SIZE = static_cast<size_t>(0);
 
 {% for message in messages %}
 {{ message.name }}::{{ message.name }}()
@@ -69,6 +64,8 @@ bool {{ message.name }}::from_bytes(const std::span<const ::umb::byte> bytes)
 
 size_t {{ message.name }}::serialized_size() const
 {
+    {# TODO: for static messages, we can just return the pre-calculated size. #}
+    // TODO: for static messages, we can just return the pre-calculated size.
     size_t size = ::umb::g_header_size;
 {% set num_packed_bools = 0 %}
 {% for field in message.fields %}

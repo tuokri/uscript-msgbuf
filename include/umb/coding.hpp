@@ -17,6 +17,8 @@ namespace umb
 template<typename T = bool>
 concept BoolType = std::is_convertible_v<T, bool>;
 
+// TODO: instead of throwing, use std::expected?
+
 template<typename T = const byte>
 inline constexpr bool _check_bounds_no_throw_impl(
     const typename std::span<T>::const_iterator& i,

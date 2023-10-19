@@ -14,13 +14,19 @@ the `SendBinary` function.
 ### Dependencies
 
 - [Inja](https://github.com/pantor/inja)
-- [Boost (Program Options, Filesystem, Algorithm)](https://www.boost.org/)
+- [Boost](https://www.boost.org/)
     - Tested with Boost versions 1.82 and 1.83.
 - [doctest](https://github.com/doctest/doctest) (for testing)
+- icu (TODO: DOCUMENT ME)
 
 Install using vcpkg:
 
 ```shell
 vcpkg install inja boost-program-options \
-  boost-filesystem boost-algorithm boost-dll doctest
+  boost-filesystem boost-algorithm boost-process boost-dll doctest icu
 ```
+
+### TODO:
+
+- Probably have to force some more dependencies since unit test messages
+  are sometimes not regenerated even though the templates or generator changes.
