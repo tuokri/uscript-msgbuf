@@ -61,6 +61,10 @@ struct BoolPack
     ::umb::byte byte{0};
     // True if this is the last bool a packed byte.
     bool last{false};
+    // True if this bool is the final bool of a byte pack.
+    // E.g. for a 3-byte pack with 24 bools, true for all `B`:
+    // [bbbbbbbB|bbbbbbbB|bbbbbbbB]
+    bool boundary{false};
 };
 
 struct MsgAnalysisResult
@@ -142,17 +146,15 @@ MsgAnalysisResult analyze_message(const inja::json& data)
             ++consecutive;
             pack_idx = (pack_idx + 1) % static_cast<::umb::byte>(::umb::g_bools_in_byte);
 
-            // TODO: this is actually not desired, at least not for C++
-            //   generation. Check again for UnrealScript later.
-            // // We always know this is the last bool of a pack.
-            // if ((consecutive % ::umb::g_bools_in_byte) == 0)
-            // {
-            //     bp.last = true;
-            // }
+            // We always know this is the last bool of a pack.
+            if ((consecutive % ::umb::g_bools_in_byte) == 0)
+            {
+                bp.boundary = true;
+            }
             // TODO: add another field that denotes "pack boundary"
             //   for long packs that span multiple bytes. It's actually
             //   needed for UScript generation. E.g.:
-            //   for a 3-byte pack that has 12 booleans: [bbbb|bbbb|bbbb],
+            //   for a 3-byte pack that has 24 booleans: [bbbbbbbb|bbbbbbbb|bbbbbbbb],
             //   we need a flag that denotes last boolean in each 1-byte pack
             //   before the | delimiter.
 
@@ -405,11 +407,10 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
                     const std::string& uscript_out_dir)
 {
     const auto r = env.render_file(file, data);
-    // std::cout << r << "\n";
     fs::path out_filename = fs::path(
         data["class_name"].get<std::string>()).filename().replace_extension(".uc");
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
-    std::cout << "writing '" << out_file.string() << "'\n";
+    std::cout << std::format("writing '{}\n'", out_file.string());
     fs::ofstream out{out_file};
     out << r;
 }
@@ -462,8 +463,8 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
     out_filename.replace_extension("");
     fs::path src_out_file =
         fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_src_extension);
-    std::cout << "writing '" << hdr_out_file.string() << "'\n";
-    std::cout << "writing '" << src_out_file.string() << "'\n";
+    std::cout << std::format("writing: '{}\n'", hdr_out_file.string());
+    std::cout << std::format("writing: '{}\n'", src_out_file.string());
     fs::ofstream hdr_out{hdr_out_file};
     fs::ofstream src_out{src_out_file};
     hdr_out << hdr;
@@ -522,6 +523,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
             bp_json["pack_index"] = bp.pack_index;
             bp_json["byte"] = bp.byte;
             bp_json["last"] = bp.last;
+            bp_json["boundary"] = bp.boundary;
             message["bool_packs"].emplace_back(bp_json);
         }
     }
@@ -550,7 +552,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     fs::path cpp_hdr_template = template_dir / ::umb::g_cpp_hdr_template;
     fs::path cpp_src_template = template_dir / ::umb::g_cpp_src_template;
 
-    std::cout << "rendering '" << file << "'\n";
+    std::cout << std::format("rendering '{}'", file);
     render_uscript(env, us_template.string(), data, uscript_out_dir);
     render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir);
 }
