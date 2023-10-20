@@ -64,41 +64,45 @@ bool {{ message.name }}::from_bytes(const std::span<const ::umb::byte> bytes)
 
 size_t {{ message.name }}::serialized_size() const
 {
-    {# TODO: for static messages, we can just return the pre-calculated size. #}
-    // TODO: for static messages, we can just return the pre-calculated size.
+{% if message.has_static_size %}
+    // TODO: return this value from class reflection data.
+    return {{ message.static_size }};
+{% else %}
     size_t size = ::umb::g_header_size;
-{% set num_packed_bools = 0 %}
-{% for field in message.fields %}
-    {% if field.type == "int" %}
-    size += ::umb::g_sizeof_int32; // {{ field.name }}
-    {% else if field.type == "byte" %}
-    size += ::umb::g_sizeof_byte; // {{ field.name }}
-    {% else if field.type == "float" %}
-    size += ::umb::g_sizeof_float; // {{ field.name }}
-    {% else if field.type == "bytes" %}
-    size += ::umb::g_dynamic_field_header_size;
-    size += m_{{ field.name }}.size(); // {{ field.name }}
-    {% else if field.type == "string" %}
-    size += ::umb::g_dynamic_field_header_size;
-    size += m_{{ field.name }}.size() * ::umb::g_sizeof_uscript_char; // {{ field.name }}
-    {% else if field.type == "bool" %}
-        {% if bp_is_packed(message, field.name) %}
-            {% set pi = bp_pack_index(message.bool_packs, field.name) %}
-            {% if bp_is_last(message.bool_packs, field.name) == true %}
-                size += ::umb::g_sizeof_byte * static_cast<size_t>({{ num_packed_bools }} / {{ bools_in_byte }}) + 1; // {{ field.name }} packed {{ pi }}
-                {% set num_packed_bools = 0 %}
+    {% set num_packed_bools = 0 %}
+    {% for field in message.fields %}
+        {% if field.type == "int" %}
+        size += ::umb::g_sizeof_int32; // {{ field.name }}
+        {% else if field.type == "byte" %}
+        size += ::umb::g_sizeof_byte; // {{ field.name }}
+        {% else if field.type == "float" %}
+        size += ::umb::g_sizeof_float; // {{ field.name }}
+        {% else if field.type == "bytes" %}
+        size += ::umb::g_dynamic_field_header_size;
+        size += m_{{ field.name }}.size(); // {{ field.name }}
+        {% else if field.type == "string" %}
+        size += ::umb::g_dynamic_field_header_size;
+        size += m_{{ field.name }}.size() * ::umb::g_sizeof_uscript_char; // {{ field.name }}
+        {% else if field.type == "bool" %}
+            {% if bp_is_packed(message, field.name) %}
+                {% set pi = bp_pack_index(message.bool_packs, field.name) %}
+                {% if bp_is_last(message.bool_packs, field.name) == true %}
+                    // TODO: calculate this value at template generation time?
+                    size += ::umb::g_sizeof_byte * static_cast<size_t>({{ num_packed_bools }} / {{ bools_in_byte }}) + 1; // {{ field.name }} packed {{ pi }}
+                    {% set num_packed_bools = 0 %}
+                {% else %}
+                    // {{ field.name }} packed {{ pi }}
+                    {% set num_packed_bools = num_packed_bools + 1 %}
+                {% endif %}
             {% else %}
-                // {{ field.name }} packed {{ pi }}
-                {% set num_packed_bools = num_packed_bools + 1 %}
+                size += ::umb::g_sizeof_byte; // {{ field.name }}
             {% endif %}
         {% else %}
-            size += ::umb::g_sizeof_byte; // {{ field.name }}
+            {{ error("invalid type: '", field.type, "' in ", message.name) }}
         {% endif %}
-    {% else %}
-        {{ error("invalid type: '", field.type, "' in ", message.name) }}
-    {% endif %}
-{% endfor %}
+    {% endfor %}
     return size;
+{% endif %}
 }
 
 {% for field in message.fields %}
