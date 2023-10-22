@@ -38,7 +38,7 @@ constexpr size_t g_bools_in_byte = 8;
 // 2 bytes - the reserved None message.
 constexpr uint16_t g_max_message_count = std::numeric_limits<uint16_t>::max() - 1;
 
-// Fractional part "precision" when coding floats.
+// Fractional part "precision" when coding floats. 7 decimal places.
 constexpr auto g_float_multiplier = 10000000;
 
 // Max size of dynamic field payload part.
@@ -47,16 +47,17 @@ constexpr auto g_max_dynamic_size = 255;
 constexpr size_t g_sizeof_byte = 1;
 constexpr size_t g_sizeof_int32 = 4;
 constexpr size_t g_sizeof_uint16 = 2;
-// Floats are encoded as int32+int32 (integer part + fractional part).
-// TODO: we don't actually need 4 bytes for the fractional part!
-constexpr size_t g_sizeof_float = 8;
+// Floats are encoded as int32+int24 (integer part + fractional part).
+// Maximum value for the fractional part is 9999999.
+// TODO: float fix: actually, this is shit. We have to use strings for floats.
+// constexpr size_t g_sizeof_float = 7;
 constexpr size_t g_sizeof_uscript_char = 2;
 
 // All types with known static sizes in bytes.
 static const std::unordered_map<std::string, size_t> g_static_types{
     {"byte",  g_sizeof_byte},
     {"int",   g_sizeof_int32},
-    {"float", g_sizeof_float},
+    // TODO: float fix: {"float", g_sizeof_float},
     // NOTE: consecutive bools are packed as bit fields in bytes, thus
     //       the size of a bool in the packet can vary. However, it will
     //       always be known at message generation time.

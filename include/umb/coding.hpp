@@ -8,8 +8,16 @@
 #include <span>
 #include <string>
 #include <vector>
+#include <limits>
+#include <array>
+#include <charconv>
+
+#include <boost/lexical_cast.hpp>
 
 #include "umb/constants.hpp"
+
+static_assert(sizeof(float) * std::numeric_limits<unsigned char>::digits == 32,
+              "require 32 bits floats");
 
 namespace umb
 {
@@ -168,27 +176,6 @@ inline constexpr void decode_int32(
     );
 }
 
-inline constexpr void decode_float(
-    std::span<const byte>::const_iterator& i,
-    const std::span<const byte> bytes,
-    float& out)
-{
-    check_bounds(i, bytes, g_sizeof_float);
-    const auto int_part = static_cast<float>(
-        static_cast<int32_t>(*i++)
-        | static_cast<int32_t>(*i++) << 8
-        | static_cast<int32_t>(*i++) << 16
-        | static_cast<int32_t>(*i++) << 24
-    );
-    const auto frac_part = static_cast<float>(
-        static_cast<int32_t>(*i++)
-        | static_cast<int32_t>(*i++) << 8
-        | static_cast<int32_t>(*i++) << 16
-        | static_cast<int32_t>(*i++) << 24
-    );
-    out = int_part + (frac_part / g_float_multiplier);
-}
-
 inline constexpr void decode_byte(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
@@ -196,6 +183,53 @@ inline constexpr void decode_byte(
 {
     check_bounds(i, bytes, g_sizeof_byte);
     out = *i++;
+}
+
+inline constexpr void decode_float(
+    std::span<const byte>::const_iterator& i,
+    const std::span<const byte> bytes,
+    float& out)
+{
+    byte size;
+    decode_byte(i, bytes, size);
+
+    if (size == 0)
+    {
+        out = 0;
+        return;
+    }
+
+    check_bounds(i, bytes, size);
+//    const auto int_part = static_cast<float>(
+//        static_cast<int32_t>(*i++)
+//        | static_cast<int32_t>(*i++) << 8
+//        | static_cast<int32_t>(*i++) << 16
+//        | static_cast<int32_t>(*i++) << 24
+//    );
+//    const auto frac_part = static_cast<float>(
+//        static_cast<int32_t>(*i++)
+//        | static_cast<int32_t>(*i++) << 8
+//        | static_cast<int32_t>(*i++) << 16
+//        // | static_cast<int32_t>(*i++) << 24
+//    );
+//    out = int_part + (frac_part / g_float_multiplier);
+
+    const auto chars = reinterpret_cast<std::span<const char>::const_iterator&>(i);
+    const auto view = std::string_view{chars, chars + size};
+    std::advance(i, size);
+
+    // TODO: to avoid double-coding floats in sizeof, we may want to always store
+    //   float and it's encoded representation together.
+
+    float f;
+    if (std::from_chars(view.begin(), view.begin() + view.size(), f).ec == std::errc())
+    {
+        out = f;
+    }
+    else
+    {
+        throw std::runtime_error("TODO: better handling");
+    }
 }
 
 inline constexpr void decode_string(
@@ -341,17 +375,34 @@ inline constexpr void encode_int32(int32_t i, std::span<byte>::iterator& bytes)
 
 inline constexpr void encode_float(float f, std::span<byte>::iterator& bytes)
 {
-    const auto int_part = static_cast<int32_t>(f);
-    const auto frac_part =
-        static_cast<int32_t>(f - static_cast<float>(int_part)) * g_float_multiplier;
-    *bytes++ = int_part & 0xff;
-    *bytes++ = (int_part >> 8) & 0xff;
-    *bytes++ = (int_part >> 16) & 0xff;
-    *bytes++ = (int_part >> 24) & 0xff;
-    *bytes++ = frac_part & 0xff;
-    *bytes++ = (frac_part >> 8) & 0xff;
-    *bytes++ = (frac_part >> 16) & 0xff;
-    *bytes++ = (frac_part >> 24) & 0xff;
+    // const auto int_part = static_cast<int32_t>(f);
+    // const auto frac_part =
+    //     static_cast<int32_t>((f - static_cast<float>(int_part)) * g_float_multiplier);
+    // *bytes++ = int_part & 0xff;
+    // *bytes++ = (int_part >> 8) & 0xff;
+    // *bytes++ = (int_part >> 16) & 0xff;
+    // *bytes++ = (int_part >> 24) & 0xff;
+    // *bytes++ = frac_part & 0xff;
+    // *bytes++ = (frac_part >> 8) & 0xff;
+    // *bytes++ = (frac_part >> 16) & 0xff;
+    // *bytes++ = (frac_part >> 24) & 0xff;
+
+    std::array<char, std::numeric_limits<float>::max_digits10 + 8> str{};
+    if (auto [ptr, ec] = std::to_chars(str.begin(), str.begin() + str.size(), f,
+                                       std::chars_format::scientific);
+        ec == std::errc())
+    {
+        const auto data = std::string_view(str.data(), ptr);
+        *bytes++ = data.size();
+        for (const auto& d: data)
+        {
+            *bytes++ = static_cast<byte>(d);
+        }
+    }
+    else
+    {
+        throw std::runtime_error("TODO: better handling");
+    }
 }
 
 inline constexpr void check_dynamic_length(size_t str_size)

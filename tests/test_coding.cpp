@@ -2,6 +2,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #endif
 
+#include <limits>
+
 #include <unicode/unistr.h>
 #include <unicode/ustream.h>
 
@@ -101,4 +103,50 @@ TEST_CASE("encode decode boolean packing message")
     ok = bpm2.from_bytes(vec);
     CHECK(ok);
     CHECK_EQ(bpm1, bpm2);
+}
+
+TEST_CASE("encode decode float fields")
+{
+    testmessages::umb::JustAnotherTestMessage jatm1;
+    testmessages::umb::JustAnotherTestMessage jatm2;
+
+    jatm1.set_some_floatVAR(1.1111111111111111111);
+    std::vector<::umb::byte> vec = jatm1.to_bytes();
+    bool ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(std::numeric_limits<float>::max());
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(0.0);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(0.1);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(35848.9858405);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
 }

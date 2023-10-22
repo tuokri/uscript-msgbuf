@@ -122,7 +122,13 @@ bool operator==(const {{ message.name }} & lhs, const {{ message.name }}& rhs)
 {
     return (
 {% for field in message.fields %}
-        (lhs.{{ field.name }}() == rhs.{{ field.name }}()) {% if not loop.is_last %} && {% endif %}
+    {% if field.type == "float" %}
+        ::umb::internal::Float{lhs.{{ field.name }}()}.AlmostEquals(
+            ::umb::internal::Float{rhs.{{ field.name }}()})
+    {% else %}
+        (lhs.{{ field.name }}() == rhs.{{ field.name }}())
+    {% endif %}
+        {% if not loop.is_last %} && {% endif %}
 {% endfor %}
     );
 }
