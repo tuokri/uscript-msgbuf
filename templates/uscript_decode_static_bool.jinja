@@ -1,27 +1,30 @@
-{% set in_pack = false %}
+{% set in_pack = var_bool("in_pack", "get") %}
 {% if bp_is_packed(message, field.name) %}
-    // bool_out = byte & 1 << pack_index;
-    Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}]; // TODO: get correct bit.
+    {% set bps = message.bool_packs %}
+    {% set bpi = bp_pack_index(bps, field.name) %}
+    Msg.{{ field.name }} = bool(Bytes[{{ pad(x, sz) }}{{ x }}] & 1{% if bpi > 0 %}{{ " " }}<< {{ bpi }} {% endif %});
     {% if not in_pack %}
         {% set in_pack = true %}
     {% else %}
-        {% if bp_is_last(message.bool_packs, field.name) %}
+        {% if bp_is_last(bps, field.name) %}
             {# True final bool in a (multi-byte) pack. E.g.: #}
             {# true for all `B`, false for all `b`: #}
             {# [bbbbbbbb|bbbbbbbb|bbbbbbbb|bbbbbbbB] #}
             {# [bbbbbbbB] #}
             {% set in_pack = false %}
             {% set x = x + 1 %}
-        {# else if bp_is_multi_pack_boundary(...) #}
+        {% else if bp_is_multi_pack_boundary(bps, field.name) %}
             {# Final bool in a packed byte, where the byte #}
             {# belongs to a multi-byte pack. But NOT the true #}
             {# final bool of the entire multi-byte pack. #}
             {# E.g.: [bbbbbbbB|bbbbbbbB|bbbbbbbb] #}
             {# True for all `B`, false for all `b`. #}
+            {% set x = x + 1 %}
         {% endif %}
     {% endif %}
 {% else %}
-    Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}];
+    Msg.{{ field.name }} = bool(Bytes[{{ pad(x, sz) }}{{ x }}]);
     {% set x = x + 1 %}
 {% endif %}
-{% set x = var("x", "set", x) -%}
+{% set x = var_int("x", "set", x) -%}
+{% set in_pack = var_bool("in_pack", "set", in_pack) -%}

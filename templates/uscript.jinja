@@ -58,6 +58,7 @@ struct {{ message.name }} extends Message
 {% endfor -%}
 
 {% for message in messages %}
+{% set in_pack = false %}
 {% if message.always_single_part %}
 // Encode {{ message.name }} to bytes. Guaranteed to fit in a single packet.
 static final function byte {{ message.name }}_ToBytes(
@@ -71,26 +72,26 @@ static final function byte {{ message.name }}_ToBytes(
     {%- set sz = message.static_size %}
     {% set x = 0 %}
     {% include "uscript_encode_static_packet_header.jinja" %}
-    {% set x = var("x", "get") %}
+    {% set x = var_int("x", "get") %}
 
     // Encode packet payload.
     {%- for field in message.fields %}
     // Field: {{ field.name }}.
     {%- if field.type == "int" %}
     {% include "uscript_encode_static_int.jinja" %}
-    {% set x = var("x", "get") -%}
+    {% set x = var_int("x", "get") -%}
 
     {%- else if field.type == "float" %}
     {% include "uscript_encode_static_float.jinja" %}
-    {% set x = var("x", "get") -%}
+    {% set x = var_int("x", "get") -%}
 
     {%- else if field.type == "byte" %}
     Bytes[{{ pad(x, sz) }}{{ x }}] = Msg.{{ field.name }};
 
     {%- else if field.type == "bool" %}
-    // TODO: bit-packing for bools.
-    {# TODO: bit-packing for bools. #}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = bool(Msg.{{ field.name }});
+    {% include "uscript_encode_static_bool.jinja" %}
+    {% set x = var_int("x", "get") -%}
+    {% set in_pack = var_bool("in_pack", "get") -%}
 
     {%- else -%}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToBytes") }}
@@ -115,6 +116,7 @@ static final function {{ message.name }}_ToMultiBytes(
     const out {{ message.name }} Msg,
     out array<byte> Bytes)
 {
+{% set in_pack = false %}
 {% if message.has_string_fields %}
     {% include "uscript_string_encoding_variables.jinja" %}
 {% endif %}
@@ -154,9 +156,8 @@ static final function {{ message.name }}_ToMultiBytes(
 {% else if field.type == "bytes" %}
     {% include "uscript_encode_dynamic_bytes.jinja" %}
 {% else if field.type == "bool" %}
-    // TODO: bit-packing for bools.
-    {# TODO: bit-packing for bools. #}
-    Bytes[I++] = bool(Msg.{{ field.name }};
+    {% include "uscript_encode_dynamic_bool.jinja" %}
+    {% set in_pack = var_bool("in_pack", "get") %}
 {% else %}
     {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
 {%- endif -%}
@@ -176,14 +177,15 @@ static final function {{ message.name }}_FromBytes(
     {% set x = 3 %}
     {% set sz = message.static_size -%}
 
+{% set in_pack = false %}
 {%- for field in message.fields %}
     {% if field.type == "int" %}
     {% include "uscript_decode_static_int.jinja" %}
-    {% set x = var("x", "get") -%}
+    {% set x = var_int("x", "get") -%}
 
     {%- else if field.type == "float" %}
     {% include "uscript_decode_static_float.jinja" %}
-    {% set x = var("x", "get") -%}
+    {% set x = var_int("x", "get") -%}
 
     {%- else if field.type == "byte" %}
     Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}];
@@ -191,7 +193,8 @@ static final function {{ message.name }}_FromBytes(
 
     {%- else if field.type == "bool" %}
     {% include "uscript_decode_static_bool.jinja" %}
-    {% set x = var("x", "get") -%}
+    {% set x = var_int("x", "get") -%}
+    {% set in_pack = var_bool("in_pack", "get") -%}
 
     {%- else if field.type == "string" %}
     {{ error("string not allowed in static message, type: '",
@@ -209,6 +212,9 @@ static final function {{ message.name }}_FromBytes(
 }
 {% endif %}
 
+// TODO: potential optimizations:
+//   - use hard-coded indices for all fields except dynamic fields
+//   - don't increment I if the decoded field is final field of the message
 // Decode {{ message.name }} from bytes. Decodes both, single-part and multipart messages.
 // When decoding multipart messages, Bytes should only contain the packet header once.
 // When receiving multipart messages from a socket, the receiver is responsible
@@ -229,46 +235,66 @@ static final function {{ message.name }}_FromMultiBytes(
 {% for field in message.fields %}
     {% if field.type == "int" %}
     Msg.{{ field.name }} = (
-        Bytes[I++]
-        | Bytes[I++] << 8
-        | Bytes[I++] << 16
-        | Bytes[I++] << 24
+           Bytes[I++]
+        | (Bytes[I++] <<  8)
+        | (Bytes[I++] << 16)
+        | (Bytes[I++] << 24)
     );
-    {% else if field.type == "byte" %}
+    {# #}
+    {%- else if field.type == "byte" %}
     Msg.{{ field.name }} = Bytes[I++];
-    {% else if field.type == "float" %}
+    {# #}
+    {%- else if field.type == "float" %}
     Msg.{{ field.name }} = (
         (
-            Bytes[I++]
+               Bytes[I++]
             | (Bytes[I++] << 8)
             | (Bytes[I++] << 16)
             | (Bytes[I++] << 24)
         ) + ((
-            Bytes[I++]
+               Bytes[I++]
             | (Bytes[I++] << 8)
             | (Bytes[I++] << 16)
             | (Bytes[I++] << 24)
         ) / FLOAT_MULTIPLIER)
     );
-    {% else if field.type == "string" %}
-    StrLen = Bytes[I++] >>> 1; // x / 2
+    {# #}
+    {%- else if field.type == "string" %}
+    StrLen = Bytes[I++];
     for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
     {
-        Msg.{{ field.name }} $= (Bytes[I++] | (Bytes[I++] << 8));
+        Msg.{{ field.name }} $= Chr(Bytes[I++] | (Bytes[I++] << 8));
     }
-    {% else if field.type == "bytes" %}
+    {# #}
+    {%- else if field.type == "bytes" %}
     BLen = Bytes[I++];
     Msg.{{ field.name }}.Length = BLen;
     for (BIdx = 0; BIdx < BLen; ++BIdx)
     {
         Msg.{{ field.name }}[BIdx] = Bytes[I++];
     }
-    {% else if field.type == "bool" %}
-    // TODO: finish packed decoding.
-    {# TODO: finish packed decoding. #}
-    Msg.{{ field.name }} = bool(B[I++]);
+    {# #}
+    {%- else if field.type == "bool" %}
+    {% if bp_is_packed(message, field.name) %}
+        {% set bps = message.bool_packs %}
+        {% set bpi = bp_pack_index(bps, field.name) %}
+    Msg.{{ field.name }} = bool(Bytes[I] & 1{% if bpi > 0 %}{{ " " }}<< {{ bpi }} {% endif %});
+        {% if not in_pack %}
+            {% set in_pack = true %}
+        {% else %}
+            {% if bp_is_last(bps, field.name) %}
+    ++I;
+                {% set in_pack = false %}
+            {% else if bp_is_multi_pack_boundary(bps, field.name) %}
+    ++I;
+            {% endif %}
+        {% endif %}
     {% else %}
-    {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
+    Msg.{{ field.name }} = bool(Bytes[I++]);
+    {% endif -%}
+
+    {%- else %}
+        {{ error("invalid type: '", field.type, "' in ", message.name, "_ToMultiBytes") }}
     {% endif %}
 {% endfor %}
 }

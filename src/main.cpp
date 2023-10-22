@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <inja/inja.hpp>
@@ -24,14 +25,58 @@
 
 #include "umb/umb.hpp"
 
+namespace
+{
+
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace bp = boost::process::v2;
 
+class Var
+{
+public:
+    Var(std::function<std::any(void)> getter,
+        std::function<std::any(std::any)> setter)
+        : get(std::move(getter)), set(std::move(setter))
+    {
+    }
+
+    std::function<std::any(void)> get;
+    std::function<std::any(std::any)> set;
+};
+
+constexpr auto g_key_x = "x";
+constexpr auto g_key_in_pack = "in_pack";
+std::unordered_map<std::string, std::any> g_var_store{
+    {g_key_x,       0},
+    {g_key_in_pack, false},
+};
+
 // Inja does not support Jinja macros so let's use these to
 // pass variables in and out of include blocks.
-static std::unordered_map<std::string, size_t> g_variables{
-    {"x", 0},
+std::unordered_map<std::string, Var> g_variables{
+    {g_key_x,
+        {
+            []()
+            { return std::any_cast<int>(::g_var_store.at(g_key_x)); },
+            [](std::any v)
+            {
+                ::g_var_store.at(g_key_x) = std::any_cast<int>(std::move(v));
+                return ::g_var_store.at(g_key_x);
+            }
+        }
+    },
+    {g_key_in_pack,
+        {
+            []()
+            { return std::any_cast<bool>(::g_var_store.at(g_key_in_pack)); },
+            [](std::any v)
+            {
+                ::g_var_store.at(g_key_in_pack) = std::any_cast<bool>(std::move(v));
+                return std::any_cast<bool>(::g_var_store.at(g_key_in_pack));
+            }
+        }
+    },
 };
 
 enum class VarAction
@@ -40,7 +85,7 @@ enum class VarAction
     SET = 1,
 };
 
-const static std::unordered_map<std::string, VarAction> g_str_to_varaction{
+const std::unordered_map<std::string, VarAction> g_str_to_varaction{
     {"GET", VarAction::GET},
     {"SET", VarAction::SET},
 };
@@ -151,12 +196,6 @@ MsgAnalysisResult analyze_message(const inja::json& data)
             {
                 bp.boundary = true;
             }
-            // TODO: add another field that denotes "pack boundary"
-            //   for long packs that span multiple bytes. It's actually
-            //   needed for UScript generation. E.g.:
-            //   for a 3-byte pack that has 24 booleans: [bbbbbbbb|bbbbbbbb|bbbbbbbb],
-            //   we need a flag that denotes last boolean in each 1-byte pack
-            //   before the | delimiter.
 
             bool_packs.emplace_back(bp);
         }
@@ -303,26 +342,42 @@ constexpr auto pad = [](const inja::Arguments& args)
 // Get and set global variables. Workaround for lack of
 // Jinja macro support in Inja. Can be used to pass variables
 // in and out of included templates.
-static constexpr auto var = [](const inja::Arguments& args)
+template<typename T>
+constexpr T var(const inja::Arguments& args)
 {
     const auto& var_name = args.at(0)->get<std::string>();
     auto action = args.at(1)->get<std::string>();
-    size_t value;
 
     boost::algorithm::to_upper(action);
     VarAction va = g_str_to_varaction.at(action);
 
+    T value;
+
     switch (va)
     {
         case VarAction::GET:
-            return ::g_variables.at(var_name);
+            return std::any_cast<T>(::g_variables.at(var_name).get());
         case VarAction::SET:
-            value = args.at(2)->get<size_t>();
-            ::g_variables.at(var_name) = value;
+            if (!args.at(2))
+            {
+                throw std::invalid_argument(std::format("no value to set for '{}'", var_name));
+            }
+            value = static_cast<T>(*args.at(2));
+            ::g_variables.at(var_name).set(value);
             return value;
         default:
-            throw std::invalid_argument("invalid VarAction: " + action);
+            throw std::invalid_argument(std::format("invalid VarAction: {}", action));
     }
+}
+
+constexpr auto var_bool = [](const inja::Arguments& args)
+{
+    return var<bool>(args);
+};
+
+constexpr auto var_int = [](const inja::Arguments& args)
+{
+    return var<int>(args);
 };
 
 constexpr auto error = [](const inja::Arguments& args)
@@ -375,32 +430,38 @@ constexpr auto bp_is_packed = [](const inja::Arguments& args)
     });
 };
 
+template<typename T>
+T bp_get(const inja::json& bps, const std::string& field_name, const std::string& key)
+{
+    for (const auto& bp: bps)
+    {
+        if (bp["field_name"] == field_name)
+        {
+            return bp[key].get<T>();
+        }
+    }
+    throw std::invalid_argument(std::format("cannot find '{}' in '{}'", key, field_name));
+}
+
 constexpr auto bp_pack_index = [](const inja::Arguments& args)
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
-    for (const auto& bp: bps)
-    {
-        if (bp["field_name"] == name)
-        {
-            return bp["pack_index"];
-        }
-    }
-    throw std::invalid_argument(std::format("cannot find 'pack_index' for {}", name));
+    return bp_get<int>(bps, name, "pack_index");
 };
 
 constexpr auto bp_is_last = [](const inja::Arguments& args)
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
-    for (const auto& bp: bps)
-    {
-        if (bp["field_name"] == name)
-        {
-            return bp["last"].get<bool>();
-        }
-    }
-    throw std::invalid_argument(std::format("cannot find 'last' for {}", name));
+    return bp_get<bool>(bps, name, "last");
+};
+
+constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args)
+{
+    const auto& bps = args.at(0)->get<std::vector<inja::json>>();
+    const auto& name = args.at(1)->get<std::string>();
+    return bp_get<bool>(bps, name, "boundary");
 };
 
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
@@ -485,7 +546,8 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     // TODO: add option to enable/disable this?
     env.add_callback("capitalize", 1, capitalize);
     env.add_callback("pad", 2, pad);
-    env.add_callback("var", var);
+    env.add_callback("var_bool", var_bool);
+    env.add_callback("var_int", var_int);
     env.add_callback("cpp_type", 1, cpp_type);
     env.add_callback("cpp_type_arg", 1, cpp_type_arg);
     env.add_callback("cpp_default_value", 1, cpp_default_value);
@@ -493,6 +555,7 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     env.add_callback("bp_is_packed", 2, bp_is_packed);
     env.add_callback("bp_pack_index", 2, bp_pack_index);
     env.add_callback("bp_is_last", 2, bp_is_last);
+    env.add_callback("bp_is_multi_pack_boundary", 2, bp_is_multi_pack_boundary);
     env.add_void_callback("error", error);
 
     auto data = env.load_json(file);
@@ -552,10 +615,12 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     fs::path cpp_hdr_template = template_dir / ::umb::g_cpp_hdr_template;
     fs::path cpp_src_template = template_dir / ::umb::g_cpp_src_template;
 
-    std::cout << std::format("rendering '{}'", file);
+    std::cout << std::format("rendering '{}'\n", file);
     render_uscript(env, us_template.string(), data, uscript_out_dir);
     render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir);
 }
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -606,12 +671,20 @@ int main(int argc, char* argv[])
     catch (const std::exception& ex)
     {
         std::cout << "error: " << ex.what() << std::endl;
+#ifndef NDEBUG
+        throw;
+#else
         return EXIT_FAILURE;
+#endif
     }
     catch (...)
     {
         std::cout << "unknown error" << std::endl;
+#ifndef NDEBUG
+        throw;
+#else
         return EXIT_FAILURE;
+#endif
     }
 
     return EXIT_SUCCESS;

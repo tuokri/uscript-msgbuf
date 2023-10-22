@@ -1,0 +1,21 @@
+{% set in_pack = var_bool("in_pack", "get") %}
+{% if bp_is_packed(message, field.name) %}
+    {% set bps = message.bool_packs %}
+    {% if not in_pack %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = (
+          byte(Msg.{{ field.name }})
+        {% set in_pack = true %}
+    {% else %}
+        | byte(Msg.{{ field.name }}) << {{ bp_pack_index(bps, field.name) }}
+        {% if bp_is_last(bps, field.name) or bp_is_multi_pack_boundary(bps, field.name) %}
+            {% set in_pack = false %}
+            {% set x = x + 1 %}
+    );
+        {% endif %}
+    {% endif %}
+{% else %}
+    Bytes[{{ pad(x, sz) }}{{ x }}] = byte(Msg.{{ field.name }});
+    {% set x = x + 1 %}
+{% endif %}
+{% set x = var_int("x", "set", x) -%}
+{% set in_pack = var_bool("in_pack", "set", in_pack) -%}

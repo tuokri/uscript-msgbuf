@@ -1,9 +1,9 @@
     StrLen = Len(Msg.{{ field.name }});
-    Bytes.Length = Bytes.Length + StrLen + 1;
-    Bytes[I++] = StrLen * {{ sizeof_uscript_char }};
+    Bytes.Length = Bytes.Length + (StrLen * {{ sizeof_uscript_char }}) + 1;
+    Bytes[I++] = StrLen;
     for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
     {
-        Char = Asc(Msg.{{ field.name }});
+        Char = Asc(Mid(Msg.{{ field.name }}, StrIdx, 1));
         Bytes[I++] = (Char       ) & 0xff;
         Bytes[I++] = (Char >>>  8) & 0xff;
     }

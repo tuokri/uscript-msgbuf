@@ -16,4 +16,4 @@
     {% set x = x + 1 %}
     Bytes[{{ pad(x, sz) }}{{ x }}] = (FracPart >>> 24) & 0xff;
     {% set x = x + 1 %}
-    {% set x = var("x", "set", x) -%}
+    {% set x = var_int("x", "set", x) -%}
