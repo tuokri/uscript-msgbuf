@@ -107,6 +107,8 @@ TEST_CASE("encode decode boolean packing message")
 
 TEST_CASE("encode decode float fields")
 {
+    using Float = ::umb::internal::Float;
+
     testmessages::umb::JustAnotherTestMessage jatm1;
     testmessages::umb::JustAnotherTestMessage jatm2;
 
@@ -116,6 +118,7 @@ TEST_CASE("encode decode float fields")
     CHECK(ok);
 
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(std::numeric_limits<float>::max());
@@ -124,6 +127,7 @@ TEST_CASE("encode decode float fields")
     CHECK(ok);
 
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(std::numeric_limits<float>::min());
@@ -132,6 +136,7 @@ TEST_CASE("encode decode float fields")
     CHECK(ok);
 
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(0.0);
@@ -140,6 +145,7 @@ TEST_CASE("encode decode float fields")
     CHECK(ok);
 
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(0.1);
@@ -148,6 +154,7 @@ TEST_CASE("encode decode float fields")
     CHECK(ok);
 
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(35848.9858405);
@@ -156,6 +163,7 @@ TEST_CASE("encode decode float fields")
     CHECK(ok);
 
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(0.00583885);
@@ -164,5 +172,6 @@ TEST_CASE("encode decode float fields")
     CHECK(ok);
 
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 }
