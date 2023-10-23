@@ -380,7 +380,7 @@ inline constexpr void
 encode_float_str(const std::string& float_str, std::span<byte>::iterator& bytes)
 {
     const auto size = float_str.size();
-    *bytes++ = std::clamp<byte>(size, 0, g_max_dynamic_size);
+    *bytes++ = static_cast<byte>(size);
     for (const auto& c: float_str)
     {
         *bytes++ = static_cast<byte>(c);

@@ -33,7 +33,10 @@ public:
     void set_{{ field.name }}({{ cpp_type_arg(field.type) }});
     {% endfor %}
     friend bool operator==(const {{ message.name }}&, const {{ message.name }}&);
-    [[nodiscard]] constexpr MessageType type() const { return MessageType::{{ message.name }}; };
+    [[nodiscard]] inline static constexpr MessageType type()
+    {
+        return MessageType::{{ message.name }};
+    };
 
 private:
     {% for field in message.fields %}
