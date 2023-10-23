@@ -174,4 +174,22 @@ TEST_CASE("encode decode float fields")
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(-0.00583885);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(-5885.000838869695000);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
+    CHECK_EQ(jatm1, jatm2);
 }
