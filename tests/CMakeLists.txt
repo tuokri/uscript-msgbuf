@@ -44,3 +44,4 @@ add_dependencies(
 )
 
 # TODO: clean up all the unneeded dependency links. The graph is a mess.
+# TODO: make reusable CMake functions to be used in other projects.
