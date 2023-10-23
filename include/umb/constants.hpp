@@ -38,9 +38,6 @@ constexpr size_t g_bools_in_byte = 8;
 // 2 bytes - the reserved None message.
 constexpr uint16_t g_max_message_count = std::numeric_limits<uint16_t>::max() - 1;
 
-// Fractional part "precision" when coding floats. 7 decimal places.
-constexpr auto g_float_multiplier = 10000000;
-
 // Max size of dynamic field payload part.
 constexpr auto g_max_dynamic_size = 255;
 

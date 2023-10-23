@@ -11,7 +11,7 @@
     {% else if field.type == "byte" %}
         ::umb::encode_byte(m_{{ field.name }}, vi);
     {% else if field.type == "float" %}
-        ::umb::encode_float(m_{{ field.name }}, vi);
+        ::umb::encode_float_str(m_{{ field.name }}_serialized, vi);
     {% else if field.type == "bytes" %}
         ::umb::encode_bytes(m_{{ field.name }}, vi);
     {% else if field.type == "string" %}

@@ -3,14 +3,13 @@
 
 #pragma once
 
+#include <charconv>
 #include <concepts>
 #include <format>
+#include <limits>
 #include <span>
 #include <string>
 #include <vector>
-#include <limits>
-#include <array>
-#include <charconv>
 
 #include <boost/lexical_cast.hpp>
 
@@ -87,6 +86,16 @@ inline constexpr void check_bounds(
         bytes,
         field_size,
         caller);
+}
+
+inline constexpr void check_dynamic_length(size_t str_size)
+{
+    // Max string payload is (g_max_dynamic_size * g_sizeof_uscript_char).
+    // Max bytes payload is simply g_max_dynamic_size.
+    if (str_size > g_max_dynamic_size)
+    {
+        throw std::invalid_argument(std::format("dynamic field too large: {}", str_size));
+    }
 }
 
 inline constexpr void decode_bool(
@@ -188,7 +197,8 @@ inline constexpr void decode_byte(
 inline constexpr void decode_float(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
-    float& out)
+    float& out,
+    std::string& serialized_float_cache)
 {
     byte size;
     decode_byte(i, bytes, size);
@@ -200,31 +210,24 @@ inline constexpr void decode_float(
     }
 
     check_bounds(i, bytes, size);
-//    const auto int_part = static_cast<float>(
-//        static_cast<int32_t>(*i++)
-//        | static_cast<int32_t>(*i++) << 8
-//        | static_cast<int32_t>(*i++) << 16
-//        | static_cast<int32_t>(*i++) << 24
-//    );
-//    const auto frac_part = static_cast<float>(
-//        static_cast<int32_t>(*i++)
-//        | static_cast<int32_t>(*i++) << 8
-//        | static_cast<int32_t>(*i++) << 16
-//        // | static_cast<int32_t>(*i++) << 24
-//    );
-//    out = int_part + (frac_part / g_float_multiplier);
 
-    const auto chars = reinterpret_cast<std::span<const char>::const_iterator&>(i);
-    const auto view = std::string_view{chars, chars + size};
+    const std::span<const byte> str_bytes{i, i + size};
     std::advance(i, size);
 
-    // TODO: to avoid double-coding floats in sizeof, we may want to always store
-    //   float and it's encoded representation together.
+    std::string float_str;
+    float_str.reserve(size);
+
+    for (const auto& sb: str_bytes)
+    {
+        const char c = static_cast<char>(sb);
+        float_str.append(1, c);
+    }
 
     float f;
-    if (std::from_chars(view.begin(), view.begin() + view.size(), f).ec == std::errc())
+    if (std::from_chars(float_str.data(), float_str.data() + float_str.size(), f).ec == std::errc())
     {
         out = f;
+        serialized_float_cache = std::move(float_str);
     }
     else
     {
@@ -373,45 +376,31 @@ inline constexpr void encode_int32(int32_t i, std::span<byte>::iterator& bytes)
     *bytes++ = (i >> 24) & 0xff;
 }
 
-inline constexpr void encode_float(float f, std::span<byte>::iterator& bytes)
+inline constexpr void
+encode_float_str(const std::string& float_str, std::span<byte>::iterator& bytes)
 {
-    // const auto int_part = static_cast<int32_t>(f);
-    // const auto frac_part =
-    //     static_cast<int32_t>((f - static_cast<float>(int_part)) * g_float_multiplier);
-    // *bytes++ = int_part & 0xff;
-    // *bytes++ = (int_part >> 8) & 0xff;
-    // *bytes++ = (int_part >> 16) & 0xff;
-    // *bytes++ = (int_part >> 24) & 0xff;
-    // *bytes++ = frac_part & 0xff;
-    // *bytes++ = (frac_part >> 8) & 0xff;
-    // *bytes++ = (frac_part >> 16) & 0xff;
-    // *bytes++ = (frac_part >> 24) & 0xff;
+    const auto size = float_str.size();
+    *bytes++ = std::clamp<byte>(size, 0, g_max_dynamic_size);
+    for (const auto& c: float_str)
+    {
+        *bytes++ = static_cast<byte>(c);
+    }
+}
 
-    std::array<char, std::numeric_limits<float>::max_digits10 + 8> str{};
-    if (auto [ptr, ec] = std::to_chars(str.begin(), str.begin() + str.size(), f,
+inline constexpr void
+encode_float(float f, std::string& out)
+{
+    std::string str;
+    str.resize(std::numeric_limits<float>::max_digits10 + 8);
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f,
                                        std::chars_format::scientific);
         ec == std::errc())
     {
-        const auto data = std::string_view(str.data(), ptr);
-        *bytes++ = data.size();
-        for (const auto& d: data)
-        {
-            *bytes++ = static_cast<byte>(d);
-        }
+        out = std::move(str);
     }
     else
     {
         throw std::runtime_error("TODO: better handling");
-    }
-}
-
-inline constexpr void check_dynamic_length(size_t str_size)
-{
-    // Max string payload is (g_max_dynamic_size * g_sizeof_uscript_char).
-    // Max bytes payload is simply g_max_dynamic_size.
-    if (str_size > g_max_dynamic_size)
-    {
-        throw std::invalid_argument(std::format("dynamic field too large: {}", str_size));
     }
 }
 

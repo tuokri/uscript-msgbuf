@@ -5,7 +5,7 @@
     {% else if field.type == "byte" %}
         ::umb::decode_byte(vi, bytes, m_{{ field.name }});
     {% else if field.type == "float" %}
-        ::umb::decode_float(vi, bytes, m_{{ field.name }});
+        ::umb::decode_float(vi, bytes, m_{{ field.name }}, m_{{ field.name }}_serialized);
     {% else if field.type == "bytes" %}
         ::umb::decode_bytes(vi, bytes, m_{{ field.name }});
     {% else if field.type == "string" %}

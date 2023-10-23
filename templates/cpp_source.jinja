@@ -12,7 +12,15 @@ constexpr auto ZERO_SIZE = static_cast<size_t>(0);
 {% for message in messages %}
 {{ message.name }}::{{ message.name }}()
 {% for field in message.fields %}
-    {% if loop.is_first %} : {% else %} , {% endif %} m_{{ field.name }}({{ cpp_default_value(field.type) }})
+    {% if loop.is_first %}
+    :
+    {% else %}
+    ,
+    {% endif %}
+    m_{{ field.name }}({{ cpp_default_value(field.type) }})
+    {% if field.type == "float" %}
+    , m_{{ field.name }}_serialized{"0"}
+    {% endif %}
 {% endfor %}
 {
 }
@@ -76,7 +84,8 @@ size_t {{ message.name }}::serialized_size() const
         {% else if field.type == "byte" %}
         size += ::umb::g_sizeof_byte; // {{ field.name }}
         {% else if field.type == "float" %}
-        size += ::umb::g_sizeof_float; // {{ field.name }}
+        size += ::umb::g_dynamic_field_header_size;
+        size += m_{{ field.name }}_serialized.size(); // {{ field.name }}
         {% else if field.type == "bytes" %}
         size += ::umb::g_dynamic_field_header_size;
         size += m_{{ field.name }}.size(); // {{ field.name }}
@@ -113,6 +122,10 @@ size_t {{ message.name }}::serialized_size() const
 
 void {{ message.name }}::set_{{ field.name }}({{ cpp_type_arg(field.type) }} value)
 {
+    {% if field.type == "float" %}
+    // TODO: error check here?
+    ::umb::encode_float(value, m_{{ field.name }}_serialized);
+    {% endif %}
     m_{{ field.name }} = value;
 }
 

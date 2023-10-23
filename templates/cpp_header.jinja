@@ -38,6 +38,9 @@ public:
 private:
     {% for field in message.fields %}
     {{ cpp_type(field.type) }} m_{{ field.name }};
+        {% if field.type == "float" %}
+    std::string m_{{ field.name }}_serialized;
+        {% endif %}
     {% endfor %}
 };
 
