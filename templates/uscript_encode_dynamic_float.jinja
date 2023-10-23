@@ -1,10 +1,9 @@
-    IntPart = Msg.{{ field.name }};
-    FracPart = (Msg.{{ field.name }} - IntPart) * FLOAT_MULTIPLIER;
-    Bytes[I++] = (IntPart       ) & 0xff;
-    Bytes[I++] = (IntPart >>>  8) & 0xff;
-    Bytes[I++] = (IntPart >>> 16) & 0xff;
-    Bytes[I++] = (IntPart >>> 24) & 0xff;
-    Bytes[I++] = (FracPart       ) & 0xff;
-    Bytes[I++] = (FracPart >>>  8) & 0xff;
-    Bytes[I++] = (FracPart >>> 16) & 0xff;
-    Bytes[I++] = (FracPart >>> 24) & 0xff;
+    FloatStr = string(Msg.{{ field.name }});
+    StrLen = Len(FloatStr);
+    Bytes.Length = Bytes.Length + StrLen + 1;
+    Bytes[I++] = StrLen;
+    for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
+    {
+        Char = Asc(Mid(FloatStr, StrIdx, 1));
+        Bytes[I++] = Char;
+    }

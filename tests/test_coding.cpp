@@ -126,6 +126,14 @@ TEST_CASE("encode decode float fields")
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
     CHECK_EQ(jatm1, jatm2);
 
+    jatm1.set_some_floatVAR(std::numeric_limits<float>::min());
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
     jatm1.set_some_floatVAR(0.0);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
@@ -143,6 +151,14 @@ TEST_CASE("encode decode float fields")
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(35848.9858405);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(0.00583885);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);

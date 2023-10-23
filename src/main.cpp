@@ -606,7 +606,6 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     data["header_size"] = ::umb::g_header_size;
     data["payload_size"] = ::umb::g_payload_size;
     data["packet_size"] = ::umb::g_packet_size;
-    data["float_multiplier"] = 10000000; // TODO: REMOVE ME!
     data["sizeof_uscript_char"] = ::umb::g_sizeof_uscript_char;
 
     const auto prog_dir = boost::dll::program_location().parent_path();

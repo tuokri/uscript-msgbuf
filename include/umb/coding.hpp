@@ -392,8 +392,8 @@ encode_float(float f, std::string& out)
 {
     std::string str;
     str.resize(std::numeric_limits<float>::max_digits10 + 8);
-    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f,
-                                       std::chars_format::scientific);
+    auto fmt = f < 0 ? std::chars_format::fixed : std::chars_format::scientific;
+    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt);
         ec == std::errc())
     {
         out = std::move(str);

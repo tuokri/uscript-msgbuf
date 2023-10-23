@@ -6,7 +6,6 @@ class {{ class_name }} extends Object
 const HEADER_SIZE = {{ header_size }};
 const PAYLOAD_SIZE = {{ payload_size }};
 const PACKET_SIZE = {{ packet_size }};
-const FLOAT_MULTIPLIER = {{ float_multiplier }};
 
 const {{ uscript_message_type_prefix }}_None = 0;
 {% for message in messages %}
@@ -65,10 +64,6 @@ static final function byte {{ message.name }}_ToBytes(
     const out {{ message.name }} Msg,
     out byte Bytes[PACKET_SIZE])
 {
-    {% if message.has_float_fields %}
-    {% include "uscript_float_coding_variables.jinja" %}
-    {% endif -%}
-
     {%- set sz = message.static_size %}
     {% set x = 0 %}
     {% include "uscript_encode_static_packet_header.jinja" %}
@@ -79,10 +74,6 @@ static final function byte {{ message.name }}_ToBytes(
     // Field: {{ field.name }}.
     {%- if field.type == "int" %}
     {% include "uscript_encode_static_int.jinja" %}
-    {% set x = var_int("x", "get") -%}
-
-    {%- else if field.type == "float" %}
-    {% include "uscript_encode_static_float.jinja" %}
     {% set x = var_int("x", "get") -%}
 
     {%- else if field.type == "byte" %}
@@ -119,6 +110,12 @@ static final function {{ message.name }}_ToMultiBytes(
 {% set in_pack = false %}
 {% if message.has_string_fields %}
     {% include "uscript_string_encoding_variables.jinja" %}
+    {% if message.has_float_fields %}
+        {% include "uscript_float_coding_variables.jinja" %}
+    {% endif %}
+{% else if message.has_float_fields %}
+    {% include "uscript_string_encoding_variables.jinja" %}
+    {% include "uscript_float_coding_variables.jinja" %}
 {% endif %}
 {% if message.has_bytes_fields %}
     {% include "uscript_bytes_coding_variables.jinja" %}
@@ -135,9 +132,6 @@ static final function {{ message.name }}_ToMultiBytes(
 
     // Encode packet payload.
 {% set sz = message.static_part %}
-{% if message.has_float_fields %}
-    {% include "uscript_float_coding_variables.jinja" %}
-{% endif %}
     local int I;
     I = 1; // Skip size until it's known.
     // Reserve at least static_part bytes. Grow dynamically if needed.
@@ -226,6 +220,12 @@ static final function {{ message.name }}_FromMultiBytes(
 {
 {% if message.has_string_fields %}
     {% include "uscript_string_decoding_variables.jinja" %}
+    {% if message.has_float_fields %}
+        {% include "uscript_float_coding_variables.jinja" %}
+    {% endif %}
+{% else if message.has_float_fields %}
+    {% include "uscript_string_decoding_variables.jinja" %}
+    {% include "uscript_float_coding_variables.jinja" %}
 {% endif %}
 {% if message.has_bytes_fields %}
     {% include "uscript_bytes_coding_variables.jinja" %}
@@ -245,19 +245,13 @@ static final function {{ message.name }}_FromMultiBytes(
     Msg.{{ field.name }} = Bytes[I++];
     {# #}
     {%- else if field.type == "float" %}
-    Msg.{{ field.name }} = (
-        (
-               Bytes[I++]
-            | (Bytes[I++] << 8)
-            | (Bytes[I++] << 16)
-            | (Bytes[I++] << 24)
-        ) + ((
-               Bytes[I++]
-            | (Bytes[I++] << 8)
-            | (Bytes[I++] << 16)
-            | (Bytes[I++] << 24)
-        ) / FLOAT_MULTIPLIER)
-    );
+    FloatStr = "";
+    StrLen = Bytes[I++];
+    for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
+    {
+        FloatStr $= Chr(Bytes[I++]);
+    }
+    Msg.{{ field.name }} = float(FloatStr);
     {# #}
     {%- else if field.type == "string" %}
     StrLen = Bytes[I++];
