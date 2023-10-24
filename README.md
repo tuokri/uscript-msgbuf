@@ -17,13 +17,12 @@ the `SendBinary` function.
 - [Boost](https://www.boost.org/)
     - Tested with Boost versions 1.82 and 1.83.
 - [doctest](https://github.com/doctest/doctest) (for testing)
-- icu (TODO: DOCUMENT ME)
+- ICU (TODO: DOCUMENT ME)
 
 Install using vcpkg:
 
 ```shell
-vcpkg install inja boost-program-options \
-  boost-filesystem boost-algorithm boost-process boost-dll doctest icu
+vcpkg install inja boost doctest icu
 ```
 
 ### TODO:
@@ -31,4 +30,8 @@ vcpkg install inja boost-program-options \
 - Probably have to force some more dependencies since unit test messages
   are sometimes not regenerated even though the templates or generator changes.
 
-- Allow setting default values for fields?
+- Allow setting default values for message fields?
+
+- Add pre-build checker script that warns if build directory has old templates.
+  - This can happen if templates are removed and build directory is not manually
+    cleaned before doing a new build, causing potential failures or minor issues.
