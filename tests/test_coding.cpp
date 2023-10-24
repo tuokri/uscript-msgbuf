@@ -112,7 +112,7 @@ TEST_CASE("encode decode float fields")
     testmessages::umb::JustAnotherTestMessage jatm1;
     testmessages::umb::JustAnotherTestMessage jatm2;
 
-    jatm1.set_some_floatVAR(1.1111111111111111111);
+    jatm1.set_some_floatVAR(1.11111111111111);
     std::vector<::umb::byte> vec = jatm1.to_bytes();
     bool ok = jatm2.from_bytes(vec);
     CHECK(ok);
