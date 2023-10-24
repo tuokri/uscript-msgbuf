@@ -43,5 +43,10 @@ add_dependencies(
     copy_templates generate_test_data
 )
 
+set_property(
+    TARGET test_msg_library
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION ${UMB_IPO_SUPPORTED}
+)
+
 # TODO: clean up all the unneeded dependency links. The graph is a mess.
 # TODO: make reusable CMake functions to be used in other projects.

@@ -3,7 +3,14 @@ project(uscript-msgbuf)
 
 include(CMakePrintHelpers)
 
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+include(CheckIPOSupported)
+check_ipo_supported(RESULT UMB_IPO_SUPPORTED OUTPUT UMB_IPO_ERROR)
+
+if (UMB_IPO_SUPPORTED)
+    message(STATUS "IPO / LTO enabled: ${UMB_IPO_SUPPORTED}")
+else ()
+    message(STATUS "IPO / LTO not supported: ${error}")
+endif ()
 
 set(Boost_USE_DEBUG_LIBS $<$<CONFIG:Debug>:ON,OFF>)
 set(Boost_USE_MULTITHREADED ON)
@@ -26,11 +33,21 @@ find_package(
 
 add_library(umb INTERFACE)
 
+set_property(
+    TARGET umb
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION ${UMB_IPO_SUPPORTED}
+)
+
 target_include_directories(umb INTERFACE include)
 
 add_executable(
     uscript_msgbuf_generator
     src/main.cpp
+)
+
+set_property(
+    TARGET uscript_msgbuf_generator
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION ${UMB_IPO_SUPPORTED}
 )
 
 if (MSVC)
@@ -75,9 +92,9 @@ target_compile_features(
 )
 
 # Build list of file paths to copy templates to.
-file(GLOB TEMPLATE_FILES templates/*.jinja)
-set(TEMPLATE_FILES ${TEMPLATE_FILES})
-foreach (template_file ${TEMPLATE_FILES})
+file(GLOB UMB_TEMPLATE_FILES templates/*.jinja)
+set(UMB_TEMPLATE_FILES ${UMB_TEMPLATE_FILES})
+foreach (template_file ${UMB_TEMPLATE_FILES})
     cmake_path(GET template_file FILENAME template_filename)
     cmake_path(
         SET
@@ -85,16 +102,19 @@ foreach (template_file ${TEMPLATE_FILES})
         NORMALIZE
         ${CMAKE_CURRENT_BINARY_DIR}/templates/${template_filename}
     )
-    list(APPEND TEMPLATE_FILE_OUTPUTS ${template_file_output})
+    list(APPEND UMB_TEMPLATE_FILE_OUTPUTS ${template_file_output})
 endforeach ()
 
-add_custom_target(copy_templates ALL DEPENDS ${TEMPLATE_FILE_OUTPUTS})
+cmake_print_variables(UMB_TEMPLATE_FILES)
+cmake_print_variables(UMB_TEMPLATE_FILE_OUTPUTS)
+
+add_custom_target(copy_templates ALL DEPENDS ${UMB_TEMPLATE_FILE_OUTPUTS})
 add_custom_command(
-    OUTPUT ${TEMPLATE_FILE_OUTPUTS}
+    OUTPUT ${UMB_TEMPLATE_FILE_OUTPUTS}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/templates/
-    COMMAND ${CMAKE_COMMAND} -E copy ${TEMPLATE_FILES}
+    COMMAND ${CMAKE_COMMAND} -E copy ${UMB_TEMPLATE_FILES}
     ${CMAKE_CURRENT_BINARY_DIR}/templates/
-    DEPENDS ${TEMPLATE_FILES}
+    DEPENDS ${UMB_TEMPLATE_FILES}
 )
 
 add_dependencies(uscript_msgbuf_generator copy_templates)
