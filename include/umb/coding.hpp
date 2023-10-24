@@ -38,7 +38,8 @@ concept BoolType = std::is_convertible_v<T, bool>;
 // TODO: instead of throwing, use std::expected?
 
 template<typename T = const byte>
-inline constexpr bool _check_bounds_no_throw_impl(
+inline constexpr bool
+_check_bounds_no_throw_impl(
     const typename std::span<T>::const_iterator& i,
     const std::span<T> bytes,
     size_t field_size) noexcept
@@ -49,7 +50,8 @@ inline constexpr bool _check_bounds_no_throw_impl(
 }
 
 template<typename T = const byte>
-inline constexpr bool check_bounds_no_throw(
+inline constexpr bool
+check_bounds_no_throw(
     const typename std::span<T>::const_iterator& i,
     const std::span<T> bytes,
     size_t field_size) noexcept
@@ -58,7 +60,8 @@ inline constexpr bool check_bounds_no_throw(
 }
 
 template<typename T = const byte>
-inline constexpr bool check_bounds_no_throw(
+inline constexpr bool
+check_bounds_no_throw(
     const typename std::span<T>::const_iterator&& i,
     const std::span<T> bytes,
     size_t field_size) noexcept
@@ -70,7 +73,8 @@ inline constexpr bool check_bounds_no_throw(
 }
 
 template<typename T = const byte>
-inline constexpr void check_bounds(
+inline constexpr void
+check_bounds(
     const typename std::span<T>::const_iterator& i,
     const std::span<T> bytes,
     size_t field_size,
@@ -86,7 +90,8 @@ inline constexpr void check_bounds(
 }
 
 template<typename T = const byte>
-inline constexpr void check_bounds(
+inline constexpr void
+check_bounds(
     const typename std::span<T>::const_iterator&& i,
     const std::span<T> bytes,
     size_t field_size,
@@ -99,7 +104,8 @@ inline constexpr void check_bounds(
         caller);
 }
 
-inline constexpr void check_dynamic_length(size_t str_size)
+inline constexpr void
+check_dynamic_length(size_t str_size)
 {
     // Max string payload is (g_max_dynamic_size * g_sizeof_uscript_char).
     // Max bytes payload is simply g_max_dynamic_size.
@@ -109,7 +115,8 @@ inline constexpr void check_dynamic_length(size_t str_size)
     }
 }
 
-inline constexpr void decode_bool(
+inline constexpr void
+decode_bool(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     bool& out)
@@ -119,7 +126,8 @@ inline constexpr void decode_bool(
 }
 
 template<BoolType B, std::integral T>
-inline constexpr void _read_bool_single_byte(
+inline constexpr void
+_read_bool_single_byte(
     byte b,
     T& index,
     B& out)
@@ -128,7 +136,8 @@ inline constexpr void _read_bool_single_byte(
 }
 
 template<BoolType B, std::integral T>
-inline constexpr void _read_bool_many_bytes(
+inline constexpr void
+_read_bool_many_bytes(
     byte& b,
     T& index,
     B& out,
@@ -142,7 +151,8 @@ inline constexpr void _read_bool_many_bytes(
 }
 
 template<BoolType... Bools>
-inline constexpr void decode_packed_bools(
+inline constexpr void
+decode_packed_bools(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     Bools& ... out)
@@ -170,7 +180,8 @@ inline constexpr void decode_packed_bools(
     }
 }
 
-inline constexpr void decode_uint16(
+inline constexpr void
+decode_uint16(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     uint16_t& out)
@@ -182,7 +193,8 @@ inline constexpr void decode_uint16(
     );
 }
 
-inline constexpr void decode_int32(
+inline constexpr void
+decode_int32(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     int32_t& out)
@@ -196,7 +208,8 @@ inline constexpr void decode_int32(
     );
 }
 
-inline constexpr void decode_byte(
+inline constexpr void
+decode_byte(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     byte& out)
@@ -205,7 +218,20 @@ inline constexpr void decode_byte(
     out = *i++;
 }
 
-inline constexpr void decode_float(
+/**
+ * Decode a float from its UMB wire format into a
+ * float and its intermediate string representation.
+ * \see encode_float.
+ * \see encode_float_str.
+ *
+ * @param i input byte iterator to current position in \bytes.
+ * @param bytes input UMB packet bytes being decoded.
+ * @param out output float to write the decoded result to.
+ * @param serialized_float_cache output string to write the float's
+ *  intermediate string representation to.
+ */
+inline constexpr void
+decode_float(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     float& out,
@@ -246,7 +272,17 @@ inline constexpr void decode_float(
     }
 }
 
-inline constexpr void decode_string(
+/**
+ * Decode UMB wire format string of 16-bit characters
+ * into a string object. \See encode_string.
+ * Overwrites \out contents with the decoded result.
+ *
+ * @param i input byte iterator to current position in \bytes.
+ * @param bytes input UMB packet bytes being decoded.
+ * @param out output string to write the decode result to.
+ */
+inline constexpr void
+decode_string(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     std::u16string& out)
@@ -290,7 +326,16 @@ inline constexpr void decode_string(
     out.append(char_buf.data(), char_buf.size());
 }
 
-inline constexpr void decode_bytes(
+/**
+ * Decode a dynamic UMB wire format byte sequence
+ * (header + payload) into a byte sequence.
+ *
+ * @param i input byte iterator to current position in \bytes.
+ * @param bytes input UMB packet bytes being decoded.
+ * @param out output vector to write decoded bytes to.
+ */
+inline constexpr void
+decode_bytes(
     std::span<const byte>::const_iterator& i,
     const std::span<const byte> bytes,
     std::vector<byte>& out)
@@ -314,13 +359,15 @@ inline constexpr void decode_bytes(
     out = std::move(b);
 }
 
-inline constexpr void encode_bool(bool b, std::span<byte>::iterator& bytes)
+inline constexpr void
+encode_bool(bool b, std::span<byte>::iterator& bytes)
 {
     *bytes++ = b;
 }
 
 template<BoolType B, std::integral T>
-inline constexpr void _write_bool_single_byte(
+inline constexpr void
+_write_bool_single_byte(
     byte& byte_out,
     T& index,
     B in)
@@ -329,7 +376,8 @@ inline constexpr void _write_bool_single_byte(
 }
 
 template<BoolType B, std::integral T>
-inline constexpr void _write_bool_many_bytes(
+inline constexpr void
+_write_bool_many_bytes(
     byte& byte_out,
     T& index,
     B in,
@@ -345,7 +393,8 @@ inline constexpr void _write_bool_many_bytes(
 // TODO: this has to use different parameter order due to how parameter packs work.
 // TODO: normalize signatures across all encoding functions to take the iterator first?
 template<BoolType... Bools>
-inline constexpr void encode_packed_bools(std::span<byte>::iterator& bytes, Bools... bools)
+inline constexpr void
+encode_packed_bools(std::span<byte>::iterator& bytes, Bools... bools)
 {
     byte& byte_out = *bytes++;
     constexpr size_t num_bools = sizeof...(bools);
@@ -368,18 +417,38 @@ inline constexpr void encode_packed_bools(std::span<byte>::iterator& bytes, Bool
     }
 }
 
-inline constexpr void encode_byte(byte b, std::span<byte>::iterator& bytes)
+/**
+ * Encode a byte into its UMB wire format.
+ *
+ * @param b input byte to encode.
+ * @param bytes output iterator to write encoded bytes to.
+ */
+inline constexpr void
+encode_byte(byte b, std::span<byte>::iterator& bytes)
 {
     *bytes++ = b;
 }
 
+/**
+ * Encode a 16 bit unsigned integer into its UMB wire format.
+ *
+ * @param i input integer to encode.
+ * @param bytes output iterator to write encoded bytes to.
+ */
 inline constexpr void encode_uint16(uint16_t i, std::span<byte>::iterator& bytes)
 {
     *bytes++ = i & 0xff;
     *bytes++ = (i >> 8) & 0xff;
 }
 
-inline constexpr void encode_int32(int32_t i, std::span<byte>::iterator& bytes)
+/**
+ * Encode a 32 bit signed integer into its UMB wire format.
+ *
+ * @param i input integer to encode.
+ * @param bytes output iterator to write encoded bytes to.
+ */
+inline constexpr void
+encode_int32(int32_t i, std::span<byte>::iterator& bytes)
 {
     *bytes++ = i & 0xff;
     *bytes++ = (i >> 8) & 0xff;
@@ -387,6 +456,14 @@ inline constexpr void encode_int32(int32_t i, std::span<byte>::iterator& bytes)
     *bytes++ = (i >> 24) & 0xff;
 }
 
+/**
+ * Encode a float's *encoded string* representation into input
+ * byte iterator in UMB wire format. This function should be
+ * used on the encoded string produced by \encode_float.
+ *
+ * @param float_str encoded string representation of a float.
+ * @param bytes output iterator to write encoded bytes to.
+ */
 inline constexpr void
 encode_float_str(const std::string& float_str, std::span<byte>::iterator& bytes)
 {
@@ -398,6 +475,14 @@ encode_float_str(const std::string& float_str, std::span<byte>::iterator& bytes)
     }
 }
 
+/**
+ * Encode a float into its intermediate encoded string format.
+ * The output of this function can be consumed by \encode_float_str
+ * to encode the string into its final UMB wire format.
+ *
+ * @param f input float to encode.
+ * @param out output string to write the result to.
+ */
 inline UMB_CONSTEXPR void
 encode_float(float f, std::string& out)
 {
@@ -415,7 +500,22 @@ encode_float(float f, std::string& out)
     }
 }
 
-inline constexpr void encode_string(const std::u16string& str, std::span<byte>::iterator& bytes)
+/**
+ * Encode a string of 16-bit characters into its UMB wire format.
+ * Effectively a UTF-16 string, but with characters supported in the Unicode
+ * range [0, 65535]. Mirrors UE3 internal string representation, so the encoding
+ * is more correctly UCS-2 with only the Basic Multilingual Plane (BMP) supported.
+ *
+ * TODO: endianness issues? Is there a chance the machines using UMB to
+ *   communicate use differing endianness for UTF16/UCS-2 strings?
+ *   Windows *should* always use UTF16-LE, but is there a chance UE3
+ *   clients/servers on other platforms use UTF16-BE?
+ *
+ * @param str input string to encode.
+ * @param bytes output iterator to write encoded bytes to.
+ */
+inline constexpr void
+encode_string(const std::u16string& str, std::span<byte>::iterator& bytes)
 {
     const auto str_size = str.size();
     check_dynamic_length(str_size);
@@ -433,6 +533,12 @@ inline constexpr void encode_string(const std::u16string& str, std::span<byte>::
     }
 }
 
+/**
+ * Encode a sequence of bytes into its UMB wire format.
+ *
+ * @param bytes_in input bytes to encode.
+ * @param bytes output iterator to write encoded bytes to.
+ */
 inline constexpr void
 encode_bytes(const std::span<const byte> bytes_in, std::span<byte>::iterator& bytes)
 {
