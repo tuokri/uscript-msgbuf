@@ -21,6 +21,17 @@ static_assert(sizeof(float) * std::numeric_limits<unsigned char>::digits == 32,
 namespace umb
 {
 
+#if _MSC_VER && !__INTEL_COMPILER
+// Workaround for C3615. Some constexpr functions
+// do not compile on MSVC, but compile without errors
+// on Clang and GCC.
+// TODO: They are probably not constexpr
+//   on Clang/GCC either, but they just allow it silently?
+#define UMB_CONSTEXPR
+#else
+#define UMB_CONSTEXPR constexpr
+#endif
+
 template<typename T = bool>
 concept BoolType = std::is_convertible_v<T, bool>;
 
@@ -387,12 +398,12 @@ encode_float_str(const std::string& float_str, std::span<byte>::iterator& bytes)
     }
 }
 
-inline constexpr void
+inline UMB_CONSTEXPR void
 encode_float(float f, std::string& out)
 {
     std::string str;
     str.resize(std::numeric_limits<float>::max_digits10 + 8);
-    auto fmt = f < 0 ? std::chars_format::fixed : std::chars_format::scientific;
+    const auto fmt = f < 0 ? std::chars_format::fixed : std::chars_format::scientific;
     if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt);
         ec == std::errc())
     {
