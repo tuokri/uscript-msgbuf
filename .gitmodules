@@ -1,0 +1,3 @@
+[submodule "tests/UDKTests/UDK-Lite"]
+	path = tests/UDKTests/UDK-Lite
+	url = https://github.com/tuokri/UDK-Lite.git
