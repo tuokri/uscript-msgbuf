@@ -33,5 +33,18 @@ vcpkg install inja boost doctest icu
 - Allow setting default values for message fields?
 
 - Add pre-build checker script that warns if build directory has old templates.
-  - This can happen if templates are removed and build directory is not manually
-    cleaned before doing a new build, causing potential failures or minor issues.
+    - This can happen if templates are removed and build directory is not manually
+      cleaned before doing a new build, causing potential failures or minor issues.
+
+- Consider declaring fields present in a packet with a 32 bit mask?
+    - Add another package type in addition to current one?
+        - Would not make sense for small messages if the mask overhead
+          is large relative to the packet size.
+    - Would limit the maximum number of fields in a message to 32.
+    - Would allow only sending the fields that are actually set in the message.
+    - Increases header overhead by 4 bytes.
+    - Increased complexity for little gain? How would this work with static
+      message coding in UnrealScript? Requires keeping track of set and unset
+      fields, making indexing impossible at template generation time?
+
+- Clean up float coding rewrite leftover comments.
