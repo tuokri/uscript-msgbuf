@@ -177,10 +177,6 @@ static final function {{ message.name }}_FromBytes(
     {% include "uscript_decode_static_int.jinja" %}
     {% set x = var_int("x", "get") -%}
 
-    {%- else if field.type == "float" %}
-    {% include "uscript_decode_static_float.jinja" %}
-    {% set x = var_int("x", "get") -%}
-
     {%- else if field.type == "byte" %}
     Msg.{{ field.name }} = Bytes[{{ pad(x, sz) }}{{ x }}];
     {% set x = x + 1 -%}
