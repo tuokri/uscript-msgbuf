@@ -53,6 +53,7 @@ bool {{ message.name }}::from_bytes(const std::span<const ::umb::byte> bytes)
 {
     // TODO: do this without the try-catch?
     //  Set field to default on failure?
+    // TODO: actually, use std::expected!
     try
     {
         auto vi = bytes.cbegin();
@@ -60,6 +61,8 @@ bool {{ message.name }}::from_bytes(const std::span<const ::umb::byte> bytes)
         {
             return false;
         }
+        // TODO: verify header? Assume already verified?
+        // TODO: do we want a version that only takes the payload bytes?
         std::advance(vi, ::umb::g_header_size);
         {% include "cpp_decode_message.jinja" %}
         return true;
