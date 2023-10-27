@@ -36,11 +36,11 @@ TEST_CASE("encode decode empty message")
     CHECK_EQ(tmsg1, tmsg2);
 }
 
-TEST_CASE("encode decode message with dynamic data")
+TEST_CASE("encode decode message with dynamic string")
 {
     testmessages::umb::testmsg msg1;
     testmessages::umb::testmsg msg2;
-    msg1.set_ffffff(u"(this is a UTF-16 string with some text 'äsdfä'2ä34 --__@@)");
+    msg1.set_ffffff(u"this is a UTF-16 string with some text 'äsdfä'2ä34 --__@@");
 
     auto bytes = msg1.to_bytes();
     CHECK_EQ(bytes.size(), msg1.serialized_size());
@@ -48,27 +48,46 @@ TEST_CASE("encode decode message with dynamic data")
     auto ok = msg2.from_bytes(bytes);
     CHECK(ok);
 
-    const auto str1 = msg1.ffffff();
-    const auto str2 = msg2.ffffff();
-    const auto u16str1 = icu::UnicodeString(str1.data());
-    const auto u16str2 = icu::UnicodeString(str2.data());
+    auto str1 = msg1.ffffff();
+    auto str2 = msg2.ffffff();
+    auto u16str1 = icu::UnicodeString(str1.data());
+    auto u16str2 = icu::UnicodeString(str2.data());
     CHECK_EQ(u16str1, u16str2);
     CHECK_EQ(msg1, msg2);
     CHECK_EQ(str1, str2);
 
-    testmessages::umb::testmsg msg3;
-    testmessages::umb::testmsg msg4;
-    msg3.set_a_field_with_some_bytes_that_do_some_things(bytes);
-
-    bytes = msg3.to_bytes();
-
-    CHECK_EQ(bytes.size(), msg3.serialized_size());
-    ok = msg4.from_bytes(bytes);
+    // Reset the string and check again.
+    msg1.set_ffffff(u"");
+    bytes = msg1.to_bytes();
+    ok = msg2.from_bytes(bytes);
     CHECK(ok);
-
+    str1 = msg1.ffffff();
+    str2 = msg2.ffffff();
+    u16str1 = icu::UnicodeString(str1.data());
+    u16str2 = icu::UnicodeString(str2.data());
+    CHECK_EQ(u16str1, u16str2);
     CHECK_EQ(msg1, msg2);
     CHECK_EQ(str1, str2);
+}
 
+TEST_CASE("encode decode message with dynamic bytes")
+{
+    testmessages::umb::testmsg msg3;
+    testmessages::umb::testmsg msg4;
+
+    std::vector<::umb::byte> field_bytes = {0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 10, 0, 0, 0, 5, 55, 255};
+    msg3.set_a_field_with_some_bytes_that_do_some_things(field_bytes);
+
+    auto bytes = msg3.to_bytes();
+
+    CHECK_EQ(bytes.size(), msg3.serialized_size());
+    bool ok = msg4.from_bytes(bytes);
+    CHECK(ok);
+
+    auto msg4_bytes = msg4.to_bytes();
+
+    CHECK_EQ(bytes, msg4_bytes);
+    CHECK_EQ(msg3, msg4);
     CHECK_EQ(msg3.serialized_size(), msg4.serialized_size());
 
     msg3.set_aa(58484);
