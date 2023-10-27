@@ -3,6 +3,9 @@
 
 #pragma once
 
+// TODO: when encoding dynamic fields, truncate fields longer
+//  than maximum size silently? Better than returning an error?
+
 #include <charconv>
 #include <concepts>
 #include <format>
@@ -36,6 +39,8 @@ template<typename T = bool>
 concept BoolType = std::is_convertible_v<T, bool>;
 
 // TODO: instead of throwing, use std::expected?
+//   - decoding functions should return std::expected<DECODED_TYPE, ERROR_CODE>
+//   - how to deal with encoding errors? just return the code without std::expected?
 
 template<typename T = const byte>
 inline constexpr bool
@@ -352,9 +357,9 @@ decode_bytes(
     check_bounds(i, bytes, size);
     std::vector<byte> b;
     b.reserve(size);
-    for (const auto& byte = *i; i != bytes.cend() && b.size() < size; ++i)
+    while (i != bytes.cend() && b.size() < size)
     {
-        b.emplace_back(byte);
+        b.emplace_back(*i++);
     }
     out = std::move(b);
 }
@@ -435,7 +440,8 @@ encode_byte(byte b, std::span<byte>::iterator& bytes)
  * @param i input integer to encode.
  * @param bytes output iterator to write encoded bytes to.
  */
-inline constexpr void encode_uint16(uint16_t i, std::span<byte>::iterator& bytes)
+inline constexpr void
+encode_uint16(uint16_t i, std::span<byte>::iterator& bytes)
 {
     *bytes++ = i & 0xff;
     *bytes++ = (i >> 8) & 0xff;
