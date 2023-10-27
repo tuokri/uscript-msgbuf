@@ -19,6 +19,7 @@ constexpr auto g_cpp_src_extension = ".umb.cpp";
 constexpr auto g_cpp_hdr_template = "cpp_header.jinja";
 constexpr auto g_cpp_src_template = "cpp_source.jinja";
 constexpr auto g_uscript_template = "uscript.jinja";
+constexpr auto g_uscript_test_mutator_template = "uscript_test_mutator.jinja";
 constexpr auto g_uscript_message_handler_template = "uscript_message_handler.jinja";
 
 constexpr auto g_default_clang_format_config = ".umb.output.clang-format";
