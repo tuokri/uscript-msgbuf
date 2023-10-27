@@ -464,12 +464,12 @@ constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args)
     return bp_get<bool>(bps, name, "boundary");
 };
 
+// TODO: take in string args as fs::paths?
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
-                    const std::string& uscript_out_dir)
+                    const std::string& filename, const std::string& uscript_out_dir)
 {
     const auto r = env.render_file(file, data);
-    fs::path out_filename = fs::path(
-        data["class_name"].get<std::string>()).filename().replace_extension(".uc");
+    fs::path out_filename = fs::path{filename};
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
     std::cout << std::format("writing '{}\n'", out_file.string());
     fs::ofstream out{out_file};
@@ -535,7 +535,11 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
 }
 
 void
-render(const std::string& file, const std::string& uscript_out_dir, const std::string& cpp_out_dir)
+render(
+    const std::string& file,
+    const std::string& uscript_out_dir,
+    const std::string& cpp_out_dir,
+    const std::string& uscript_test_mutator = "")
 {
     inja::Environment env;
 
@@ -613,14 +617,28 @@ render(const std::string& file, const std::string& uscript_out_dir, const std::s
     fs::path us_template = template_dir / ::umb::g_uscript_template;
     fs::path cpp_hdr_template = template_dir / ::umb::g_cpp_hdr_template;
     fs::path cpp_src_template = template_dir / ::umb::g_cpp_src_template;
+    fs::path us_test_mutator_template = template_dir / ::umb::g_uscript_test_mutator_template;
+
+    const auto uscript_out_name = fs::path(
+        data["class_name"].get<std::string>()).filename().replace_extension(".uc").string();
 
     std::cout << std::format("rendering '{}'\n", file);
-    render_uscript(env, us_template.string(), data, uscript_out_dir);
+    render_uscript(env, us_template.string(), data, uscript_out_name, uscript_out_dir);
     render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir);
+
+    if (!uscript_test_mutator.empty())
+    {
+        data["uscript_test_mutator"] = uscript_test_mutator;
+        const auto us_test_cmdlet_out_name = uscript_test_mutator + ".uc";
+        render_uscript(env, us_test_mutator_template.string(), data, us_test_cmdlet_out_name,
+                       uscript_out_dir);
+    }
 }
 
 } // namespace
 
+// TODO: split this into a library + executable?
+//   -> easier to test generation library in unit tests
 int main(int argc, char* argv[])
 {
     try
@@ -637,6 +655,9 @@ int main(int argc, char* argv[])
                            "C++ code generation output directory");
         desc.add_options()("input-file",
                            po::value<std::vector<std::string>>()->required(), "input file(s)");
+        desc.add_options()("uscript-test-mutator",
+                           po::value<std::string>()->default_value(""),
+                           "name of the generated UnrealScript test suite mutator");
 
         po::positional_options_description p;
         p.add("input-file", -1);
@@ -661,10 +682,11 @@ int main(int argc, char* argv[])
 
         const auto uscript_out_dir = vm["uscript-out"].as<std::string>();
         const auto cpp_out_dir = vm["cpp-out"].as<std::string>();
+        auto uscript_test_mutator = vm["uscript-test-mutator"].as<std::string>();
 
         for (const auto& file: vm["input-file"].as<std::vector<std::string>>())
         {
-            render(file, uscript_out_dir, cpp_out_dir);
+            render(file, uscript_out_dir, cpp_out_dir, uscript_test_mutator);
         }
     }
     catch (const std::exception& ex)
