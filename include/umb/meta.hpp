@@ -1,0 +1,6 @@
+#ifndef USCRIPT_MSGBUF_META_HPP
+#define USCRIPT_MSGBUF_META_HPP
+
+#pragma once
+
+#endif // USCRIPT_MSGBUF_META_HPP
