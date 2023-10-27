@@ -142,7 +142,7 @@ public:
     // The mask for the exponent bits.
     static const Bits kExponentBitMask = ~(kSignBitMask | kFractionBitMask);
 
-    // How many ULP's (Units in the Last Place) we want to tolerate when
+    // How many ULPs (Units in the Last Place) we want to tolerate when
     // comparing two numbers.  The larger the value, the more error we
     // allow.  A 0 value means that two numbers must be exactly the same
     // to be considered equal.
