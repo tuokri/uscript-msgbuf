@@ -1,13 +1,37 @@
-class {{ uscript_test_mutator }} extends Mutator;
+class {{ uscript_test_mutator }} extends Mutator
+    config(Mutator_{{ uscript_test_mutator }});
 
-event int Main(string Params)
+`define ulog(msg, cond, tag) \
+    `log(self.class.name $ "::" $ GetFuncName() $ "(): " $ `msg, \
+    `cond, \
+    `if(`tag) name("UMBTests-" $ string(`tag)) `else 'UMBTests' `endif)
+
+function bool MutatorIsAllowed()
 {
-    local int Failures;
-    Failures = 0;
+    return True;
+}
+
+function InitMutator(string Options, out string ErrorMessage)
+{
+    `ulog("Options:" @ Options @ "ErrorMessage:" @ ErrorMessage);
+    super.InitMutator(Options, ErrorMessage);
+}
+
+function PostBeginPlay()
+{
+    // local PlayerController PC;
+
+    `ulog(self @ "initialized");
+
+    super.PostBeginPlay();
 
 {% for message in messages %}
 
 {% endfor %}
 
-    return Failures;
+    // PC = GetALocalPlayerController();
+    // `ulog("PC:" @ PC);
+
+    `ulog("quitting");
+    ConsoleCommand("QUIT", True);
 }
