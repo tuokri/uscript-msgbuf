@@ -325,10 +325,9 @@ async def main():
     ec = await proc.wait()
     print(f"UDK.exe exited with code: {ec}")
 
-    # TODO: rename commandlet -> mutator everywhere.
     test_proc = await asyncio.create_subprocess_exec(
         (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
-        *["Entry?Mutator=UMBTestsMutator", "-UNATTENDED"],
+        *["Entry?Mutator=UMBTests.UMBTestsMutator", "-UNATTENDED", "-log"],
     )
 
     test_ec = await test_proc.wait()
@@ -342,6 +341,9 @@ async def main():
 
     poker_event.set()
     poker.join(timeout=5)
+
+    if poker.is_alive():
+        raise RuntimeError("timed out waiting for poker thread")
 
 
 if __name__ == "__main__":
