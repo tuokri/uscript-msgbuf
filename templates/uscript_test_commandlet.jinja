@@ -1,0 +1,13 @@
+class {{ uscript_test_mutator }} extends Mutator;
+
+event int Main(string Params)
+{
+    local int Failures;
+    Failures = 0;
+
+{% for message in messages %}
+
+{% endfor %}
+
+    return Failures;
+}

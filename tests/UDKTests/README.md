@@ -12,6 +12,7 @@ in [defaults.py](defaults.py).
 
 | Variable              | Description                                         |
 |-----------------------|-----------------------------------------------------|
+| UDK_TEST_TIMEOUT      | script compilation and test timeout in seconds      |
 | UDK_LITE_TAG          | UDK-Lite repository Git tag                         |
 | UDK_LITE_ROOT         | path to UDK-Lite root                               |
 | UDK_LITE_RELEASE_URL  | UDK-Lite binary and package release URL             | 

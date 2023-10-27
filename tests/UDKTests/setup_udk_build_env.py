@@ -1,25 +1,84 @@
+import asyncio
 import glob
 import json
 import os
 import shutil
+import threading
+import time
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from pathlib import Path
-from pprint import pprint
+from typing import IO
 
 import httpx
 import py7zr
 import tqdm
+import watchdog.events
+import watchdog.observers
+from udk_configparser import UDKConfigParser
 
 import defaults
 
 SCRIPT_DIR = Path(__file__).parent
 CACHE_DIR = SCRIPT_DIR / ".cache/"
 
+UDK_TEST_TIMEOUT = defaults.UDK_TEST_TIMEOUT
+
+
+class LogWatcher(watchdog.events.FileSystemEventHandler):
+    def __init__(self, event: threading.Event, log_file: Path):
+        self._event = event
+        self._log_file = log_file
+        self._log_filename = log_file.name
+        self._fh: IO | None = None
+        self._pos = 0
+
+    def on_any_event(self, event: watchdog.events.FileSystemEvent):
+        if Path(event.src_path).name == self._log_filename:
+            print(f"fs event: {event.event_type}, {event.src_path}")
+            self._fh = open(self._log_file)
+
+    def on_modified(self, event: watchdog.events.FileSystemEvent):
+        path = Path(event.src_path)
+        if path.name == self._log_filename:
+            if not self._fh:
+                raise RuntimeError("no log file handle")
+
+            size = self._log_file.stat().st_size
+            if size == 0:
+                print("log file cleared")
+                self._pos = 0
+                return
+
+            self._fh.seek(self._pos)
+
+            log_end = False
+            # TODO: detect partial lines. Just read the entire
+            #   file again in the end to get fully intact data?
+            while line := self._fh.readline():
+                self._pos = self._fh.tell()
+
+                print(line.strip())
+
+                if "Log file closed" in line:
+                    log_end = True
+
+            if log_end:
+                print("setting stop event")
+                self._event.set()
+
+    def __del__(self):
+        if self._fh:
+            try:
+                self._fh.close()
+            except OSError:
+                pass
+
 
 @dataclass
 class Cache:
+    udk_lite_tag: str = ""
     pkg_archive: str = ""
     pkg_archive_extracted_files: list[str] = field(default_factory=list)
 
@@ -61,11 +120,22 @@ def download_file(url: str, out_file: Path):
 
 
 def remove_old_extracted(cache: Cache):
+    dirs = []
+
     for file in cache.pkg_archive_extracted_files:
         p = Path(file).resolve()
-        if p.exists():
+        if p.exists() and p.is_file():
             print(f"removing '{p}'")
             p.unlink(missing_ok=True)
+        elif p.is_dir():
+            dirs.append(p)
+
+    for d in dirs:
+        is_empty = not any(d.iterdir())
+        if is_empty:
+            shutil.rmtree(d)
+        else:
+            print(f"not removing non-empty directory: '{d}'")
 
 
 def already_extracted(archive_file: str, out_dir: Path, cache: Cache) -> bool:
@@ -79,7 +149,17 @@ def already_extracted(archive_file: str, out_dir: Path, cache: Cache) -> bool:
     return extracted_file.exists() and is_cached
 
 
-def main():
+# Convince UDK.exe to flush the log file.
+# TODO: this is fucking stupid.
+def poke_file(file: Path, event: threading.Event):
+    while not event.is_set():
+        file.stat()
+        time.sleep(1)
+
+
+async def main():
+    global UDK_TEST_TIMEOUT
+
     hard_reset = False
     cache = Cache()
 
@@ -102,6 +182,7 @@ def main():
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         write_cache(cache_file, cache)
 
+    UDK_TEST_TIMEOUT = os.environ.get("UDK_TEST_TIMEOUT", defaults.UDK_TEST_TIMEOUT)
     udk_lite_tag = os.environ.get("UDK_LITE_TAG", defaults.UDK_LITE_TAG)
     udk_lite_root = Path(os.environ.get("UDK_LITE_ROOT", defaults.UDK_LITE_ROOT))
     udk_lite_release_url = os.environ.get("UDK_LITE_RELEASE_URL", defaults.UDK_LITE_RELEASE_URL)
@@ -115,12 +196,12 @@ def main():
     print(f"UDK_LITE_RELEASE_URL={udk_lite_release_url}")
     print(f"USCRIPT_MESSAGE_FILES={uscript_message_files}")
 
-    input_msgs = [
+    input_script_msg_files = [
         resolve_script_path(path) for path in
         glob.glob(uscript_message_files, recursive=True)
     ]
 
-    if not input_msgs:
+    if not input_script_msg_files:
         raise RuntimeError("no input script files found")
 
     # Check if cache tag, url, etc. match current ones, if not -> reinit.
@@ -128,6 +209,10 @@ def main():
 
     dl_pkg_archive = False
     pkg_file = CACHE_DIR / Path(udk_lite_release_url).name
+
+    if cache.udk_lite_tag != udk_lite_tag:
+        print(f"cached UDK-Lite tag '{cache.udk_lite_tag}' does not match '{udk_lite_tag}'")
+        dl_pkg_archive = True
 
     pkg_file_outdated = cache.pkg_archive != str(pkg_file)
     if pkg_file_outdated:
@@ -140,6 +225,7 @@ def main():
 
     if dl_pkg_archive:
         download_file(udk_lite_release_url, pkg_file)
+        cache.udk_lite_tag = udk_lite_tag
         remove_old_extracted(cache)
         cache.pkg_archive_extracted_files = []
     else:
@@ -160,11 +246,7 @@ def main():
             t for t in targets
             if (udk_lite_root / t).is_dir()
         ]
-        pprint(dirs)
         targets = [t for t in targets if t not in dirs]
-
-        for d in dirs:
-            Path(d).mkdir(parents=True, exist_ok=True)
 
         out_files = [
             str((udk_lite_root / target).resolve())
@@ -176,6 +258,9 @@ def main():
             for d in dirs
         ]
 
+        for od in out_dirs:
+            Path(od).mkdir(parents=True, exist_ok=True)
+
         if targets:
             print(f"extracting {len(targets)} targets to '{udk_lite_root}'")
             pkg.extract(udk_lite_root, targets)
@@ -184,8 +269,80 @@ def main():
         cache.pkg_archive_extracted_files = list(set(cache.pkg_archive_extracted_files))
         write_cache(cache_file, cache)
 
-        pprint(targets)
+    cfg_file = udk_lite_root / "UDKGame/Config/DefaultEngine.ini"
+    cfg = UDKConfigParser(comment_prefixes=";")
+    cfg.read(cfg_file)
+
+    pkg_name = "UMBTests"
+    edit_packages = cfg["UnrealEd.EditorEngine"].getlist("+EditPackages")
+    if pkg_name not in edit_packages:
+        edit_packages.append(pkg_name)
+        cfg["UnrealEd.EditorEngine"]["+EditPackages"] = "\n".join(edit_packages)
+
+    with cfg_file.open("w") as f:
+        cfg.write(f, space_around_delimiters=False)
+
+    for script_file in input_script_msg_files:
+        dst_dir = udk_lite_root / "Development/Src/UMBTests/Classes/"
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        dst = dst_dir / script_file.name
+        print(f"'{script_file}' -> '{dst}'")
+        shutil.copy(script_file, dst)
+
+    log_dir = udk_lite_root / "UDKGame/Logs/"
+    log_file = log_dir / "Launch.log"
+
+    compiler_event = threading.Event()
+    poker_event = threading.Event()
+
+    obs = watchdog.observers.Observer()
+    watcher = LogWatcher(compiler_event, log_file)
+    obs.schedule(watcher, str(log_dir))
+    obs.start()
+
+    proc = await asyncio.create_subprocess_exec(
+        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
+        *["make", "-useunpublished", "-log"],
+    )
+
+    poker = threading.Thread(
+        target=poke_file,
+        args=[log_file, poker_event],
+    )
+    poker.start()
+
+    ok = compiler_event.wait(timeout=UDK_TEST_TIMEOUT)
+
+    if not ok:
+        raise RuntimeError("timed out waiting for UDK.exe (compiler_event) stop event")
+
+    print("UDK.exe finished")
+
+    await (await asyncio.create_subprocess_exec(
+        *["taskkill", "/pid", str(proc.pid)]
+    )).wait()
+
+    ec = await proc.wait()
+    print(f"UDK.exe exited with code: {ec}")
+
+    # TODO: rename commandlet -> mutator everywhere.
+    test_proc = await asyncio.create_subprocess_exec(
+        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
+        *["Entry?Mutator=UMBTestsMutator", "-UNATTENDED"],
+    )
+
+    test_ec = await test_proc.wait()
+    print(f"UDK.exe UMB test run exited with code: {test_ec}")
+
+    obs.stop()
+    obs.join(timeout=UDK_TEST_TIMEOUT)
+
+    if obs.is_alive():
+        raise RuntimeError("timed out waiting for observer thread")
+
+    poker_event.set()
+    poker.join(timeout=5)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
