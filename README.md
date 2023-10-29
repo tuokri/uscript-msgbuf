@@ -46,5 +46,3 @@ vcpkg install inja boost doctest icu
     - Increased complexity for little gain? How would this work with static
       message coding in UnrealScript? Requires keeping track of set and unset
       fields, making indexing impossible at template generation time?
-
-- Clean up float coding rewrite leftover comments.

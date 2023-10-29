@@ -45,21 +45,16 @@ constexpr auto g_max_dynamic_size = 255;
 constexpr size_t g_sizeof_byte = 1;
 constexpr size_t g_sizeof_int32 = 4;
 constexpr size_t g_sizeof_uint16 = 2;
-// Floats are encoded as int32+int24 (integer part + fractional part).
-// Maximum value for the fractional part is 9999999.
-// TODO: float fix: actually, this is shit. We have to use strings for floats.
-// constexpr size_t g_sizeof_float = 7;
 constexpr size_t g_sizeof_uscript_char = 2;
 
 // All types with known static sizes in bytes.
 static const std::unordered_map<std::string, size_t> g_static_types{
-    {"byte",  g_sizeof_byte},
-    {"int",   g_sizeof_int32},
-    // TODO: float fix: {"float", g_sizeof_float},
+    {"byte", g_sizeof_byte},
+    {"int",  g_sizeof_int32},
     // NOTE: consecutive bools are packed as bit fields in bytes, thus
     //       the size of a bool in the packet can vary. However, it will
     //       always be known at message generation time.
-    {"bool",  g_sizeof_byte},
+    {"bool", g_sizeof_byte},
 };
 
 // All dynamic types with variable size i.e. header + data.
