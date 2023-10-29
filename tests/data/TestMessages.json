@@ -231,8 +231,8 @@
           "name": "some_byte_delimiter"
         },
         {
-          "type": "float",
-          "name": "float_delimiter_asd"
+          "type": "int",
+          "name": "int_delimiter_asd"
         },
         {
           "type": "bool",
