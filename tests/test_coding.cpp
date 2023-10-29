@@ -131,7 +131,8 @@ TEST_CASE("encode decode float fields")
     testmessages::umb::JustAnotherTestMessage jatm1;
     testmessages::umb::JustAnotherTestMessage jatm2;
 
-    jatm1.set_some_floatVAR(1.11111111111111);
+    const float ones = 1.11111111111111F;
+    jatm1.set_some_floatVAR(ones);
     std::vector<::umb::byte> vec = jatm1.to_bytes();
     bool ok = jatm2.from_bytes(vec);
     CHECK(ok);
@@ -167,7 +168,7 @@ TEST_CASE("encode decode float fields")
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
-    jatm1.set_some_floatVAR(0.1);
+    jatm1.set_some_floatVAR(0.1F);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
@@ -176,7 +177,7 @@ TEST_CASE("encode decode float fields")
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
-    jatm1.set_some_floatVAR(35848.9858405);
+    jatm1.set_some_floatVAR(35848.9858405F);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
@@ -185,7 +186,7 @@ TEST_CASE("encode decode float fields")
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
-    jatm1.set_some_floatVAR(0.00583885);
+    jatm1.set_some_floatVAR(0.00583885F);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
@@ -194,7 +195,7 @@ TEST_CASE("encode decode float fields")
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
-    jatm1.set_some_floatVAR(-0.00583885);
+    jatm1.set_some_floatVAR(-0.00583885F);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
@@ -203,7 +204,7 @@ TEST_CASE("encode decode float fields")
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
-    jatm1.set_some_floatVAR(-5885.000838869695000);
+    jatm1.set_some_floatVAR(-5885.000838869695000F);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
