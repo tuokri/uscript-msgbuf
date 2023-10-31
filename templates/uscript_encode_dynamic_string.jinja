@@ -1,5 +1,5 @@
     StrLen = Len(Msg.{{ field.name }});
-    Bytes.Length = Bytes.Length + (StrLen * {{ sizeof_uscript_char }}) + 1;
+    Bytes.Length = Bytes.Length + (StrLen * {{ sizeof_uscript_char }});
     Bytes[I++] = StrLen;
     for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
     {
