@@ -287,6 +287,36 @@
           "name": "partial_byte_pack_end_1"
         }
       ]
+    },
+    {
+      "name": "MultiStringMessage",
+      "fields": [
+        {
+          "type": "string",
+          "name": "a"
+        },
+        {
+          "type": "string",
+          "name": "b"
+        },
+        {
+          "type": "string",
+          "name": "c"
+        }
+      ]
+    },
+    {
+      "name": "DualStringMessage",
+      "fields": [
+        {
+          "type": "string",
+          "name": "a"
+        },
+        {
+          "type": "string",
+          "name": "b"
+        }
+      ]
     }
   ]
 }
