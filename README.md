@@ -46,3 +46,6 @@ vcpkg install inja boost doctest icu
     - Increased complexity for little gain? How would this work with static
       message coding in UnrealScript? Requires keeping track of set and unset
       fields, making indexing impossible at template generation time?
+
+- If the generator executable is changed and compiled, all templates should be
+  invalidated. Is there a smart way to do this with CMake?
