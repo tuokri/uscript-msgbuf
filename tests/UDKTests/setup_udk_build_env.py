@@ -37,7 +37,7 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
     def on_any_event(self, event: watchdog.events.FileSystemEvent):
         if Path(event.src_path).name == self._log_filename:
             print(f"fs event: {event.event_type}, {event.src_path}")
-            self._fh = open(self._log_file)
+            self._fh = open(self._log_file, errors="replace")
 
     def on_modified(self, event: watchdog.events.FileSystemEvent):
         path = Path(event.src_path)
@@ -327,7 +327,12 @@ async def main():
 
     test_proc = await asyncio.create_subprocess_exec(
         (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
-        *["Entry?Mutator=UMBTests.UMBTestsMutator", "-UNATTENDED", "-log"],
+        *[
+            "server",
+            "Entry?Mutator=UMBTests.UMBTestsMutator",
+            "-UNATTENDED",
+            "-log",
+        ],
     )
 
     test_ec = await test_proc.wait()
