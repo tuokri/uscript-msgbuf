@@ -124,6 +124,30 @@ TEST_CASE("encode decode boolean packing message")
     CHECK_EQ(bpm1, bpm2);
 }
 
+TEST_CASE("encode decode static boolean packing message")
+{
+    testmessages::umb::STATIC_BoolPackingMessage sbpm1;
+    testmessages::umb::STATIC_BoolPackingMessage sbpm2;
+
+    sbpm1.set_bool_10_part_pack__0(false);
+    sbpm1.set_bool_10_part_pack__5(false);
+    sbpm1.set_pack2(false);
+    sbpm1.set_pack1(true);
+    sbpm1.set_int_pack_delimiter(69);
+
+    std::vector<::umb::byte> vec;
+    const auto ss = sbpm1.serialized_size();
+    vec.resize(ss);
+    bool ok = sbpm1.to_bytes(vec);
+    const auto vec2 = sbpm1.to_bytes();
+    CHECK(ok);
+    CHECK_EQ(vec, vec2);
+
+    ok = sbpm2.from_bytes(vec);
+    CHECK(ok);
+    CHECK_EQ(sbpm1, sbpm2);
+}
+
 TEST_CASE("encode decode float fields")
 {
     using Float = ::umb::internal::Float;
