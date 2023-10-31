@@ -5,20 +5,41 @@
 
 #pragma once
 
-#include "umb/umb.hpp"
+#include <array>
+#include <cstdint>
+
+#include "umb/meta.hpp"
+
+#include "{{class_name }}{{ cpp_hdr_extension }}"
 
 namespace {{ cpp_namespace }}::meta
 {
 
-// TODO: message concept?
-// TODO: have a meta.hpp in include/umb that defines base meta/reflection templates
-//   -> implement meta templates for each message in the generated header, not here
-
-template</*MessageConcept*/ M>
-constexpr /* some_attribute_here? */
+template<uint16_t MessageType>
+class Message
 {
+public:
+    [[nodiscard]] static constexpr size_t static_size()
+    {
+        if constexpr (MessageType < ::{{ cpp_namespace }}::MessageType)
+        {
 
-}
+        }
+        else
+        {
+            static_assert(false);
+        }
+    }
+
+    // Message<TYPE_HERE>::field<1>::type()?
+    // Message<TYPE_HERE>::field<1>.type()?
+
+    template<size_t N>
+    [[nodiscard]] static constexpr ::umb::meta::Field field<N>()
+    {
+        return {};
+    }
+};
 
 }; // {{ cpp_namespace }}
 
