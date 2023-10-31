@@ -185,9 +185,9 @@ MsgAnalysisResult analyze_message(const inja::json& data)
             bp.field_name = field["name"];
             bp.field_index = i;
             bp.pack_index = pack_idx;
-            bp.byte = static_cast<::umb::byte>(consecutive_all / ::umb::g_bools_in_byte);
+            bp.byte = static_cast<::umb::byte>(std::floor(
+                consecutive_all / ::umb::g_bools_in_byte));
 
-            consecutive_all = consecutive;
             ++consecutive;
             pack_idx = (pack_idx + 1) % static_cast<::umb::byte>(::umb::g_bools_in_byte);
 
@@ -201,14 +201,18 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         }
         else
         {
+            // Jump by entire pack length, even if the pack was not
+            // really a pack, or if the pack wasn't fully filled by
+            // booleans. This is so we can get the total size of all
+            // booleans used in the message, including the wasted space
+            // used by lone bools or partial boolean packs.
+            consecutive_all += ::umb::g_bools_in_byte;
+
             // Started a bool pack "range" earlier, but it turned
             // out to be a single bool. Drop it.
             if (consecutive == 1)
             {
                 bool_packs.pop_back();
-                // NOTE: not decrementing consecutive_all on purpose here to
-                // get the total size used by bools, including both packed and
-                // lone bools.
             }
             else if (consecutive > 1)
             {
@@ -236,7 +240,8 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     auto num_packed_bytes = 0;
     if (max_byte_bp != bool_packs.cend())
     {
-        num_packed_bytes = max_byte_bp->byte;
+        // Byte refers to index here, add 1 to get total amount of them.
+        num_packed_bytes = max_byte_bp->byte + 1;
     }
     const auto total_pack_size = num_packed_bytes * ::umb::g_sizeof_byte;
 
@@ -611,6 +616,7 @@ render(
     data["payload_size"] = ::umb::g_payload_size;
     data["packet_size"] = ::umb::g_packet_size;
     data["sizeof_uscript_char"] = ::umb::g_sizeof_uscript_char;
+    data["max_dynamic_size"] = ::umb::g_max_dynamic_size;
 
     const auto prog_dir = boost::dll::program_location().parent_path();
     fs::path template_dir = prog_dir / ::umb::g_template_dir;
