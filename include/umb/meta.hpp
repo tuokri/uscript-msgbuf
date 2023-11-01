@@ -6,7 +6,7 @@
 namespace umb::meta
 {
 
-template<typename T>
+template<auto>
 struct always_false: std::false_type
 {
 };

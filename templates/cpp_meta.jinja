@@ -13,13 +13,13 @@ public:
     {% if message.has_static_size %}
             return {{ message.static_size }};
     {% else %}
-            static_assert(::umb::meta::always_false<MT>, "{{ message.name }} is not static");
+            static_assert(::umb::meta::always_false<MT>::value, "{{ message.name }} is not static");
     {% endif %}
         }
 {% endfor %}
         else
         {
-            static_assert(::umb::meta::always_false<MT>, "invalid MessageType");
+            static_assert(::umb::meta::always_false<MT>::value, "invalid MessageType");
         }
     }
 
@@ -37,12 +37,12 @@ public:
             {% endfor %}
             else
             {
-                static_assert(::umb::meta::always_false<N>);
+                static_assert(::umb::meta::always_false<N>::value);
             }
         }
         else
         {
-            static_assert(::umb::meta::always_false<N>);
+            static_assert(::umb::meta::always_false<N>::value);
         }
 {% endfor %}
     }
