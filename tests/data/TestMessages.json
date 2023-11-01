@@ -1,6 +1,7 @@
 {
   "cpp_namespace": "testmessages::umb",
   "class_name": "TestMessages",
+  "__generate_test_mutator": true,
   "messages": [
     {
       "name": "GetSomeStuff",
