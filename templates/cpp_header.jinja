@@ -51,4 +51,8 @@ private:
 
 } // {{ cpp_namespace }}
 
+#ifdef UMB_INCLUDE_META
+{% include "cpp_meta.jinja" %}
+#endif
+
 #endif // {{ upper(class_name) }}_USCRIPT_MSGBUF_GENERATED_HDR_HPP
