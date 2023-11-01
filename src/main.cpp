@@ -32,6 +32,8 @@ namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace bp = boost::process::v2;
 
+// Utility class for setting and getting global Inja
+// variables and passing them to and from included templates.
 class Var
 {
 public:
@@ -469,6 +471,14 @@ constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args)
     return bp_get<bool>(bps, name, "boundary");
 };
 
+constexpr auto meta_field_type = [](const inja::Arguments& args)
+{
+    // UMB type string -> FieldType -> FieldType as string.
+    const auto& type = args.at(0)->get<std::string>();
+    ::umb::meta::FieldType ft = ::umb::meta::from_type_string(type);
+    return ::umb::meta::to_string(ft);
+};
+
 // TODO: take in string args as fs::paths?
 void render_uscript(inja::Environment& env, const std::string& file, const inja::json& data,
                     const std::string& filename, const std::string& uscript_out_dir)
@@ -565,6 +575,7 @@ render(
     env.add_callback("bp_pack_index", 2, bp_pack_index);
     env.add_callback("bp_is_last", 2, bp_is_last);
     env.add_callback("bp_is_multi_pack_boundary", 2, bp_is_multi_pack_boundary);
+    env.add_callback("meta_field_type", 1, meta_field_type);
     env.add_void_callback("error", error);
 
     auto data = env.load_json(file);
@@ -632,7 +643,9 @@ render(
     render_uscript(env, us_template.string(), data, uscript_out_name, uscript_out_dir);
     render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir);
 
-    if (!uscript_test_mutator.empty())
+    const bool should_gen_mutator = data["__generate_test_mutator"].get<bool>();
+
+    if (should_gen_mutator && !uscript_test_mutator.empty())
     {
         data["uscript_test_mutator"] = uscript_test_mutator;
         const auto us_test_cmdlet_out_name = uscript_test_mutator + ".uc";
