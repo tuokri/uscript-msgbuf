@@ -163,8 +163,14 @@ target_compile_options(
 )
 
 option(BUILD_TESTS "build tests" OFF)
+option(UMB_INCLUDE_META "include meta/reflection C++ templates" ON)
 
 if (BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif ()
+
+if (UMB_INCLUDE_META)
+    target_compile_definitions(uscript_msgbuf_generator PRIVATE -DUMB_INCLUDE_META)
+    target_compile_definitions(umb INTERFACE -DUMB_INCLUDE_META)
 endif ()

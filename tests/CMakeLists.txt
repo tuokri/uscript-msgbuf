@@ -12,10 +12,11 @@ target_compile_features(test_coding PRIVATE cxx_std_23)
 set(UMB_USCRIPT_TEST_MUTATOR "UMBTestsMutator")
 set(UMB_GENERATED_TEST_OUT ${CMAKE_CURRENT_SOURCE_DIR}/out)
 set(UMB_GENERATED_OUTPUT_TEST_FILES "")
-file(GLOB TEST_MSG_FILES data/*.json)
+file(GLOB UMB_TEST_MSG_DEFINITION_FILES data/*.json)
+cmake_print_variables(UMB_TEST_MSG_DEFINITION_FILES)
 # TODO: have the generator output this list instead of building it manually here?
 # TODO: this will skip some UScript generated files.
-foreach (test_msg_file ${TEST_MSG_FILES})
+foreach (test_msg_file ${UMB_TEST_MSG_DEFINITION_FILES})
     cmake_path(GET test_msg_file STEM test_msg_stem)
     cmake_path(SET msg_out_uc NORMALIZE ${UMB_GENERATED_TEST_OUT}/${test_msg_stem}.uc)
     cmake_path(SET msg_out_cpp NORMALIZE ${UMB_GENERATED_TEST_OUT}/${test_msg_stem}.umb.cpp)
@@ -30,11 +31,11 @@ endif ()
 add_custom_command(
     OUTPUT ${UMB_GENERATED_OUTPUT_TEST_FILES}
     COMMAND ${CMAKE_BINARY_DIR}/uscript_msgbuf_generator${CMAKE_EXECUTABLE_SUFFIX}
-    ${TEST_MSG_FILES}
+    ${UMB_TEST_MSG_DEFINITION_FILES}
     --cpp-out=${UMB_GENERATED_TEST_OUT}
     --uscript-out=${UMB_GENERATED_TEST_OUT}
     --uscript-test-mutator=${UMB_USCRIPT_TEST_MUTATOR}
-    DEPENDS ${TEST_MSG_FILES} ${UMB_TEMPLATE_FILES}
+    DEPENDS ${UMB_TEST_MSG_DEFINITION_FILES} ${UMB_TEMPLATE_FILES}
 )
 add_custom_target(generate_test_data ALL DEPENDS ${UMB_GENERATED_OUTPUT_TEST_FILES})
 add_dependencies(generate_test_data uscript_msgbuf_generator)
@@ -42,6 +43,8 @@ add_dependencies(generate_test_data copy_templates)
 
 # TODO: do not pass .uc files to this library.
 add_library(test_msg_library ${UMB_GENERATED_OUTPUT_TEST_FILES})
+# Always enable reflection for testing, regardless of global setting.
+target_compile_definitions(test_msg_library PRIVATE -DUMB_INCLUDE_META)
 target_include_directories(test_msg_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/out)
 target_link_libraries(test_msg_library PUBLIC umb ICU::uc ICU::dt ICU::in ICU::io)
 add_dependencies(
