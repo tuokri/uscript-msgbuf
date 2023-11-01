@@ -1,0 +1,16 @@
+{
+  "cpp_namespace": "moremessages",
+  "class_name": "MoreMessages",
+  "__generate_test_mutator": false,
+  "messages": [
+    {
+      "name": "XGonGetIt",
+      "fields": [
+        {
+          "type": "int",
+          "name": "integerfield"
+        }
+      ]
+    }
+  ]
+}
