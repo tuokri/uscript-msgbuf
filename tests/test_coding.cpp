@@ -11,6 +11,7 @@
 
 #include "umb/umb.hpp"
 
+#include "MoreMessage.umb.hpp"
 #include "TestMessages.umb.hpp"
 
 TEST_CASE("encode decode empty message")
@@ -34,6 +35,19 @@ TEST_CASE("encode decode empty message")
     ok = tmsg2.from_bytes(bytes);
     CHECK(ok);
     CHECK_EQ(tmsg1, tmsg2);
+}
+
+TEST_CASE("encode decode empty message from MoreMessages")
+{
+    moremessages::XGonGetIt xggi1;
+    moremessages::XGonGetIt xggi2;
+
+    std::vector<::umb::byte> bytes = xggi1.to_bytes();
+    CHECK_EQ(bytes.size(), xggi1.serialized_size());
+
+    bool ok = xggi2.from_bytes(bytes);
+    CHECK(ok);
+    CHECK_EQ(xggi1, xggi2);
 }
 
 TEST_CASE("encode decode message with dynamic string")
