@@ -9,7 +9,7 @@ const PACKET_SIZE = {{ packet_size }};
 
 const {{ uscript_message_type_prefix }}_None = 0;
 {% for message in messages %}
-const {{ uscript_message_type_prefix }}_{{ message.name }} = {{ loop.index }};
+const {{ uscript_message_type_prefix }}_{{ message.name }} = {{ loop.index1 }};
 {% endfor %}
 
 // Describes the wire format used by this library.
