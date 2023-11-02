@@ -11,6 +11,14 @@ the `SendBinary` function.
 
 ## Building
 
+### Supported compilers
+
+Tested on the following compilers. UMB uses C++23 features, so building
+could also work on older compilers, depending on their C++23 support status.
+
+- GCC 13.1.0
+- MSVC 19.37.32825
+
 ### Dependencies
 
 - [Inja](https://github.com/pantor/inja)
