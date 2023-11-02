@@ -1,7 +1,9 @@
 import asyncio
+import enum
 import glob
 import json
 import os
+import re
 import shutil
 import threading
 import time
@@ -25,20 +27,55 @@ CACHE_DIR = SCRIPT_DIR / ".cache/"
 
 UDK_TEST_TIMEOUT = defaults.UDK_TEST_TIMEOUT
 
+LOG_RE = re.compile(r"^\[[\d.]+]\s(\w+):(.*)$")
+
+
+class State(enum.StrEnum):
+    NONE = enum.auto()
+    BUILDING = enum.auto()
+    TESTING = enum.auto()
+
 
 class LogWatcher(watchdog.events.FileSystemEventHandler):
-    def __init__(self, event: threading.Event, log_file: Path):
-        self._event = event
+    def __init__(
+            self,
+            building_event: threading.Event,
+            testing_event: threading.Event,
+            log_file: Path,
+    ):
+        self._building_event = building_event
+        self._testing_event = testing_event
         self._log_file = log_file
         self._log_filename = log_file.name
         self._fh: IO | None = None
         self._pos = 0
+        self._state = State.NONE
+        self._warnings = 0
+        self._errors = 0
+
+    @property
+    def warnings(self) -> int:
+        return self._warnings
+
+    @property
+    def errors(self) -> int:
+        return self._errors
+
+    @property
+    def state(self) -> State:
+        return self._state
+
+    @state.setter
+    def state(self, state: State):
+        print(f"setting state: {state}")
+        self._state = state
 
     def on_any_event(self, event: watchdog.events.FileSystemEvent):
         if Path(event.src_path).name == self._log_filename:
             print(f"fs event: {event.event_type}, {event.src_path}")
             self._fh = open(self._log_file, errors="replace")
 
+    # TODO: better state handling, this is a mess ATM.
     def on_modified(self, event: watchdog.events.FileSystemEvent):
         path = Path(event.src_path)
         if path.name == self._log_filename:
@@ -59,14 +96,29 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
             while line := self._fh.readline():
                 self._pos = self._fh.tell()
 
+                if match := LOG_RE.match(line):
+                    if match.group(1).lower() == "error":
+                        if match.group(2):
+                            self._errors += 1
+                    elif match.group(1).lower() == "warning":
+                        if match.group(2):
+                            self._warnings += 1
+
                 print(line.strip())
 
-                if "Log file closed" in line:
-                    log_end = True
+                if self._state == State.BUILDING:
+                    if "Log file closed" in line:
+                        log_end = True
+                elif self._state == State.TESTING:
+                    if "Exit: Exiting" in line:
+                        log_end = True
 
             if log_end:
                 print("setting stop event")
-                self._event.set()
+                if self._state == State.BUILDING:
+                    self._building_event.set()
+                elif self._state == State.TESTING:
+                    self._testing_event.set()
 
     def __del__(self):
         if self._fh:
@@ -292,14 +344,17 @@ async def main():
     log_dir = udk_lite_root / "UDKGame/Logs/"
     log_file = log_dir / "Launch.log"
 
-    compiler_event = threading.Event()
+    building_event = threading.Event()
+    testing_event = threading.Event()
     poker_event = threading.Event()
 
     obs = watchdog.observers.Observer()
-    watcher = LogWatcher(compiler_event, log_file)
+    watcher = LogWatcher(building_event, testing_event, log_file)
     obs.schedule(watcher, str(log_dir))
     obs.start()
 
+    print("starting UDK build phase")
+    watcher.state = State.BUILDING
     proc = await asyncio.create_subprocess_exec(
         (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
         *["make", "-useunpublished", "-log"],
@@ -311,10 +366,10 @@ async def main():
     )
     poker.start()
 
-    ok = compiler_event.wait(timeout=UDK_TEST_TIMEOUT)
+    ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
 
     if not ok:
-        raise RuntimeError("timed out waiting for UDK.exe (compiler_event) stop event")
+        raise RuntimeError("timed out waiting for UDK.exe (building_event) stop event")
 
     print("UDK.exe finished")
 
@@ -325,6 +380,11 @@ async def main():
     ec = await proc.wait()
     print(f"UDK.exe exited with code: {ec}")
 
+    if ec != 0:
+        raise RuntimeError(f"UDK.exe error: {ec}")
+
+    print("starting UDK testing phase")
+    watcher.state = State.TESTING
     test_proc = await asyncio.create_subprocess_exec(
         (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
         *[
@@ -334,6 +394,15 @@ async def main():
             "-log",
         ],
     )
+
+    ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
+
+    if not ok:
+        raise RuntimeError("timed out waiting for UDK.exe (testing_event) stop event")
+
+    await (await asyncio.create_subprocess_exec(
+        *["taskkill", "/pid", str(test_proc.pid)]
+    )).wait()
 
     test_ec = await test_proc.wait()
     print(f"UDK.exe UMB test run exited with code: {test_ec}")
@@ -349,6 +418,15 @@ async def main():
 
     if poker.is_alive():
         raise RuntimeError("timed out waiting for poker thread")
+
+    if ec != 0:
+        raise RuntimeError(f"UDK.exe error: {ec}")
+
+    print(f"finished with {watcher.warnings} warnings")
+    print(f"finished with {watcher.errors} errors")
+
+    if watcher.errors:
+        raise RuntimeError("failed, errors detected")
 
 
 if __name__ == "__main__":
