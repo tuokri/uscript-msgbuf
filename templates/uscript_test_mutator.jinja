@@ -8,6 +8,7 @@ const FLOAT_MAX = 34028237000000000000000000000.f;
 const FLOAT_MIN = 0.0000000000000000000000000001175494;
 
 var int NumTestRounds;
+var bool bDone;
 
 `define ulog(msg, cond, tag) \
     `log(self.class.name $ "::" $ GetFuncName() $ "(): " $ `msg, \
@@ -234,9 +235,21 @@ function PreBeginPlay()
 
     `ulog("quitting");
     ConsoleCommand("QUIT", True);
+
+    bDone = True;
+    SetTimer(2.0, True, nameof(Quit));
+}
+
+final function Quit()
+{
+    if (bDone)
+    {
+        ConsoleCommand("QUIT", True);
+    }
 }
 
 DefaultProperties
 {
     NumTestRounds=50
+    bDone=False
 }
