@@ -1,7 +1,7 @@
 name: Build and test generated UScript with UDK
 on: [ push ]
 jobs:
-  Build-Test-UScript-Wiht-UDK:
+  Build-Test-UScript-With-UDK:
     runs-on: windows-latest
     steps:
       - name: Check out UMB repository
@@ -12,5 +12,6 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - run: pip install -r .\tests\UDKTests\requirements.txt
+      - run: python --version
       - name: Run UDK build and test script
         run: python .\tests\UDKTests\setup_udk_build_env.py
