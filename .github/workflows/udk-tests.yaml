@@ -9,4 +9,4 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r .\tests\UDKTests\requirements.txt
       - name: Run UDK build and test script
-        run: python .\tests\UDKTests\setup_build_env.py
+        run: python .\tests\UDKTests\setup_udk_build_env.py
