@@ -266,14 +266,16 @@ decode_float(
     }
 
     float f;
-    if (std::from_chars(float_str.data(), float_str.data() + float_str.size(), f).ec == std::errc())
+    const auto [_, ec] = std::from_chars(float_str.data(), float_str.data() + float_str.size(), f);
+    if (ec == std::errc())
     {
         out = f;
         serialized_float_cache = std::move(float_str);
     }
     else
     {
-        throw std::runtime_error("TODO: better handling");
+        throw std::runtime_error(
+            std::format("TODO: better handling: {}", std::make_error_condition(ec).message()));
     }
 }
 
@@ -311,18 +313,19 @@ decode_string(
     std::vector<char16_t> char_buf;
     char_buf.reserve(str_size);
 
-    char16_t previous = 0;
-    auto shift = 8;
+    char16_t previous = 0x00;
+    auto shift = 0;
     for (const auto& byte: byte_buf)
     {
-        if (shift == 0)
+        if (shift == 8)
         {
-            char_buf.emplace_back((previous << shift) | byte);
+            char_buf.emplace_back(previous | (byte << shift));
         }
         else
         {
             previous = static_cast<char16_t>(byte);
         }
+        // [0, 8, 0, 8, 0, 8, ...]
         shift = (shift + 8) % 16;
     }
 
@@ -493,16 +496,20 @@ inline UMB_CONSTEXPR void
 encode_float(float f, std::string& out)
 {
     std::string str;
-    str.resize(std::numeric_limits<float>::max_digits10 + 8);
+    // NOTE: using double here to ensure we reserve enough to fit all floats.
+    constexpr auto limit = std::numeric_limits<double>::max_digits10;
+    str.resize(limit + 64);
     const auto fmt = f < 0 ? std::chars_format::fixed : std::chars_format::scientific;
-    if (auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt);
-        ec == std::errc())
+    const auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt, limit);
+    if (ec == std::errc())
     {
         out = std::move(str);
     }
     else
     {
-        throw std::runtime_error("TODO: better handling");
+        throw std::runtime_error(
+            std::format("TODO: better handling: {}, {}", f,
+                        std::make_error_condition(ec).message()));
     }
 }
 
