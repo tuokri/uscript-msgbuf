@@ -11,6 +11,8 @@
 namespace umb
 {
 
+// TODO: constexpr virtual?
+
 class Message
 {
 public:
