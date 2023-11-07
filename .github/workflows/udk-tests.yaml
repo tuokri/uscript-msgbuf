@@ -1,5 +1,7 @@
 name: Build and test generated UScript with UDK
+
 on: [ push ]
+
 jobs:
   Build-Test-UScript-With-UDK:
     runs-on: windows-latest
