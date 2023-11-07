@@ -19,6 +19,8 @@ could also work on older compilers, depending on their C++23 support status.
 - GCC 13.1.0
 - MSVC 19.37.32825
 
+*Clang is currently unsupported due to Inja compilation issues.*
+
 ### Dependencies
 
 - [Inja](https://github.com/pantor/inja)
