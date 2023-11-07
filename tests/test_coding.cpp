@@ -84,6 +84,33 @@ TEST_CASE("encode decode message with dynamic string")
     CHECK_EQ(str1, str2);
 }
 
+
+TEST_CASE("encode decode long unicode string")
+{
+    testmessages::umb::testmsg msg1;
+    testmessages::umb::testmsg msg2;
+
+    msg1.set_ffffff(u"䮟\\uEB67삝뿣\\u0CF6벆빚셲슣鬳쐖\\uA7D0ﱋ\\uEC15冹杖젝赱雴뎇腷阎䱝"
+                    "㟅戦⿶휍Ჹ\\uE6E1⭌貍擳ꊞ좜ꉋሸ专齡볳핯홯톗ﭲޱ腴艵嚃쎝\\uF3B6龮暮葔㺚ᷙ㎚格龖꣥"
+                    "⧦團蕤뗜⪰黑켻䘡\\uE644親氏䑃萐觢曠聲筓Ꙝ\\uF5DC퍕ᓉ䑦䧽잏\\uEC91瑬繬˝ꏥ"
+                    "屴艱헪□곒坅ꞃ\\uE44Bᇰ們ｰ臬๗\\uECD0婞㫉");
+
+    auto bytes = msg1.to_bytes();
+    CHECK_EQ(bytes.size(), msg1.serialized_size());
+
+    auto ok = msg2.from_bytes(bytes);
+    CHECK(ok);
+
+    auto str1 = msg1.ffffff();
+    auto str2 = msg2.ffffff();
+    auto u16str1 = icu::UnicodeString(str1.data());
+    auto u16str2 = icu::UnicodeString(str2.data());
+    CHECK_EQ(u16str1.length(), u16str2.length());
+    CHECK_EQ(u16str1, u16str2);
+    CHECK_EQ(msg1, msg2);
+    CHECK_EQ(str1, str2);
+}
+
 TEST_CASE("encode decode message with dynamic bytes")
 {
     testmessages::umb::testmsg msg3;
