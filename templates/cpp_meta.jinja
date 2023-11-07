@@ -1,14 +1,201 @@
 namespace {{ cpp_namespace }}::meta
 {
 
+{% for message in messages %}
+    {% for field in message.fields %}
+static constexpr auto meta_field_{{ message.name }}_{{ field.name }}_name = "{{ field.name }}";
+    {% endfor %}
+{% endfor %}
+
+// TODO: why take field name as a string here? Just use field index?
+template<MessageType MT, ::umb::meta::FieldType FT, const auto& FN, auto Value>
+constexpr void set_field(std::shared_ptr<::umb::Message> msg)
+{
+    if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
+    {
+        // Do nothing.
+    }
+{% for message in messages %}
+    else if constexpr
+    (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+    {
+        if constexpr (FT == ::umb::meta::FieldType::None)
+        {
+            // Do nothing.
+        }
+    {% for field in message.fields %}
+        else if constexpr
+        ((FN == meta_field_{{ message.name }}_{{ field.name }}_name) && (FT == ::umb::meta::FieldType::{{ meta_field_type(field.type) }}))
+        {
+            static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->set_{{ field.name }}(Value);
+        }
+    {% endfor %}
+        else
+        {
+            static_assert(::umb::meta::always_false<FT>::value, "invalid field type and/or name");
+        }
+    }
+{% endfor %}
+    else
+    {
+        static_assert(::umb::meta::always_false<MT>::value, "invalid MessageType");
+    }
+}
+
+// TODO: why take field name as a string here? Just use field index?
+template<MessageType MT, ::umb::meta::FieldType FT, const auto& FN, typename DynType>
+constexpr void set_field_dynamic(std::shared_ptr<::umb::Message> msg, const DynType& value)
+{
+    if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
+    {
+        static_assert("invalid dynamic field type");
+    }
+{% for message in messages %}
+    else if constexpr
+    (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+    {
+        if constexpr (FT == ::umb::meta::FieldType::None)
+        {
+            static_assert("invalid dynamic field type");
+        }
+    {% for field in message.fields %}
+        {% if field.type in ["string", "bytes"] %}
+        else if constexpr
+        ((FN == meta_field_{{ message.name }}_{{ field.name }}_name) && (FT == ::umb::meta::FieldType::{{ meta_field_type(field.type) }}))
+        {
+            static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->set_{{ field.name }}(value);
+        }
+        {% endif %}
+    {% endfor %}
+        else
+        {
+            static_assert(::umb::meta::always_false<FT>::value, "invalid dynamic field type and/or name");
+        }
+    }
+{% endfor %}
+    else
+    {
+        static_assert(::umb::meta::always_false<MT>::value, "invalid MessageType");
+    }
+}
+
+template<MessageType MT, ::umb::meta::FieldType FT, const auto& FN>
+constexpr auto get_field(std::shared_ptr<::umb::Message> msg)
+{
+    if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
+    {
+        static_assert(false, "get_field not supported for MessageType::None");
+    }
+{% for message in messages %}
+    else if constexpr
+    (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+    {
+        if constexpr (FT == ::umb::meta::FieldType::None)
+        {
+            static_assert(false, "get_field not supported for FieldType::None");
+        }
+    {% for field in message.fields %}
+        else if constexpr
+        ((FN == meta_field_{{ message.name }}_{{ field.name }}_name) && (FT == ::umb::meta::FieldType::{{ meta_field_type(field.type) }}))
+        {
+            return static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->{{ field.name }}();
+        }
+    {% endfor %}
+        else
+        {
+            static_assert(::umb::meta::always_false<FT>::value, "invalid field type and/or name");
+        }
+    }
+{% endfor %}
+    else
+    {
+        static_assert(::umb::meta::always_false<MT>::value, "invalid MessageType");
+    }
+}
+
+template<MessageType MT>
+[[nodiscard]] constexpr std::shared_ptr<::umb::Message> make_shared_message()
+{
+    if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
+    {
+        static_assert(::umb::meta::always_false<MT>::value, "cannot make None message");
+    }
+{% for message in messages %}
+    else if constexpr
+    (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+    {
+        return std::make_shared<::{{ cpp_namespace }}::{{ message.name }}>();
+    }
+{% endfor %}
+    else
+    {
+        static_assert(::umb::meta::always_false<MT>::value);
+    }
+}
+
+template<MessageType MT>
+[[nodiscard]] constexpr auto to_string()
+{
+    if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
+    {
+        return "::{{ cpp_namespace }}::MessageType::None";
+    }
+{% for message in messages %}
+    else if constexpr
+    (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+    {
+        return "::{{ cpp_namespace }}::MessageType::{{ message.name }}";
+    }
+{% endfor %}
+    else
+    {
+        static_assert(::umb::meta::always_false<MT>::value);
+    }
+}
+
+[[nodiscard]] constexpr auto first_message_type()
+{
+    return ::{{ cpp_namespace }}::MessageType::{{ at(messages, 0).name }};
+}
+
+[[nodiscard]] constexpr auto last_message_type()
+{
+    return ::{{ cpp_namespace }}::MessageType::{{ at(messages, length(messages) - 1).name }};
+}
+
+{#// TODO: is this needed?#}
+{#{% for message in messages %}#}
+{#inline static constexpr auto _mt_{{ loop.index }}_{{ message.name }} = ::{{ cpp_namespace }}::MessageType::{{ message.name }};#}
+{#{% endfor %}#}
+
+[[nodiscard]] inline static constexpr std::array<::{{ cpp_namespace }}::MessageType, {{ length(messages) + 1 }}>
+message_types()
+{
+    return {
+        ::{{ cpp_namespace }}::MessageType::None,
+{% for message in messages %}
+        ::{{ cpp_namespace }}::MessageType::{{ message.name }}
+        // meta_mt_{{ loop.index }}_{{ message.name }}
+    {% if not loop.is_last %}
+        ,
+    {% endif %}
+{% endfor %}
+    };
+}
+
 template<::{{ cpp_namespace }}::MessageType MT>
 class Message
 {
 public:
-    [[nodiscard]] static constexpr size_t static_size()
+    [[nodiscard]] static constexpr auto static_size()
     {
+        if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
+        {
+            return 0;
+        }
 {% for message in messages %}
-        if constexpr (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+        else if constexpr
+        (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
         {
     {% if message.has_static_size %}
             return {{ message.static_size }};
@@ -23,40 +210,72 @@ public:
         }
     }
 
-    template<size_t N>
-    [[nodiscard]] static constexpr ::umb::meta::Field field()
+    [[nodiscard]] static constexpr auto field_count()
     {
-{% for message in messages %}
-        if constexpr (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+        if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
         {
-            {% for field in message.fields %}
-            if constexpr (N == {{ loop.index }})
-            {
-                return _field_{{ message.name }}_{{ field.name }}_{{ loop.index }};
-            }
-            {% endfor %}
-            else
-            {
-                static_assert(::umb::meta::always_false<N>::value);
-            }
+            return 0;
         }
-        else
+{% for message in messages %}
+        else if constexpr
+        (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
         {
-            static_assert(::umb::meta::always_false<N>::value);
+            return {{ length(message.fields) }};
         }
 {% endfor %}
+        else
+        {
+            static_assert(::umb::meta::always_false<MT>::value, "invalid MessageType");
+        }
+    }
+
+    template<auto N>
+    [[nodiscard]] static constexpr auto field()
+    {
+        if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
+        {
+            return ::umb::meta::Field<::umb::meta::FieldType::None, ::umb::meta::empty_string>();
+        }
+{% for message in messages %}
+        else if constexpr
+        (MT == ::{{ cpp_namespace }}::MessageType::{{ message.name }})
+        {
+        {% for field in message.fields %}
+            {% if loop.is_first %}
+            if constexpr
+            {% else %}
+            else if constexpr
+            {% endif %}
+            (N == {{ loop.index }})
+            {
+                return meta_field_{{ message.name }}_{{ field.name }}_{{ loop.index }};
+            }
+        {% endfor %}
+            else
+            {
+                static_assert(::umb::meta::always_false<N>::value, "invalid field index");
+            }
+        }
+{% endfor %}
+        else
+        {
+            static_assert(::umb::meta::always_false<MT>::value, "invalid MessageType");
+        }
     }
 
 private:
 {% for message in messages %}
     {% for field in message.fields %}
-    static constexpr auto _field_{{ message.name }}_{{ field.name }}_name = "{{ field.name }}";
-    static constexpr ::umb::meta::Field _field_{{ message.name }}_{{ field.name }}_{{ loop.index }} = {
-        .type = ::umb::meta::FieldType::{{ meta_field_type(field.type) }},
-        .name = _field_{{ message.name }}_{{ field.name }}_name
-    };
+    static constexpr auto meta_field_{{ message.name }}_{{ field.name }}_{{ loop.index }}
+        = ::umb::meta::Field<
+            ::umb::meta::FieldType::{{ meta_field_type(field.type) }}, meta_field_{{ message.name }}_{{ field.name }}_name>();
+    // static constexpr ::umb::meta::Field meta_field_{{ message.name }}_{{ field.name }}_{{ loop.index }} = {
+    //     .type = ::umb::meta::FieldType::{{ meta_field_type(field.type) }},
+    //     .name = meta_field_{{ message.name }}_{{ field.name }}_name
+    // };
     {% endfor %}
 {% endfor %}
+
 };
 
 } // namespace {{ cpp_namespace }}::meta

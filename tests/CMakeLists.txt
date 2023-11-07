@@ -2,12 +2,25 @@ include(CTest)
 
 find_package(doctest REQUIRED)
 find_package(ICU REQUIRED COMPONENTS uc dt in io)
+find_package(Boost REQUIRED)
 
 add_executable(test_coding test_coding.cpp)
 target_link_libraries(test_coding PRIVATE doctest::doctest umb test_msg_library)
 add_test(NAME test_coding COMMAND test_coding)
 target_compile_options(test_coding PRIVATE ${UMB_COMPILE_OPTIONS})
 target_compile_features(test_coding PRIVATE cxx_std_23)
+
+add_executable(test_randomized test_randomized.cpp)
+target_link_libraries(test_randomized PRIVATE doctest::doctest umb test_msg_library Boost::boost)
+add_test(NAME test_randomized COMMAND test_coding)
+target_compile_options(test_randomized PRIVATE ${UMB_COMPILE_OPTIONS})
+target_compile_features(test_randomized PRIVATE cxx_std_23)
+
+# TODO: may need to do this for MSVC/Clang later.
+# Currently only GCC works with UMB meta/reflection code.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(test_randomized PRIVATE -ftemplate-depth=2048)
+endif ()
 
 set(UMB_USCRIPT_TEST_MUTATOR "UMBTestsMutator")
 set(UMB_GENERATED_TEST_OUT ${CMAKE_CURRENT_SOURCE_DIR}/out)
@@ -47,6 +60,7 @@ add_library(test_msg_library ${UMB_GENERATED_OUTPUT_TEST_FILES})
 target_compile_definitions(test_msg_library PRIVATE -DUMB_INCLUDE_META)
 target_include_directories(test_msg_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/out)
 target_link_libraries(test_msg_library PUBLIC umb ICU::uc ICU::dt ICU::in ICU::io)
+
 add_dependencies(
     test_msg_library
     uscript_msgbuf_generator
@@ -55,6 +69,7 @@ add_dependencies(
 )
 
 add_dependencies(test_coding generate_test_data copy_templates)
+add_dependencies(test_randomized generate_test_data copy_templates)
 
 set_property(
     TARGET test_msg_library

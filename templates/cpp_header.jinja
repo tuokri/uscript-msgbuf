@@ -5,6 +5,15 @@
 
 #pragma once
 
+#include <cstdint>
+#include <span>
+#include <string>
+#include <vector>
+#ifdef UMB_INCLUDE_META
+#include <any>
+#include <memory>
+#endif
+
 #include "umb/umb.hpp"
 
 namespace {{ cpp_namespace }}
@@ -46,6 +55,7 @@ private:
         {% endif %}
     {% endfor %}
 };
+
 
 {% endfor %}
 
