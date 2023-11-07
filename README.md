@@ -57,3 +57,5 @@ vcpkg install inja boost doctest icu
 
 - If the generator executable is changed and compiled, all templates should be
   invalidated. Is there a smart way to do this with CMake?
+
+- Investigate floating point edge cases. C++ inf/nan <-> UScript inf/nan?
