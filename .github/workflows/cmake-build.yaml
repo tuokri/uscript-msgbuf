@@ -82,3 +82,12 @@ jobs:
         shell: bash
         working-directory: ${{github.workspace}}/build
         run: ctest -C ${{ matrix.build_type }}
+
+      - name: Archive UMB generator executable
+        uses: actions/upload-artifact@latest
+        with:
+          name: umb-generator-executable-{{ matrix.os }}-{{ matrix.build_type }}
+          path: |
+            build/templates/
+            build/uscript_msgbuf_generator*
+            build/*.dll
