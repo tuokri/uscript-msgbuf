@@ -29,6 +29,12 @@ jobs:
           version: 1.0  # NOTE: this is cache version according to the docs.
         if: matrix.os == 'ubuntu-latest'
 
+      - name: set default GCC
+        shell: bash
+        run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
+          --slave /usr/bin/g++ g++ /usr/bin/g++-13
+        if: matrix.os == 'ubuntu-latest'
+
       - name: print GCC version
         shell: bash
         run: gcc --version
