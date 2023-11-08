@@ -48,7 +48,7 @@ jobs:
 
       - name: Print MSVC version
         shell: powershell
-        run: cl.exe --version
+        run: cl.exe
         if: matrix.os == 'windows-latest'
 
       - uses: actions/checkout@v4
