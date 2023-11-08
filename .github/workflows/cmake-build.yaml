@@ -30,6 +30,11 @@ jobs:
           packages: autoconf-archive
         if: matrix.os == 'ubuntu-latest'
 
+      - name: print GCC version
+        shell: bash
+        run: gcc --version
+        if: matrix.os == 'ubuntu-latest'
+
       - uses: actions/checkout@v4
         with:
           submodules: true
