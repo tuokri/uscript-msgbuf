@@ -26,7 +26,7 @@ target_compile_features(test_coding PRIVATE cxx_std_23)
 
 add_executable(test_randomized test_randomized.cpp)
 target_link_libraries(test_randomized PRIVATE doctest::doctest umb test_msg_library Boost::boost)
-add_test(NAME test_randomized COMMAND test_coding)
+add_test(NAME test_randomized COMMAND test_randomized)
 target_compile_options(test_randomized PRIVATE ${UMB_COMPILE_OPTIONS})
 target_compile_features(test_randomized PRIVATE cxx_std_23)
 
