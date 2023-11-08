@@ -40,9 +40,18 @@
 #include <boost/program_options.hpp>
 
 #include "umb/umb.hpp"
+// Always include meta explicitly, needed by the generator
+// even if not doing a meta build for generated messages.
+#include "umb/meta.hpp"
 
 namespace
 {
+
+#ifdef UMB_INCLUDE_META
+constexpr bool g_generate_meta_cpp = true;
+#else
+constexpr bool g_generate_meta_cpp = false;
+#endif
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -487,6 +496,7 @@ constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args)
     return bp_get<bool>(bps, name, "boundary");
 };
 
+// TODO: don't call this from Inja if not generating meta code?
 constexpr auto meta_field_type = [](const inja::Arguments& args)
 {
     // UMB type string -> FieldType -> FieldType as string.
@@ -644,6 +654,7 @@ render(
     data["packet_size"] = ::umb::g_packet_size;
     data["sizeof_uscript_char"] = ::umb::g_sizeof_uscript_char;
     data["max_dynamic_size"] = ::umb::g_max_dynamic_size;
+    data["generate_meta_cpp"] = g_generate_meta_cpp;
 
     const auto prog_dir = boost::dll::program_location().parent_path();
     fs::path template_dir = prog_dir / ::umb::g_template_dir;
