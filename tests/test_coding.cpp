@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023  Tuomo Kriikkula
+ * This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #ifndef __JETBRAINS_IDE__
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #endif
@@ -277,4 +293,37 @@ TEST_CASE("encode decode float fields")
     REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
+}
+
+TEST_CASE("encode decode float inf/nan fields")
+{
+    testmessages::umb::JustAnotherTestMessage jatm1;
+    testmessages::umb::JustAnotherTestMessage jatm2;
+
+    jatm1.set_some_floatVAR(std::numeric_limits<float>::infinity());
+    std::vector<::umb::byte> vec = jatm1.to_bytes();
+    bool ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    CHECK(std::isinf(jatm1.some_floatVAR()));
+    CHECK(std::isinf(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(-std::numeric_limits<float>::infinity());
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    CHECK(std::isinf(jatm1.some_floatVAR()));
+    CHECK(std::isinf(jatm2.some_floatVAR()));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(std::nanf("0"));
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    CHECK(std::isnan(jatm1.some_floatVAR()));
+    CHECK(std::isnan(jatm2.some_floatVAR()));
+    CHECK_NE(jatm1, jatm2); // Comparing nan to anything is always false.
 }
