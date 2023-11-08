@@ -2,35 +2,50 @@ name: CMake build and tests
 
 on: [ push ]
 
-env:
-  BUILD_TYPE: Debug
+# TODO: just use CMake presets?
 
 jobs:
   build:
+    name: ${{ matrix.os }}-${{ matrix.build_type }}-${{ github.workflow }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        build_type: [ Debug, Release ]
         os: [ ubuntu-latest, windows-latest ]
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Create Build Environment
-        # Some projects don't allow in-source building, so create a separate build directory
-        # We'll use this as our working directory for all subsequent commands
         run: cmake -E make_directory ${{github.workspace}}/build
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@main
+        id: runvcpkg
+        with:
+          vcpkgDirectory: '${{ runner.workspace }}/build/vcpkg'
+          # vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
+          # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
+          runVcpkgInstall: true
+          vcpkgJsonGlob: '**/cmakepresets/vcpkg.json'
 
       - name: Configure CMake
         shell: bash
         working-directory: ${{github.workspace}}/build
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+      - name: Print output of run-vcpkg's action.
+        run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
 
       - name: Build
-        working-directory: ${{github.workspace}}/build
         shell: bash
-        run: cmake --build . --config $BUILD_TYPE
+        working-directory: ${{github.workspace}}/build
+        run: cmake --build . --config ${{ matrix.build_type }}
 
       - name: Test
-        working-directory: ${{github.workspace}}/build
         shell: bash
-        run: ctest -C $BUILD_TYPE
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C ${{ matrix.build_type }}
