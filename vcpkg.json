@@ -1,7 +1,14 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "dependencies": [
-    "boost",
+    "boost-algorithm",
+    "boost-asio",
+    "boost-dll",
+    "boost-filesystem",
+    "boost-hana",
+    "boost-lexical-cast",
+    "boost-process",
+    "boost-program-options",
     "doctest",
     "icu",
     "inja"
