@@ -18,8 +18,6 @@ jobs:
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
             umb_include_meta: OFF  # TODO: fix later. Boost Hana issues on MSVC.
           - os: ubuntu-latest
-            compiler: gcc
-            gcc: 13
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
             umb_include_meta: ON
 
@@ -27,7 +25,7 @@ jobs:
       - name: install apt dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: autoconf-archive
+          packages: autoconf-archive gcc-13 g++13
         if: matrix.os == 'ubuntu-latest'
 
       - name: print GCC version
