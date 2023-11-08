@@ -134,6 +134,8 @@ TEST_CASE("test TestMessages messages with randomized data")
 
     boost::hana::for_each(rounds, [&](const auto round)
     {
+        std::cout << std::format("\n####### round: {}\n", static_cast<uint64_t>(round));
+
         boost::hana::for_each(seq, [&](const auto index)
         {
             // Skip MessageType::None.
@@ -213,7 +215,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                         const auto str_val = meta::get_field<mt, field.type, field.name>(message);
                         const auto icu_string = icu::UnicodeString(str_val.data());
                         std::cout << std::format("-- (String) {}=", field.name) << icu_string
-                                  << "\n" << std::endl;
+                                  << "\n";
                         CHECK_EQ(str_in, str_val);
                     }
                     else if constexpr (field.type == ::umb::meta::FieldType::Bytes)
@@ -245,6 +247,8 @@ TEST_CASE("test TestMessages messages with randomized data")
                 const auto bytes2 = m2->to_bytes();
                 CHECK_MESSAGE(bytes == bytes2, byte_cmp_msg(bytes, bytes2));
                 // TODO: meta comparison functions?
+
+                std::cout << std::endl;
             }
         });
     });
