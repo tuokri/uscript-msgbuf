@@ -68,7 +68,7 @@ final static function array<byte> RandomBytes(int Size)
     Bytes.Length = Size;
     for (I = 0; I < Size; ++I)
     {
-        Bytes[I] = byte(Rand(255));
+        Bytes[I] = byte(Rand(256));
     }
 
     return Bytes;
@@ -82,8 +82,7 @@ final static function string RandomString(int Size)
     Str = "";
     for (I = 0; I < Size; ++I)
     {
-        Str $= Chr(Clamp(Rand(65535), 1, 65535));
-        // Str $= Chr(Clamp(Rand(125), 21, 125));
+        Str $= Chr(Clamp(Rand(65536), 0, 65536));
     }
 
     return Str;
@@ -115,13 +114,13 @@ final simulated function int Test_{{ message.name }}()
     {% else if field.type == "float" %}
     {{ msg1 }}.{{ field.name }} = RandRange(FLOAT_MIN, FLOAT_MAX);
     {% else if field.type == "byte" %}
-    {{ msg1 }}.{{ field.name }} = byte(Rand(255));
+    {{ msg1 }}.{{ field.name }} = byte(Rand(256));
     {% else if field.type == "bool" %}
     {{ msg1 }}.{{ field.name }} = FRand() > 0.5;
     {% else if field.type == "bytes" %}
-    {{ msg1 }}.{{ field.name }} = RandomBytes(Rand({{ max_dynamic_size }}));
+    {{ msg1 }}.{{ field.name }} = RandomBytes(Rand({{ max_dynamic_size }} + 1));
     {% else if field.type == "string" %}
-    {{ msg1 }}.{{ field.name }} = RandomString(Rand({{ max_dynamic_size }}));
+    {{ msg1 }}.{{ field.name }} = RandomString(Rand({{ max_dynamic_size }} + 1));
     {% endif %}
 {% endfor %}
 
