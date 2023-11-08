@@ -84,7 +84,7 @@ jobs:
         run: ctest -C ${{ matrix.build_type }}
 
       - name: Archive UMB generator executable
-        uses: actions/upload-artifact@latest
+        uses: actions/upload-artifact@v3
         with:
           name: umb-generator-executable-{{ matrix.os }}-{{ matrix.build_type }}
           path: |
