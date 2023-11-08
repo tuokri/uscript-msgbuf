@@ -23,7 +23,7 @@ jobs:
       - name: install apt dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: conftest
+          packages: autoconf-archive
         if: matrix.os == 'ubuntu-latest'
 
       - uses: actions/checkout@v4
