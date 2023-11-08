@@ -106,10 +106,10 @@ TEST_CASE("encode decode long unicode string")
     testmessages::umb::testmsg msg1;
     testmessages::umb::testmsg msg2;
 
-    constexpr auto raw_str = u"䮟\\uEB67삝뿣\\u0CF6벆빚셲슣鬳쐖\\uA7D0ﱋ\\uEC15冹杖젝赱雴뎇腷阎䱝"
-                             "㟅戦⿶휍Ჹ\\uE6E1⭌貍擳ꊞ좜ꉋሸ专齡볳핯홯톗ﭲޱ腴艵嚃쎝\\uF3B6龮暮葔㺚ᷙ㎚格龖꣥"
-                             "⧦團蕤뗜⪰黑켻䘡\\uE644親氏䑃萐觢曠聲筓Ꙝ\\uF5DC퍕ᓉ䑦䧽잏\\uEC91瑬繬˝ꏥ"
-                             "屴艱헪□곒坅ꞃ\\uE44Bᇰ們ｰ臬๗\\uECD0婞㫉";
+    constexpr auto raw_str = u"䮟삝뿣벆빚셲슣鬳쐖ﱋ冹杖젝赱雴뎇腷阎䱝㟅戦⿶휍Ჹ⭌貍öäi"
+                             "擳ꊞ좜ꉋሸ专齡볳핯홯톗ﭲޱ腴艵嚃쎝龮暮葔㺚ᷙ㎚格龖꣥⧦團蕤åa"
+                             "뗜⪰黑켻䘡親氏䑃萐觢曠聲筓Ꙝ퍕ᓉ䑦䧽잏瑬繬˝ꏥ屴艱헪□곒Ö"
+                             "坅ꞃᇰ們ｰ臬๗婞㫉ugif";
     msg1.set_ffffff(raw_str);
 
     const auto raw_str_icu = icu::UnicodeString(raw_str);
