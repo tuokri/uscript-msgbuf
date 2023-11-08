@@ -44,6 +44,9 @@ jobs:
         with:
           submodules: true
 
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
       - name: Create Build Environment
         run: cmake -E make_directory ${{github.workspace}}/build
 
