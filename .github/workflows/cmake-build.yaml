@@ -17,6 +17,8 @@ jobs:
           - os: windows-latest
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
           - os: ubuntu-latest
+            compiler: gcc
+            gcc: 13
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
 
     steps:
