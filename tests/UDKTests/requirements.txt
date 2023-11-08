@@ -1,4 +1,5 @@
 httpx==0.25.0
 py7zr==0.20.6
 tqdm==4.66.1
+udk_configparser==1.1.1
 watchdog==3.0.0
