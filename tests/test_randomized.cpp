@@ -19,14 +19,18 @@
 #define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
 #endif
 
+#include <doctest/doctest.h>
+
+#include <iostream>
+
+// Only possible with reflection.
+#ifdef UMB_INCLUDE_META
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <utility>
-
-#include <doctest/doctest.h>
 
 #include <boost/hana.hpp>
 
@@ -253,3 +257,13 @@ TEST_CASE("test TestMessages messages with randomized data")
         });
     });
 }
+
+#else
+
+TEST_CASE("skipping randomized tests")
+{
+    std::cout << "UMB_INCLUDE_META not set, skipping randomized tests\n";
+    CHECK(true);
+}
+
+#endif
