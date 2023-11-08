@@ -71,7 +71,7 @@ jobs:
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
           -DBUILD_TESTS=ON
-          -DUMB_INCLUDE_META={{ matrix.umb_include_meta }}
+          -DUMB_INCLUDE_META=${{ matrix.umb_include_meta }}
 
       - name: Build
         shell: bash
@@ -86,7 +86,7 @@ jobs:
       - name: Archive UMB generator executable
         uses: actions/upload-artifact@v3
         with:
-          name: umb-generator-executable-{{ matrix.os }}-{{ matrix.build_type }}
+          name: umb-generator-executable-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
             build/templates/
             build/uscript_msgbuf_generator*
