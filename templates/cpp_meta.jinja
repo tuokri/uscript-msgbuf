@@ -17,7 +17,7 @@ namespace {{ cpp_namespace }}::meta
 
 {% for message in messages %}
     {% for field in message.fields %}
-static constexpr auto meta_field_{{ message.name }}_{{ field.name }}_name = "{{ field.name }}";
+constexpr std::string_view meta_field_{{ message.name }}_{{ field.name }}_name = "{{ field.name }}";
     {% endfor %}
 {% endfor %}
 
