@@ -18,7 +18,6 @@ UM_GEN_EXECUTABLE_DEFAULT="${SCRIPT_DIR}/../cmake-build-debug-wsl/uscript_msgbuf
 [[ -z "${UMB_GEN_BIN}" ]] && UMB_GEN_BIN=${UM_GEN_EXECUTABLE_DEFAULT} || VALGRIND="${UMB_GEN_BIN}"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-UM_GEN_EXECUTABLE="${SCRIPT_DIR}/../cmake-build-debug-wsl/uscript_msgbuf_generator"
 DATA_FILES=("${SCRIPT_DIR}"/data/*.json)
 OUT_DIR="${SCRIPT_DIR}"/out/valgrind
 
@@ -28,6 +27,6 @@ echo "using valgrind: '${VALGRIND}'"
 echo "using UMB generator: '${UMB_GEN_BIN}'"
 
 ${VALGRIND} --leak-check=full --track-origins=yes --error-exitcode=1 \
-  "${UM_GEN_EXECUTABLE}" "${DATA_FILES[@]}" \
+  "${UMB_GEN_BIN}" "${DATA_FILES[@]}" \
   --cpp-out="${OUT_DIR}" \
   --uscript-out="${OUT_DIR}"
