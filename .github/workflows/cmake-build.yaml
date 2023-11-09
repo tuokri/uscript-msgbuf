@@ -7,6 +7,7 @@ on: [ push ]
 env:
   VALGRIND_GIT_TAG: VALGRIND_3_22_0
   VALGRIND_PREFIX: /usr/local/valgrind
+  UMB_VALGRIND_BIN: ${{ env.VALGRIND_PREFIX }}/bin/valgrind
 
 jobs:
   build:
@@ -56,8 +57,8 @@ jobs:
 
       - name: Install Valgrind
         if: |
-          (matrix.os == 'ubuntu-latest') 
-          && (${{ steps.cache-valgrind.outputs.cache-hit != 'true' }})
+          matrix.os == 'ubuntu-latest'
+            && ${{ steps.cache-valgrind.outputs.cache-hit }} != 'true'
         run: git clone https://sourceware.org/git/valgrind.git --depth 1 --branch ${{ env.VALGRIND_GIT_TAG }}
           && cd valgrind
           && ./autogen.sh
@@ -124,13 +125,12 @@ jobs:
         run: ctest -C ${{ matrix.build_type }} --verbose
 
       - name: Print Valgrind version
-        run: valgrind --version
+        run: ${{ env.UMB_VALGRIND_BIN}} --version
         if: matrix.os == 'ubuntu-latest'
 
       - name: Run UMB generator with Valgrind
         env:
           UMB_GEN_BIN: build/uscript_msgbuf_generator
-          UMB_VALGRIND_BIN: ${{ env.VALGRIND_PREFIX }}/bin/valgrind
           VALGRIND_LIB: ${{ env.VALGRIND_PREFIX }}/libexec/valgrind/
         run: tests/gen_test_messages_with_valgrind.sh
         if: matrix.os == 'ubuntu-latest'
