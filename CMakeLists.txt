@@ -197,3 +197,11 @@ if (UMB_INCLUDE_META)
         target_compile_options(umb INTERFACE /Zc:lambda)
     endif ()
 endif ()
+
+# Avoid executable not being found in later targets due to
+# MSVC added /Debug /Release paths.
+if (MSVC)
+    set_target_properties(uscript_msgbuf_generator
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR})
+endif ()
