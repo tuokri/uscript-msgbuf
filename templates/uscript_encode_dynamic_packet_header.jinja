@@ -15,4 +15,4 @@
     Bytes[0] = {{ sz }};
     Bytes[1] = {{ 0 }}; // Part.
     Bytes[2] = {{ uscript_message_type_prefix }}_{{ message.name }};
-    Bytes[3] = ({{ uscript_message_type_prefix }}_{{ message.name }} << 8) & 0xff;
+    Bytes[3] = ({{ uscript_message_type_prefix }}_{{ message.name }} >>> 8) & 0xff;

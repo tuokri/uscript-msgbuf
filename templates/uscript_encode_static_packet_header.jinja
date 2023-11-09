@@ -16,8 +16,8 @@
     {% set x = x + 1 %}
     Bytes[{{ pad(x, sz) }}{{ x }}] = {{ 0 }}; // Part.
     {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ uscript_message_type_prefix }}_{{ message.name }};
+    Bytes[{{ pad(x, sz) }}{{ x }}] = {{ uscript_message_type_prefix }}_{{ message.name }} & 0xff;
     {% set x = x + 1 %}
-    Bytes[{{ pad(x, sz) }}{{ x }}] = ({{ uscript_message_type_prefix }}_{{ message.name }} << 8) & 0xff;
+    Bytes[{{ pad(x, sz) }}{{ x }}] = ({{ uscript_message_type_prefix }}_{{ message.name }} >>> 8) & 0xff;
     {% set x = x + 1 -%}
     {% set x = var_int("x", "set", x) -%}
