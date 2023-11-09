@@ -55,7 +55,9 @@ jobs:
           restore-keys: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
 
       - name: Install Valgrind
-        if: (matrix.os == 'ubuntu-latest') && (${{ steps.cache-valgrind.outputs.cache-hit != 'true' }})
+        if: |
+          (matrix.os == 'ubuntu-latest') 
+          && (${{ steps.cache-valgrind.outputs.cache-hit != 'true' }})
         run: git clone https://sourceware.org/git/valgrind.git --depth 1 --branch ${{ env.VALGRIND_GIT_TAG }}
           && cd valgrind
           && ./autogen.sh
