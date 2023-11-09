@@ -104,10 +104,14 @@ struct Field
     static constexpr auto type = FT;
     static constexpr auto name = Name;
 
-    constexpr explicit operator Field() const
-    {
-        return {type, name};
-    }
+// TODO: check if this is actually needed for anything.
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic ignored "-Wclass-conversion"
+//     constexpr explicit operator Field() const
+//     {
+//         return {type, name};
+//     }
+// #pragma GCC diagnostic pop
 
     constexpr Field operator()() const
     {
