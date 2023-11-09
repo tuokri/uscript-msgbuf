@@ -41,7 +41,7 @@ constexpr void set_field(std::shared_ptr<::umb::Message> msg)
         else if constexpr
         ((FN == meta_field_{{ message.name }}_{{ field.name }}_name) && (FT == ::umb::meta::FieldType::{{ meta_field_type(field.type) }}))
         {
-            static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->set_{{ field.name }}(Value);
+            std::static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->set_{{ field.name }}(Value);
         }
     {% endfor %}
         else
@@ -77,7 +77,7 @@ constexpr void set_field_dynamic(std::shared_ptr<::umb::Message> msg, const DynT
         else if constexpr
         ((FN == meta_field_{{ message.name }}_{{ field.name }}_name) && (FT == ::umb::meta::FieldType::{{ meta_field_type(field.type) }}))
         {
-            static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->set_{{ field.name }}(value);
+            std::static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->set_{{ field.name }}(value);
         }
         {% endif %}
     {% endfor %}
@@ -112,7 +112,7 @@ constexpr auto get_field(std::shared_ptr<::umb::Message> msg)
         else if constexpr
         ((FN == meta_field_{{ message.name }}_{{ field.name }}_name) && (FT == ::umb::meta::FieldType::{{ meta_field_type(field.type) }}))
         {
-            return static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->{{ field.name }}();
+            return std::static_pointer_cast<::{{ cpp_namespace }}::{{ message.name }}>(msg)->{{ field.name }}();
         }
     {% endfor %}
         else
