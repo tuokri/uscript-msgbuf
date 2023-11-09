@@ -187,4 +187,8 @@ endif ()
 if (UMB_INCLUDE_META)
     target_compile_definitions(uscript_msgbuf_generator PRIVATE -DUMB_INCLUDE_META)
     target_compile_definitions(umb INTERFACE -DUMB_INCLUDE_META)
+    if (MSVC)
+        # Boost Hana fails to compile on MSVC without these.
+        target_compile_options(umb INTERFACE /Zc:__cplusplus /Zc:preprocessor)
+    endif ()
 endif ()
