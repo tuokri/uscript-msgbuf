@@ -64,7 +64,7 @@ jobs:
           && ./autogen.sh
           && ./configure --prefix=${{ env.VALGRIND_PREFIX }}
           && make -j2
-          && sudo make install
+          && make install
 
       - name: Set default GCC
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
