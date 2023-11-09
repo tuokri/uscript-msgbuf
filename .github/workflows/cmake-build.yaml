@@ -48,8 +48,8 @@ jobs:
         run: cl.exe
         if: matrix.os == 'windows-latest'
 
-      - name: Change PowerShell codepage on Windows
-        run: chcp 65001
+      - name: Change default codepage on Windows
+        run: REG ADD HKCU\Console\%SystemRoot^%_system32_cmd.exe /v CodePage /t REG_DWORD /d 65001
         if: matrix.os == 'windows-latest'
 
       - uses: actions/checkout@v4
