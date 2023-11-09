@@ -123,7 +123,7 @@ struct BoolPack
     std::string field_name{};
     // Index of this field in the message.
     size_t field_index{0};
-    // Index into the packed byte. 0-3.
+    // Index into the packed byte. 0-4.
     ::umb::byte pack_index{0};
     // Indicates which byte this bool belongs to.
     // For this value, lone bools are also counted, thus
