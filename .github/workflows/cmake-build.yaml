@@ -18,10 +18,12 @@ jobs:
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
             umb_include_meta: OFF  # TODO: fix later. Boost Hana issues on MSVC.
             cxx_compiler: cl
+            cmake_generator: Visual Studio 17 2022
           - os: ubuntu-latest
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
             umb_include_meta: ON
             cxx_compiler: g++
+            cmake_generator: Ninja
 
     steps:
       - name: Change default cmd.exe codepage on Windows
@@ -82,7 +84,7 @@ jobs:
       - name: Configure CMake
         shell: bash
         working-directory: ${{github.workspace}}/build
-        run: cmake -G Ninja $GITHUB_WORKSPACE
+        run: cmake -G "${{ matrix.cmake_generator }}" $GITHUB_WORKSPACE
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
