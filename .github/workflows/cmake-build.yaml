@@ -94,6 +94,8 @@ jobs:
         run: ctest -C ${{ matrix.build_type }} --verbose
 
       - name: Run UMB generator with Valgrind
+        env:
+          UMB_GEN_BIN: build/uscript_msgbuf_generator
         run: tests/gen_test_messages_with_valgrind.sh
         if: matrix.os == 'ubuntu-latest'
 
@@ -103,5 +105,6 @@ jobs:
           name: umb-generator-executable-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
             build/templates/
-            build/uscript_msgbuf_generator*
+            build/uscript_msgbuf_generator
+            build/uscript_msgbuf_generator.exe
             build/*.dll
