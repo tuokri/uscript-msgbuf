@@ -132,9 +132,9 @@ TEST_CASE("test TestMessages messages with randomized data")
 {
     namespace meta = ::testmessages::umb::meta;
 
-    constexpr auto rounds = std::make_index_sequence<UMB_META_TEST_ROUNDS>();
+    constexpr auto rounds = std::make_integer_sequence<uint64_t, UMB_META_TEST_ROUNDS>();
     constexpr auto mts = meta::message_types();
-    constexpr auto seq = std::make_index_sequence<mts.size()>();
+    constexpr auto seq = std::make_integer_sequence<uint64_t, mts.size()>();
 
     boost::hana::for_each(rounds, [&](const auto round)
     {
@@ -142,22 +142,22 @@ TEST_CASE("test TestMessages messages with randomized data")
 
         boost::hana::for_each(seq, [&](const auto index)
         {
+            constexpr auto i = static_cast<uint16_t>(index);
+            constexpr auto mt = static_cast<::testmessages::umb::MessageType>(i);
+            constexpr auto field_count = meta::Message<mt>::field_count();
+
             // Skip MessageType::None.
             // TODO: is there a constexpr way to specify start index for
             //   std::make_index_sequence to avoid this if branch?
             if constexpr (index > 0)
             {
-                constexpr auto i = static_cast<uint16_t>(index);
-                constexpr auto mt = static_cast<::testmessages::umb::MessageType>(i);
-                constexpr auto field_count = meta::Message<mt>::field_count();
-
                 std::cout << std::format("index={}, mt={}, field_count={}\n",
                                          std::to_string(index),
                                          meta::to_string<mt>(), field_count);
 
                 std::shared_ptr<::umb::Message> message = meta::make_shared_message<mt>();
 
-                constexpr auto field_seq = std::make_index_sequence<field_count>();
+                constexpr auto field_seq = std::make_integer_sequence<uint64_t, field_count>();
                 boost::hana::for_each(field_seq, [&](const auto findex)
                 {
                     constexpr auto field = meta::Message<mt>::template field<findex>();
@@ -211,7 +211,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                     else if constexpr (field.type == ::umb::meta::FieldType::String)
                     {
                         constexpr auto slen = static_cast<uint8_t>(r & 0xFF);
-                        constexpr auto slen_seq = std::make_index_sequence<slen>();
+                        constexpr auto slen_seq = std::make_integer_sequence<uint64_t, slen>();
                         std::cout << std::format("-- DYNAMIC slen: {}\n", slen);
                         const std::u16string str_in = get_rand_str<index, findex, round>(
                             slen_seq);
@@ -226,7 +226,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                     {
                         constexpr auto bshift = static_cast<uint8_t>(r & 0x7);
                         constexpr auto blen = static_cast<uint8_t>((r >> bshift) & 0xFF);
-                        constexpr auto blen_seq = std::make_index_sequence<blen>();
+                        constexpr auto blen_seq = std::make_integer_sequence<uint64_t, blen>();
                         std::cout << std::format("-- DYNAMIC blen: {}\n", blen);
                         const std::vector<::umb::byte> bytes_in = get_rand_bytes<index, findex, round>(
                             blen_seq);
