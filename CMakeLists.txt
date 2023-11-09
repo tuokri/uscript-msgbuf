@@ -190,5 +190,10 @@ if (UMB_INCLUDE_META)
     if (MSVC)
         # Boost Hana fails to compile on MSVC without these.
         target_compile_options(umb INTERFACE /Zc:__cplusplus /Zc:preprocessor)
+
+        # https://developercommunity.visualstudio.com/t/lambda-fails-to-implicitly-capture-constexpr-value/610504
+        # https://learn.microsoft.com/en-us/cpp/build/reference/zc-lambda?view=msvc-170
+        # https://developercommunity.visualstudio.com/t/VC-complier-can-not-complie-a-lambda/10450649
+        target_compile_options(umb INTERFACE /Zc:lambda)
     endif ()
 endif ()
