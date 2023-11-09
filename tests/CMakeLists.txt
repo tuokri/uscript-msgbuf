@@ -30,6 +30,12 @@ add_test(NAME test_randomized COMMAND test_randomized)
 target_compile_options(test_randomized PRIVATE ${UMB_COMPILE_OPTIONS})
 target_compile_features(test_randomized PRIVATE cxx_std_23)
 
+# https://developercommunity.visualstudio.com/t/lambda-fails-to-implicitly-capture-constexpr-value/610504
+# https://learn.microsoft.com/en-us/cpp/build/reference/zc-lambda?view=msvc-170
+if (MSVC)
+    target_compile_options(test_randomized PRIVATE /Zc:lambda)
+endif ()
+
 # TODO: may need to do this for MSVC/Clang later.
 # Currently only GCC works with UMB meta/reflection code.
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -74,6 +80,7 @@ add_library(test_msg_library ${UMB_GENERATED_OUTPUT_TEST_FILES})
 target_compile_definitions(test_msg_library PRIVATE -DUMB_INCLUDE_META)
 target_include_directories(test_msg_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/out)
 target_link_libraries(test_msg_library PUBLIC umb ICU::uc ICU::dt ICU::in ICU::io)
+target_compile_features(test_msg_library PRIVATE cxx_std_23)
 
 add_dependencies(
     test_msg_library
