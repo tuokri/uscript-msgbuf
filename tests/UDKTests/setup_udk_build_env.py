@@ -41,6 +41,8 @@ import defaults
 
 SCRIPT_DIR = Path(__file__).parent
 CACHE_DIR = SCRIPT_DIR / ".cache/"
+UMB_TESTS_TCP_LINK_PATH = Path("UMBTestsTcpLink.uc").resolve()
+UMB_TESTS_MACROS_PATH = Path("UMBTestsMacros.uci").resolve()
 
 UDK_TEST_TIMEOUT = defaults.UDK_TEST_TIMEOUT
 
@@ -269,6 +271,14 @@ async def main():
         resolve_script_path(path) for path in
         glob.glob(uscript_message_files, recursive=True)
     ]
+
+    if not UMB_TESTS_TCP_LINK_PATH.exists():
+        raise RuntimeError(f"'{UMB_TESTS_TCP_LINK_PATH}' does not exist")
+    input_script_msg_files.append(UMB_TESTS_TCP_LINK_PATH)
+
+    if not UMB_TESTS_MACROS_PATH.exists():
+        raise RuntimeError(f"'{UMB_TESTS_MACROS_PATH}' does not exist")
+    input_script_msg_files.append(UMB_TESTS_MACROS_PATH)
 
     if not input_script_msg_files:
         raise RuntimeError("no input script files found")

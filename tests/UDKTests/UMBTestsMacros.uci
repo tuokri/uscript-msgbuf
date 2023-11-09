@@ -1,0 +1,4 @@
+`define ulog(msg, cond, tag) \
+    `log(self.class.name $ "::" $ GetFuncName() $ "(): " $ `msg, \
+    `cond, \
+    `if(`tag) name("UMBTests-" $ string(`tag)) `else 'UMBTests' `endif)

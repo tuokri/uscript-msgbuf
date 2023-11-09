@@ -16,7 +16,8 @@
 
 class UMBTestsTcpLink extends TcpLink;
 
-/*
+`include(UMBTests\Classes\UMBTestsMacros.uci);
+
 var private int ClientPort;
 
 var private array<string> Responses;
@@ -60,6 +61,7 @@ delegate OnRandPrimeReceived(const out array<byte> P);
 
 simulated event Tick(float DeltaTime)
 {
+    /*
     local int I;
     // local int J;
     // local int K;
@@ -169,6 +171,7 @@ simulated event Tick(float DeltaTime)
     }
 
     super.Tick(DeltaTime);
+    */
 }
 
 final simulated function ConnectToServer()
@@ -299,4 +302,3 @@ DefaultProperties
 
     TickGroup=TG_DuringAsyncWork
 }
-*/
