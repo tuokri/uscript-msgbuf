@@ -66,7 +66,7 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@master
 
       - name: Create Build Environment
-        run: cmake -E make_directory ${{github.workspace}}/build
+        run: cmake -E make_directory ${{ github.workspace }}/build
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@main
@@ -82,8 +82,8 @@ jobs:
         run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
 
       - name: Configure CMake
-        working-directory: ${{github.workspace}}/build
-        run: cmake -G "${{ matrix.cmake_generator }}" $GITHUB_WORKSPACE
+        working-directory: ${{ github.workspace }}/build
+        run: cmake -G "${{ matrix.cmake_generator }}" ${{ github.workspace }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
@@ -92,11 +92,11 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
 
       - name: Build
-        working-directory: ${{github.workspace}}/build
+        working-directory: ${{ github.workspace }}/build
         run: cmake --build . --config ${{ matrix.build_type }}
 
       - name: Test
-        working-directory: ${{github.workspace}}/build
+        working-directory: ${{ github.workspace }}/build
         run: ctest -C ${{ matrix.build_type }} --verbose
 
       - name: Print Valgrind version
