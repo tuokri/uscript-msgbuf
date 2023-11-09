@@ -69,15 +69,15 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
         self._fh: IO | None = None
         self._pos = 0
         self._state = State.NONE
-        self._warnings = 0
-        self._errors = 0
+        self._warnings = []
+        self._errors = []
 
     @property
-    def warnings(self) -> int:
+    def warnings(self) -> list[str]:
         return self._warnings
 
     @property
-    def errors(self) -> int:
+    def errors(self) -> list[str]:
         return self._errors
 
     @property
@@ -118,10 +118,10 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
                 if match := LOG_RE.match(line):
                     if match.group(1).lower() == "error":
                         if match.group(2):
-                            self._errors += 1
+                            self._errors.append(line)
                     elif match.group(1).lower() == "warning":
                         if match.group(2):
-                            self._warnings += 1
+                            self._warnings.append(line)
 
                 print(line.strip())
 
@@ -449,8 +449,16 @@ async def main():
     if ec != 0:
         raise RuntimeError(f"UDK.exe error: {ec}")
 
-    print(f"finished with {watcher.warnings} warnings")
-    print(f"finished with {watcher.errors} errors")
+    print(f"finished with {len(watcher.warnings)} warnings")
+    print(f"finished with {len(watcher.errors)} errors")
+
+    print("WARNINGS:")
+    for warn in watcher.warnings:
+        print(warn.strip())
+
+    print("ERRORS:")
+    for err in watcher.errors:
+        print(err.strip())
 
     if watcher.errors:
         raise RuntimeError("failed, errors detected")
