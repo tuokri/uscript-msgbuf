@@ -106,27 +106,27 @@ TEST_CASE("encode decode long unicode string")
     testmessages::umb::testmsg msg1;
     testmessages::umb::testmsg msg2;
 
-    constexpr auto raw_str = u"\\u4b9f\\uc09d\\ubfe3\\ubc86\\ube5a"
-                             "\\uc172\\uc2a3\\u9b33\\uc416\\ufc4b"
-                             "\\u51b9\\ufa94\\uc81d\\u8d71\\u96f4"
-                             "\\ub387\\u8177\\u960e\\u4c5d\\u37c5"
-                             "\\u6226\\u2ff6\\ud70d\\u1cb9\\u2b4c"
-                             "\\u8c8d\\u00f6\\u00e4\\u0069\\u64f3"
-                             "\\ua29e\\uc89c\\ua24b\\u1238\\u4e13"
-                             "\\u9f61\\ubcf3\\ud56f\\ud66f\\ud197"
-                             "\\ufb72\\u07b1\\u8174\\u8275\\u5683"
-                             "\\uc39d\\u9fae\\u66ae\\u8454\\u3e9a"
-                             "\\u1dd9\\u339a\\u683c\\u9f96\\ua8e5"
-                             "\\u29e6\\u5718\\u8564\\u00e5\\u0061"
-                             "\\ub5dc\\u2ab0\\u9ed1\\ucf3b\\u4621"
-                             "\\u89aa\\u6c0f\\u4443\\u8410\\u89e2"
-                             "\\u66e0\\u8072\\u7b53\\ua65c\\ud355"
-                             "\\u14c9\\u4466\\u49fd\\uc78f\\u746c"
-                             "\\u7e6c\\u02dd\\ua3e5\\u5c74\\u8271"
-                             "\\ud5ea\\u25a1\\uacd2\\u00d6\\u5745"
-                             "\\ua783\\u11f0\\u5011\\uff70\\u81ec"
-                             "\\u0e57\\u5a5e\\u3ac9\\u0075\\u0067"
-                             "\\u0069\\u0066";
+    constexpr auto raw_str = u"\u4b9f\uc09d\ubfe3\ubc86\ube5a"
+                             "\uc172\uc2a3\u9b33\uc416\ufc4b"
+                             "\u51b9\ufa94\uc81d\u8d71\u96f4"
+                             "\ub387\u8177\u960e\u4c5d\u37c5"
+                             "\u6226\u2ff6\ud70d\u1cb9\u2b4c"
+                             "\u8c8d\u00f6\u00e4\u0069\u64f3"
+                             "\ua29e\uc89c\ua24b\u1238\u4e13"
+                             "\u9f61\ubcf3\ud56f\ud66f\ud197"
+                             "\ufb72\u07b1\u8174\u8275\u5683"
+                             "\uc39d\u9fae\u66ae\u8454\u3e9a"
+                             "\u1dd9\u339a\u683c\u9f96\ua8e5"
+                             "\u29e6\u5718\u8564\u00e5\u0061"
+                             "\ub5dc\u2ab0\u9ed1\ucf3b\u4621"
+                             "\u89aa\u6c0f\u4443\u8410\u89e2"
+                             "\u66e0\u8072\u7b53\ua65c\ud355"
+                             "\u14c9\u4466\u49fd\uc78f\u746c"
+                             "\u7e6c\u02dd\ua3e5\u5c74\u8271"
+                             "\ud5ea\u25a1\uacd2\u00d6\u5745"
+                             "\ua783\u11f0\u5011\uff70\u81ec"
+                             "\u0e57\u5a5e\u3ac9\u0075\u0067"
+                             "\u0069\u0066";
 
     msg1.set_ffffff(raw_str);
 
