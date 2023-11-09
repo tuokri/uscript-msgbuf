@@ -93,6 +93,10 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest -C ${{ matrix.build_type }} --verbose
 
+      - name: Print Valgrind version
+        run: valgrind --version
+        if: matrix.os == 'ubuntu-latest'
+
       - name: Run UMB generator with Valgrind
         env:
           UMB_GEN_BIN: build/uscript_msgbuf_generator
