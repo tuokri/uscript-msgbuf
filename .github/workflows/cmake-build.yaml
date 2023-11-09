@@ -34,13 +34,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: Set default GCC
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
           --slave /usr/bin/g++ g++ /usr/bin/g++-13
         if: matrix.os == 'ubuntu-latest'
 
       - name: Print GCC version
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         run: gcc --version
         if: matrix.os == 'ubuntu-latest'
 
@@ -49,12 +49,12 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Print MSVC version
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         run: cl.exe
         if: matrix.os == 'windows-latest'
 
       - name: Change PowerShell codepage on Windows
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         run: chcp 65001
         if: matrix.os == 'windows-latest'
 
@@ -82,7 +82,7 @@ jobs:
         run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
 
       - name: Configure CMake
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         working-directory: ${{github.workspace}}/build
         run: cmake -G Ninja $GITHUB_WORKSPACE
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
@@ -93,17 +93,17 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
 
       - name: Build
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         working-directory: ${{github.workspace}}/build
         run: cmake --build . --config ${{ matrix.build_type }}
 
       - name: Test
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         working-directory: ${{github.workspace}}/build
         run: ctest -C ${{ matrix.build_type }} --verbose
 
       - name: Run UMB generator with Valgrind
-        shell: ${{ matrix.shell }}
+        shell: matrix.shell
         run: tests/gen_test_messages_with_valgrind.sh
         if: matrix.os == 'ubuntu-latest'
 
