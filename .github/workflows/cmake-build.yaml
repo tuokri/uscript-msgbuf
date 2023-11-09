@@ -4,6 +4,10 @@ on: [ push ]
 
 # TODO: just use CMake presets?
 
+env:
+  VALGRIND_GIT_TAG: VALGRIND_3_22_0
+  VALGRIND_PREFIX: /usr/local/valgrind
+
 jobs:
   build:
     name: ${{ matrix.os }}-${{ matrix.build_type }}-${{ github.workflow }}
@@ -16,7 +20,7 @@ jobs:
         include:
           - os: windows-latest
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
-            umb_include_meta: OFF  # TODO: fix later. Boost Hana issues on MSVC.
+            umb_include_meta: OFF  # TODO: fix later. Boost Hana (and other) issues on MSVC.
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
           - os: ubuntu-latest
@@ -37,9 +41,27 @@ jobs:
       - name: Install apt dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: autoconf-archive gcc-13 g++13 valgrind
+          packages: autoconf-archive gcc-13 g++13
           version: 1.0  # NOTE: this is cache version according to the docs.
         if: matrix.os == 'ubuntu-latest'
+
+      - name: Cache Valgrind
+        uses: actions/cache@v3
+        id: cache-valgrind
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          path: ${{ env.VALGRIND_PREFIX }}
+          key: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
+          restore-keys: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
+
+      - name: Install Valgrind
+        if: matrix.os == 'ubuntu-latest' && ${{ steps.cache-valgrind.outputs.cache-hit != 'true' }}
+        run: git clone https://sourceware.org/git/valgrind.git --depth 1 --branch ${{ env.VALGRIND_GIT_TAG }}
+          && cd valgrind
+          && ./autogen.sh
+          && ./configure --prefix=${{ env.VALGRIND_PREFIX }}
+          && make -j2
+          && sudo make install
 
       - name: Set default GCC
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
@@ -106,6 +128,8 @@ jobs:
       - name: Run UMB generator with Valgrind
         env:
           UMB_GEN_BIN: build/uscript_msgbuf_generator
+          UMB_VALGRIND_BIN: ${{ env.VALGRIND_PREFIX }}/bin/valgrind
+          VALGRIND_LIB: ${{ env.VALGRIND_PREFIX }}/libexec/valgrind/
         run: tests/gen_test_messages_with_valgrind.sh
         if: matrix.os == 'ubuntu-latest'
 
