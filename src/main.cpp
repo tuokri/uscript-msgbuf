@@ -512,7 +512,7 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
     const auto r = env.render_file(file, data);
     fs::path out_filename = fs::path{filename};
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
-    std::cout << std::format("writing '{}\n'", out_file.string());
+    std::cout << std::format("writing '{}'\n", out_file.string());
     fs::ofstream out{out_file};
     out << r;
 }
@@ -565,8 +565,8 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
     out_filename.replace_extension("");
     fs::path src_out_file =
         fs::path{cpp_out_dir} / out_filename.replace_extension(::umb::g_cpp_src_extension);
-    std::cout << std::format("writing: '{}\n'", hdr_out_file.string());
-    std::cout << std::format("writing: '{}\n'", src_out_file.string());
+    std::cout << std::format("writing: '{}'\n", hdr_out_file.string());
+    std::cout << std::format("writing: '{}'\n", src_out_file.string());
     fs::ofstream hdr_out{hdr_out_file};
     fs::ofstream src_out{src_out_file};
     hdr_out << hdr;
