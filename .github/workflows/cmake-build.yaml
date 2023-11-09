@@ -24,6 +24,14 @@ jobs:
             cxx_compiler: g++
 
     steps:
+      - name: Change default cmd.exe codepage on Windows
+        run: REG ADD HKCU\Console\%SystemRoot^%_system32_cmd.exe /v CodePage /t REG_DWORD /d 65001
+        if: matrix.os == 'windows-latest'
+
+      - name: Change default PowerShell codepage on Windows
+        run: REG ADD HKCU\Console\%SystemRoot^%_System32_WindowsPowerShell_v1.0_powershell.exe /v CodePage /t REG_DWORD /d 65001
+        if: matrix.os == 'windows-latest'
+
       - name: Install apt dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -46,10 +54,6 @@ jobs:
 
       - name: Print MSVC version
         run: cl.exe
-        if: matrix.os == 'windows-latest'
-
-      - name: Change default codepage on Windows
-        run: REG ADD HKCU\Console\%SystemRoot^%_system32_cmd.exe /v CodePage /t REG_DWORD /d 65001
         if: matrix.os == 'windows-latest'
 
       - uses: actions/checkout@v4
