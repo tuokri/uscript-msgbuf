@@ -695,7 +695,7 @@ render(
 //   -> easier to test generation library in unit tests
 int main(int argc, char* argv[])
 {
-    bool run_clang_format = true;
+    bool no_run_clang_format = false;
 
     try
     {
@@ -704,7 +704,7 @@ int main(int argc, char* argv[])
         po::options_description desc("Options");
         desc.add_options()("help,h", "print the help message");
         desc.add_options()("no-run-clang-format",
-                           po::bool_switch(&run_clang_format),
+                           po::bool_switch(&no_run_clang_format),
                            "skips clang-format step for generated C++ if set");
         desc.add_options()("uscript-out,u",
                            po::value<std::string>()->default_value(default_out_dir.string()),
@@ -743,6 +743,7 @@ int main(int argc, char* argv[])
         const auto cpp_out_dir = vm["cpp-out"].as<std::string>();
         auto uscript_test_mutator = vm["uscript-test-mutator"].as<std::string>();
 
+        const bool run_clang_format = !no_run_clang_format;
         for (const auto& file: vm["input-file"].as<std::vector<std::string>>())
         {
             render(file, uscript_out_dir, cpp_out_dir, uscript_test_mutator, run_clang_format);
