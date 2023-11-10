@@ -165,4 +165,4 @@ jobs:
             tests/out/*.uc
 
   build-and-test-with-udk:
-    uses: .github/workflows/udk-tests.yaml
+    uses: ./.github/workflows/udk-tests.yaml
