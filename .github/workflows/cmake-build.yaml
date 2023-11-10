@@ -67,8 +67,8 @@ jobs:
           && ./configure --prefix=${{ env.VALGRIND_PREFIX }}
           && make -j2
           && make install
+          && find / -name valgrind 2>/dev/null
           && test -e ${{ env.UMB_VALGRIND_BIN }} && echo "Valgrind bin found" || echo "Valgrind bin not found"
-          && find / -name valgrind
 
       - name: Set default GCC
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
@@ -130,7 +130,7 @@ jobs:
         run: ctest -C ${{ matrix.build_type }} --verbose
 
       - name: Print Valgrind version
-        run: find / -name valgrind && ${{ env.UMB_VALGRIND_BIN }} --version
+        run: find / -name valgrind 2>/dev/null && ${{ env.UMB_VALGRIND_BIN }} --version
         if: matrix.os == 'ubuntu-latest'
 
       - name: Run UMB generator with Valgrind
