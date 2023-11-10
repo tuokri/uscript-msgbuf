@@ -543,9 +543,12 @@ void clang_format(const std::vector<fs::path>& paths)
     ctx.run();
 }
 
-void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
-                const std::string& src_template_file, inja::json& data,
-                const std::string& cpp_out_dir)
+void render_cpp(inja::Environment& env,
+                const std::string& hdr_template_file,
+                const std::string& src_template_file,
+                inja::json& data,
+                const std::string& cpp_out_dir,
+                bool run_clang_format = true)
 {
     if (!data.contains("cpp_namespace"))
     {
@@ -572,7 +575,10 @@ void render_cpp(inja::Environment& env, const std::string& hdr_template_file,
     hdr_out << hdr;
     src_out << src;
 
-    clang_format({hdr_out_file, src_out_file});
+    if (run_clang_format)
+    {
+        clang_format({hdr_out_file, src_out_file});
+    }
 }
 
 void
@@ -580,7 +586,8 @@ render(
     const std::string& file,
     const std::string& uscript_out_dir,
     const std::string& cpp_out_dir,
-    const std::string& uscript_test_mutator = "")
+    const std::string& uscript_test_mutator = "",
+    bool run_clang_format = true)
 {
     inja::Environment env;
 
@@ -668,7 +675,8 @@ render(
 
     std::cout << std::format("rendering '{}'\n", file);
     render_uscript(env, us_template.string(), data, uscript_out_name, uscript_out_dir);
-    render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir);
+    render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir,
+               run_clang_format);
 
     const bool should_gen_mutator = data["__generate_test_mutator"].get<bool>();
 
@@ -687,12 +695,17 @@ render(
 //   -> easier to test generation library in unit tests
 int main(int argc, char* argv[])
 {
+    bool run_clang_format = true;
+
     try
     {
         const auto default_out_dir = fs::current_path().parent_path();
 
         po::options_description desc("Options");
         desc.add_options()("help,h", "print the help message");
+        desc.add_options()("no-run-clang-format",
+                           po::bool_switch(&run_clang_format),
+                           "skips clang-format step for generated C++ if set");
         desc.add_options()("uscript-out,u",
                            po::value<std::string>()->default_value(default_out_dir.string()),
                            "UnrealScript code generation output directory");
@@ -732,7 +745,7 @@ int main(int argc, char* argv[])
 
         for (const auto& file: vm["input-file"].as<std::vector<std::string>>())
         {
-            render(file, uscript_out_dir, cpp_out_dir, uscript_test_mutator);
+            render(file, uscript_out_dir, cpp_out_dir, uscript_test_mutator, run_clang_format);
         }
     }
     catch (const std::exception& ex)

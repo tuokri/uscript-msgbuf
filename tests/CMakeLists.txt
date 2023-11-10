@@ -55,13 +55,21 @@ cmake_print_variables(UMB_GENERATED_OUTPUT_TEST_FILES)
 if (NOT DEFINED UMB_TEMPLATE_FILES)
     message(FATAL_ERROR "UMB_TEMPLATE_FILES not defined")
 endif ()
+set(
+    UMB_GENERATOR_TESTING_ARGS
+    ${UMB_TEST_MSG_DEFINITION_FILES}
+    --cpp-out=${UMB_GENERATED_TEST_OUT}
+    --uscript-out=${UMB_GENERATED_TEST_OUT}  # TODO: put generated code in build dir!
+    --uscript-test-mutator=${UMB_USCRIPT_TEST_MUTATOR}
+)
+if (NOT UMB_RUN_CLANG_FORMAT)
+    list(APPEND UMB_GENERATOR_TESTING_ARGS --no-run-clang-format)
+endif ()
+cmake_print_variables(UMB_GENERATOR_TESTING_ARGS)
 add_custom_command(
     OUTPUT ${UMB_GENERATED_OUTPUT_TEST_FILES}
     COMMAND ${CMAKE_BINARY_DIR}/uscript_msgbuf_generator${CMAKE_EXECUTABLE_SUFFIX}
-    ${UMB_TEST_MSG_DEFINITION_FILES}
-    --cpp-out=${UMB_GENERATED_TEST_OUT}
-    --uscript-out=${UMB_GENERATED_TEST_OUT}
-    --uscript-test-mutator=${UMB_USCRIPT_TEST_MUTATOR}
+    ${UMB_GENERATOR_TESTING_ARGS}
     DEPENDS ${UMB_TEST_MSG_DEFINITION_FILES} ${UMB_TEMPLATE_FILES}
 )
 add_custom_target(generate_test_data ALL DEPENDS ${UMB_GENERATED_OUTPUT_TEST_FILES})

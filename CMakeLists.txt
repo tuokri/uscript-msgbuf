@@ -177,7 +177,9 @@ target_compile_options(
 )
 
 option(BUILD_TESTS "build tests" OFF)
+# TODO: this should also be a command line switch for the generator.
 option(UMB_INCLUDE_META "include meta/reflection C++ templates" ON)
+option(UMB_RUN_CLANG_FORMAT "run clang-format on generated C++ files" ON)
 
 if (BUILD_TESTS)
     enable_testing()
