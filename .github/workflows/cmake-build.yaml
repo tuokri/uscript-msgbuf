@@ -4,13 +4,13 @@ on: [ push ]
 
 # TODO: just use CMake presets?
 
-env:
-  VALGRIND_GIT_TAG: VALGRIND_3_22_0
-  VALGRIND_PREFIX: ${{ runner.workspace }}/valgrind/
-  UMB_VALGRIND_BIN: ${{ runner.workspace }}/valgrind/bin/valgrind
-
 jobs:
   build:
+    env:
+      VALGRIND_GIT_TAG: VALGRIND_3_22_0
+      VALGRIND_PREFIX: ${{ github.workspace }}/valgrind/
+      UMB_VALGRIND_BIN: ${{ github.workspace }}/valgrind/bin/valgrind
+
     name: ${{ matrix.os }}-${{ matrix.build_type }}-${{ github.workflow }}
     runs-on: ${{ matrix.os }}
     strategy:
