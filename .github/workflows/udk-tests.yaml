@@ -45,4 +45,5 @@ jobs:
       - run: python --version
 
       - name: Run UDK build and test script
+        timeout-minutes: 10
         run: python .\tests\UDKTests\setup_udk_build_env.py
