@@ -11,10 +11,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-# TODO: rename this script.
-# TODO: leverage pytest?
-
+import argparse
 import asyncio
 import enum
 import glob
@@ -40,6 +37,9 @@ import watchdog.observers
 from udk_configparser import UDKConfigParser
 
 import defaults
+
+# TODO: rename this script.
+# TODO: leverage pytest?
 
 SCRIPT_DIR = Path(__file__).parent
 CACHE_DIR = SCRIPT_DIR / ".cache/"
@@ -174,7 +174,7 @@ def load_cache(path: Path) -> Cache:
     return Cache(**cache)
 
 
-def download_file(url: str, out_file: Path):
+def download_file(url: str, out_file: Path, progress_bar: bool = True):
     with out_file.open("wb") as f:
         print(f"downloading '{url}'")
         with httpx.stream(
@@ -184,13 +184,20 @@ def download_file(url: str, out_file: Path):
                 follow_redirects=True) as resp:
             resp.raise_for_status()
             total = int(resp.headers["Content-Length"])
-            with tqdm.tqdm(total=total, unit_scale=True, unit_divisor=1024,
-                           unit="B") as progress:
-                num_bytes_downloaded = resp.num_bytes_downloaded
+
+            # TODO: refactor this.
+            if progress_bar:
+                with tqdm.tqdm(total=total, unit_scale=True, unit_divisor=1024,
+                               unit="B") as progress:
+                    num_bytes_downloaded = resp.num_bytes_downloaded
+                    for data in resp.iter_bytes(chunk_size=4096):
+                        f.write(data)
+                        progress.update(resp.num_bytes_downloaded - num_bytes_downloaded)
+                        num_bytes_downloaded = resp.num_bytes_downloaded
+
+            else:
                 for data in resp.iter_bytes(chunk_size=4096):
                     f.write(data)
-                    progress.update(resp.num_bytes_downloaded - num_bytes_downloaded)
-                    num_bytes_downloaded = resp.num_bytes_downloaded
 
     print("download finished")
 
@@ -307,6 +314,16 @@ async def run_udk_server(
 async def main():
     global UDK_TEST_TIMEOUT
 
+    ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--no-progress-bar",
+        help="disable progress bar",
+        action="store_true",
+    )
+
+    args = ap.parse_args()
+    progress_bar = not args.no_progress_bar
+
     hard_reset = False
     cache = Cache()
 
@@ -379,7 +396,7 @@ async def main():
         dl_pkg_archive = True
 
     if dl_pkg_archive:
-        download_file(udk_lite_release_url, pkg_file)
+        download_file(udk_lite_release_url, pkg_file, progress_bar=progress_bar)
         cache.udk_lite_tag = udk_lite_tag
         remove_old_extracted(cache)
         cache.pkg_archive_extracted_files = []
