@@ -259,6 +259,8 @@ async def run_udk_build(
     if use_shell:
         proc = await asyncio.create_subprocess_shell(
             cmd=f"start {udk_exe} make -useunpublished -log",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
         )
     else:
         proc = await asyncio.create_subprocess_exec(
@@ -308,6 +310,8 @@ async def run_udk_server(
     if use_shell:
         test_proc = await asyncio.create_subprocess_shell(
             cmd=f"start {udk_exe} server {udk_args} -log -UNATTENDED",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
         )
     else:
         test_proc = await asyncio.create_subprocess_exec(
