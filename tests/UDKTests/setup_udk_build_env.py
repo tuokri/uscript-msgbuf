@@ -320,7 +320,7 @@ async def main():
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         write_cache(cache_file, cache)
 
-    UDK_TEST_TIMEOUT = os.environ.get("UDK_TEST_TIMEOUT", defaults.UDK_TEST_TIMEOUT)
+    UDK_TEST_TIMEOUT = int(os.environ.get("UDK_TEST_TIMEOUT", defaults.UDK_TEST_TIMEOUT))
     udk_lite_tag = os.environ.get("UDK_LITE_TAG", defaults.UDK_LITE_TAG)
     udk_lite_root = Path(os.environ.get("UDK_LITE_ROOT", defaults.UDK_LITE_ROOT))
     udk_lite_release_url = os.environ.get("UDK_LITE_RELEASE_URL", defaults.UDK_LITE_RELEASE_URL)
