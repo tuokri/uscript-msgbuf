@@ -41,8 +41,8 @@ import defaults
 
 SCRIPT_DIR = Path(__file__).parent
 CACHE_DIR = SCRIPT_DIR / ".cache/"
-UMB_TESTS_TCP_LINK_PATH = Path("UMBTestsTcpLink.uc").resolve()
-UMB_TESTS_MACROS_PATH = Path("UMBTestsMacros.uci").resolve()
+UMB_TESTS_TCP_LINK_PATH = SCRIPT_DIR / "UMBTestsTcpLink.uc"
+UMB_TESTS_MACROS_PATH = SCRIPT_DIR / "UMBTestsMacros.uci"
 
 UDK_TEST_TIMEOUT = defaults.UDK_TEST_TIMEOUT
 
