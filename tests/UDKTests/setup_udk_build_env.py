@@ -257,6 +257,8 @@ async def run_udk_build(
         *["make", "-useunpublished", "-log"],
     )
 
+    print(f"proc: {proc}")
+
     ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
 
     await (await asyncio.create_subprocess_exec(
@@ -295,6 +297,8 @@ async def run_udk_server(
             "-log",
         ],
     )
+
+    print(f"proc: {test_proc}")
 
     ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
 

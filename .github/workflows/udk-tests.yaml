@@ -6,7 +6,8 @@ on: [ workflow_call ]
 env:
   UDK_LITE_CACHE: ${{ github.workspace }}/tests/UDKTests/.cache/
   UDK_LITE_TAG: 1.0.0
-  UDK_TEST_TIMEOUT: 600
+  # Timeout for individual steps in the test script. Not a total timeout.
+  UDK_TEST_TIMEOUT: 300
   PYTHONUNBUFFERED: 1
 
 jobs:
