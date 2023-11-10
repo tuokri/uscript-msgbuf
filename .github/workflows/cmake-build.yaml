@@ -6,8 +6,8 @@ on: [ push ]
 
 env:
   VALGRIND_GIT_TAG: VALGRIND_3_22_0
-  VALGRIND_PREFIX: ./valgrind/
-  UMB_VALGRIND_BIN: ./valgrind/bin/valgrind
+  VALGRIND_PREFIX: ${{ runner.workspace }}/valgrind/
+  UMB_VALGRIND_BIN: ${{ runner.workspace }}/valgrind/bin/valgrind
 
 jobs:
   build:
@@ -67,7 +67,7 @@ jobs:
           && ./configure --prefix=${{ env.VALGRIND_PREFIX }}
           && make -j2
           && make install
-          && test -e ${{ env.UMB_VALGRIND_BIN }} && Valgrind bin found || Valgrind bin not found
+          && test -e ${{ env.UMB_VALGRIND_BIN }} && echo "Valgrind bin found" || echo "Valgrind bin not found"
 
       - name: Set default GCC
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
@@ -139,16 +139,6 @@ jobs:
         run: tests/gen_test_messages_with_valgrind.sh
         if: matrix.os == 'ubuntu-latest'
 
-      - name: Archive UMB generator executable
-        uses: actions/upload-artifact@v3
-        with:
-          name: umb-generator-executable-${{ matrix.os }}-${{ matrix.build_type }}
-          path: |
-            build/templates/
-            build/uscript_msgbuf_generator
-            build/uscript_msgbuf_generator.exe
-            build/*.dll
-
       - name: Archive UMB generated C++ files
         uses: actions/upload-artifact@v3
         with:
@@ -165,4 +155,26 @@ jobs:
             tests/out/*.uc
 
   build-and-test-with-udk:
+    needs: [ build ]
     uses: ./.github/workflows/udk-tests.yaml
+
+  archive-umb-generator:
+    name: ${{ matrix.os }}-${{ matrix.build_type }}-${{ github.workflow }}
+    needs: [ build-and-test-with-udk ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [ Debug, Release ]
+        os: [ ubuntu-latest, windows-latest ]
+
+    steps:
+      - name: Archive UMB generator executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: umb-generator-executable-${{ matrix.os }}-${{ matrix.build_type }}
+          path: |
+            build/templates/
+            build/uscript_msgbuf_generator
+            build/uscript_msgbuf_generator.exe
+            build/*.dll
