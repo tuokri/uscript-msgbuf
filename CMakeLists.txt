@@ -205,5 +205,5 @@ endif ()
 if (MSVC)
     set_target_properties(uscript_msgbuf_generator
         PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR})
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif ()
