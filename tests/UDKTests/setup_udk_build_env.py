@@ -180,14 +180,14 @@ def download_file(url: str, out_file: Path):
         with httpx.stream(
                 "GET",
                 url,
-                timeout=60.0,
+                timeout=120.0,
                 follow_redirects=True) as resp:
             resp.raise_for_status()
             total = int(resp.headers["Content-Length"])
             with tqdm.tqdm(total=total, unit_scale=True, unit_divisor=1024,
                            unit="B") as progress:
                 num_bytes_downloaded = resp.num_bytes_downloaded
-                for data in resp.iter_bytes():
+                for data in resp.iter_bytes(chunk_size=4096):
                     f.write(data)
                     progress.update(resp.num_bytes_downloaded - num_bytes_downloaded)
                     num_bytes_downloaded = resp.num_bytes_downloaded
