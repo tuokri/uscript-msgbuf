@@ -248,22 +248,36 @@ async def run_udk_build(
         watcher: LogWatcher,
         udk_lite_root: Path,
         building_event: threading.Event,
+        use_shell: bool = False,
 ) -> int:
     print("starting UDK build phase")
 
+    udk_exe = (udk_lite_root / "Binaries/Win64/UDK.exe").resolve()
+
     watcher.state = State.BUILDING
-    proc = await asyncio.create_subprocess_exec(
-        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
-        *["make", "-useunpublished", "-log"],
-    )
+
+    if use_shell:
+        proc = await asyncio.create_subprocess_shell(
+            cmd=f"start {udk_exe} make -useunpublished -log",
+        )
+    else:
+        proc = await asyncio.create_subprocess_exec(
+            udk_exe,
+            *["make", "-useunpublished", "-log"],
+        )
 
     print(f"proc: {proc}")
 
     ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
 
-    await (await asyncio.create_subprocess_exec(
-        *["taskkill", "/pid", str(proc.pid)]
-    )).wait()
+    if use_shell:
+        await (await asyncio.create_subprocess_exec(
+            *["taskkill", "/IM", "UDK.exe", "/F"]
+        )).wait()
+    else:
+        await (await asyncio.create_subprocess_exec(
+            *["taskkill", "/pid", str(proc.pid)]
+        )).wait()
 
     if not ok:
         raise RuntimeError("timed out waiting for UDK.exe (building_event) stop event")
@@ -284,27 +298,40 @@ async def run_udk_server(
         udk_lite_root: Path,
         testing_event: threading.Event,
         udk_args: str,
+        use_shell: bool = False,
 ) -> int:
     print("starting UDK testing phase")
 
+    udk_exe = (udk_lite_root / "Binaries/Win64/UDK.exe").resolve()
+
     watcher.state = State.TESTING
-    test_proc = await asyncio.create_subprocess_exec(
-        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
-        *[
-            "server",
-            udk_args,
-            "-UNATTENDED",
-            "-log",
-        ],
-    )
+    if use_shell:
+        test_proc = await asyncio.create_subprocess_shell(
+            cmd=f"start {udk_exe} server {udk_args} -log -UNATTENDED",
+        )
+    else:
+        test_proc = await asyncio.create_subprocess_exec(
+            udk_exe,
+            *[
+                "server",
+                udk_args,
+                "-UNATTENDED",
+                "-log",
+            ],
+        )
 
     print(f"proc: {test_proc}")
 
     ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
 
-    await (await asyncio.create_subprocess_exec(
-        *["taskkill", "/pid", str(test_proc.pid)]
-    )).wait()
+    if use_shell:
+        await (await asyncio.create_subprocess_exec(
+            *["taskkill", "/IM", "UDK.exe", "/F"]
+        )).wait()
+    else:
+        await (await asyncio.create_subprocess_exec(
+            *["taskkill", "/pid", str(test_proc.pid)]
+        )).wait()
 
     if not ok:
         raise RuntimeError("timed out waiting for UDK.exe (testing_event) stop event")
@@ -324,9 +351,15 @@ async def main():
         help="disable progress bar",
         action="store_true",
     )
+    ap.add_argument(
+        "--use-shell",
+        help="start subprocesses using shell",
+        action="store_true",
+    )
 
     args = ap.parse_args()
     progress_bar = not args.no_progress_bar
+    use_shell = args.use_shell
 
     hard_reset = False
     cache = Cache()
@@ -504,6 +537,7 @@ async def main():
         watcher=watcher,
         udk_lite_root=udk_lite_root,
         building_event=building_event,
+        use_shell=use_shell,
     )
 
     ec += await run_udk_server(
@@ -511,6 +545,7 @@ async def main():
         udk_lite_root=udk_lite_root,
         testing_event=testing_event,
         udk_args="Entry?Mutator=UMBTests.UMBTestsMutator",
+        use_shell=use_shell,
     )
 
     obs.stop()
