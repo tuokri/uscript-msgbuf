@@ -175,8 +175,8 @@ def load_cache(path: Path) -> Cache:
 
 
 def download_file(url: str, out_file: Path, progress_bar: bool = True):
+    print(f"downloading '{url}'")
     with out_file.open("wb") as f:
-        print(f"downloading '{url}'")
         with httpx.stream(
                 "GET",
                 url,
@@ -542,7 +542,7 @@ async def main():
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except Exception as e:
-        print(f"error running main: {e}")
+    except Exception as _e:
+        print(f"error running main: {_e}")
         print_exc()
         sys.exit(1)
