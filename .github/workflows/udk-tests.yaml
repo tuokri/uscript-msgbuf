@@ -1,13 +1,25 @@
 name: Build and test generated UScript with UDK
 
-on: [ push ]
+on: [ workflow_call ]
 
 jobs:
-  Build-Test-UScript-With-UDK:
-    runs-on: windows-latest
+  build-and-test-with-udk:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest ]
+        build_type: [ Debug, Release ]
+
     steps:
       - name: Check out UMB repository
         uses: actions/checkout@v4
+
+      - name: Download UnrealScript generated messages
+        uses: actions/download-artifact@v3
+        with:
+          name: umb-generated-uscript-${{ matrix.os }}-${{ matrix.build_type }}
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -16,5 +28,6 @@ jobs:
           cache-dependency-path: .\tests\UDKTests\requirements.txt
       - run: pip install -r .\tests\UDKTests\requirements.txt
       - run: python --version
+
       - name: Run UDK build and test script
         run: python .\tests\UDKTests\setup_udk_build_env.py

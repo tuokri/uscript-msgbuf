@@ -6,8 +6,8 @@ on: [ push ]
 
 env:
   VALGRIND_GIT_TAG: VALGRIND_3_22_0
-  VALGRIND_PREFIX: ${{ github.workspace }}/valgrind/
-  UMB_VALGRIND_BIN: ${{ github.workspace }}/valgrind/bin/valgrind
+  VALGRIND_PREFIX: ./valgrind/
+  UMB_VALGRIND_BIN: ./valgrind/bin/valgrind
 
 jobs:
   build:
@@ -22,12 +22,14 @@ jobs:
           - os: windows-latest
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
             umb_include_meta: OFF  # TODO: fix later. Boost Hana (and other) issues on MSVC.
+            umb_run_clang_format: OFF # TODO: seems to cause issues on the runner.
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
             cmake_extra_args: -A x64
           - os: ubuntu-latest
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
             umb_include_meta: ON
+            umb_run_clang_format: ON
             cxx_compiler: g++
             cmake_generator: Ninja
             # cmake_extra_args:
@@ -65,6 +67,7 @@ jobs:
           && ./configure --prefix=${{ env.VALGRIND_PREFIX }}
           && make -j2
           && make install
+          && test -e ${{ env.UMB_VALGRIND_BIN }} && Valgrind bin found || Valgrind bin not found
 
       - name: Set default GCC
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
@@ -115,6 +118,7 @@ jobs:
           -DBUILD_TESTS=ON
           -DUMB_INCLUDE_META=${{ matrix.umb_include_meta }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
+          -DUMB_RUN_CLANG_FORMAT=${{ matrix.umb_run_clang_format }}
 
       - name: Build
         working-directory: ${{ github.workspace }}/build
@@ -125,7 +129,7 @@ jobs:
         run: ctest -C ${{ matrix.build_type }} --verbose
 
       - name: Print Valgrind version
-        run: ${{ env.UMB_VALGRIND_BIN}} --version
+        run: ${{ env.UMB_VALGRIND_BIN }} --version
         if: matrix.os == 'ubuntu-latest'
 
       - name: Run UMB generator with Valgrind
@@ -144,3 +148,21 @@ jobs:
             build/uscript_msgbuf_generator
             build/uscript_msgbuf_generator.exe
             build/*.dll
+
+      - name: Archive UMB generated C++ files
+        uses: actions/upload-artifact@v3
+        with:
+          name: umb-generated-cpp-${{ matrix.os }}-${{ matrix.build_type }}
+          path: |
+            tests/out/*.umb.cpp
+            tests/out/*.umb.hpp
+
+      - name: Archive UMB generated UnrealScript files
+        uses: actions/upload-artifact@v3
+        with:
+          name: umb-generated-uscript-${{ matrix.os }}-${{ matrix.build_type }}
+          path: |
+            tests/out/*.uc
+
+  build-and-test-with-udk:
+    uses: .github/workflows/udk-tests.yaml
