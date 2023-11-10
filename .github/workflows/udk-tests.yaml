@@ -28,8 +28,8 @@ jobs:
         id: cache-udk-lite-release
         with:
           path: ${{ env.UDK_LITE_CACHE }}
-          key: ${{ matrix.os }}-${{ matrix.build_type }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
-          restore-keys: ${{ matrix.os }}-${{ matrix.build_type }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
+          key: ${{ matrix.os }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
+          restore-keys: ${{ matrix.os }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
 
       - name: Download UnrealScript generated messages
         uses: actions/download-artifact@v3
