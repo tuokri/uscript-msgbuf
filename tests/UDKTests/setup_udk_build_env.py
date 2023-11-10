@@ -243,14 +243,14 @@ async def run_udk_build(
 
     ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
 
+    await (await asyncio.create_subprocess_exec(
+        *["taskkill", "/pid", str(proc.pid)]
+    )).wait()
+
     if not ok:
         raise RuntimeError("timed out waiting for UDK.exe (building_event) stop event")
 
     print("UDK.exe finished")
-
-    await (await asyncio.create_subprocess_exec(
-        *["taskkill", "/pid", str(proc.pid)]
-    )).wait()
 
     ec = await proc.wait()
     print(f"UDK.exe exited with code: {ec}")
@@ -282,12 +282,12 @@ async def run_udk_server(
 
     ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
 
-    if not ok:
-        raise RuntimeError("timed out waiting for UDK.exe (testing_event) stop event")
-
     await (await asyncio.create_subprocess_exec(
         *["taskkill", "/pid", str(test_proc.pid)]
     )).wait()
+
+    if not ok:
+        raise RuntimeError("timed out waiting for UDK.exe (testing_event) stop event")
 
     test_ec = await test_proc.wait()
     print(f"UDK.exe UMB test run exited with code: {test_ec}")
@@ -469,13 +469,13 @@ async def main():
     with cfg_file.open("w") as f:
         cfg.write(f, space_around_delimiters=False)
 
-    _ = await run_udk_build(
+    ec = await run_udk_build(
         watcher=watcher,
         udk_lite_root=udk_lite_root,
         building_event=building_event,
     )
 
-    ec = await run_udk_server(
+    ec += await run_udk_server(
         watcher=watcher,
         udk_lite_root=udk_lite_root,
         testing_event=testing_event,
@@ -495,7 +495,7 @@ async def main():
         raise RuntimeError("timed out waiting for poker thread")
 
     if ec != 0:
-        raise RuntimeError(f"UDK.exe error: {ec}")
+        raise RuntimeError(f"UDK.exe error (sum of all exit codes): {ec}")
 
     print(f"finished with {len(watcher.warnings)} warnings")
     print(f"finished with {len(watcher.errors)} errors")
