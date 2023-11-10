@@ -228,6 +228,73 @@ def poke_file(file: Path, event: threading.Event):
         time.sleep(1)
 
 
+async def run_udk_build(
+        watcher: LogWatcher,
+        udk_lite_root: Path,
+        building_event: threading.Event,
+) -> int:
+    print("starting UDK build phase")
+
+    watcher.state = State.BUILDING
+    proc = await asyncio.create_subprocess_exec(
+        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
+        *["make", "-useunpublished", "-log"],
+    )
+
+    ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
+
+    if not ok:
+        raise RuntimeError("timed out waiting for UDK.exe (building_event) stop event")
+
+    print("UDK.exe finished")
+
+    await (await asyncio.create_subprocess_exec(
+        *["taskkill", "/pid", str(proc.pid)]
+    )).wait()
+
+    ec = await proc.wait()
+    print(f"UDK.exe exited with code: {ec}")
+
+    if ec != 0:
+        raise RuntimeError(f"UDK.exe error: {ec}")
+
+    return ec
+
+
+async def run_udk_server(
+        watcher: LogWatcher,
+        udk_lite_root: Path,
+        testing_event: threading.Event,
+        udk_args: str,
+) -> int:
+    print("starting UDK testing phase")
+
+    watcher.state = State.TESTING
+    test_proc = await asyncio.create_subprocess_exec(
+        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
+        *[
+            "server",
+            udk_args,
+            "-UNATTENDED",
+            "-log",
+        ],
+    )
+
+    ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
+
+    if not ok:
+        raise RuntimeError("timed out waiting for UDK.exe (testing_event) stop event")
+
+    await (await asyncio.create_subprocess_exec(
+        *["taskkill", "/pid", str(test_proc.pid)]
+    )).wait()
+
+    test_ec = await test_proc.wait()
+    print(f"UDK.exe UMB test run exited with code: {test_ec}")
+
+    return test_ec
+
+
 async def main():
     global UDK_TEST_TIMEOUT
 
@@ -348,19 +415,6 @@ async def main():
         cache.pkg_archive_extracted_files = list(set(cache.pkg_archive_extracted_files))
         write_cache(cache_file, cache)
 
-    cfg_file = udk_lite_root / "UDKGame/Config/DefaultEngine.ini"
-    cfg = UDKConfigParser(comment_prefixes=";")
-    cfg.read(cfg_file)
-
-    pkg_name = "UMBTests"
-    edit_packages = cfg["UnrealEd.EditorEngine"].getlist("+EditPackages")
-    if pkg_name not in edit_packages:
-        edit_packages.append(pkg_name)
-        cfg["UnrealEd.EditorEngine"]["+EditPackages"] = "\n".join(edit_packages)
-
-    with cfg_file.open("w") as f:
-        cfg.write(f, space_around_delimiters=False)
-
     for script_file in input_script_msg_files:
         dst_dir = udk_lite_root / "Development/Src/UMBTests/Classes/"
         dst_dir.mkdir(parents=True, exist_ok=True)
@@ -377,15 +431,16 @@ async def main():
 
     obs = watchdog.observers.Observer()
     watcher = LogWatcher(building_event, testing_event, log_file)
+
+    if not log_file.exists():
+        print(f"'{log_file}' does not exist yet, touching...")
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        log_file.touch()
+
     obs.schedule(watcher, str(log_dir))
     obs.start()
 
-    print("starting UDK build phase")
-    watcher.state = State.BUILDING
-    proc = await asyncio.create_subprocess_exec(
-        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
-        *["make", "-useunpublished", "-log"],
-    )
+    cfg_file = udk_lite_root / "UDKGame/Config/DefaultEngine.ini"
 
     poker = threading.Thread(
         target=poke_file,
@@ -393,46 +448,39 @@ async def main():
     )
     poker.start()
 
-    ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
+    # if not cfg_file.exists():
+    #     print(f"'{cfg_file}' does not exist, running dry-run server to create config files")
+    #     _ = await run_udk_server(
+    #         watcher=watcher,
+    #         udk_lite_root=udk_lite_root,
+    #         testing_event=testing_event,
+    #         udk_args="Entry",
+    #     )
 
-    if not ok:
-        raise RuntimeError("timed out waiting for UDK.exe (building_event) stop event")
+    cfg = UDKConfigParser(comment_prefixes=";")
+    cfg.read(cfg_file)
 
-    print("UDK.exe finished")
+    pkg_name = "UMBTests"
+    edit_packages = cfg["UnrealEd.EditorEngine"].getlist("+EditPackages")
+    if pkg_name not in edit_packages:
+        edit_packages.append(pkg_name)
+        cfg["UnrealEd.EditorEngine"]["+EditPackages"] = "\n".join(edit_packages)
 
-    await (await asyncio.create_subprocess_exec(
-        *["taskkill", "/pid", str(proc.pid)]
-    )).wait()
+    with cfg_file.open("w") as f:
+        cfg.write(f, space_around_delimiters=False)
 
-    ec = await proc.wait()
-    print(f"UDK.exe exited with code: {ec}")
-
-    if ec != 0:
-        raise RuntimeError(f"UDK.exe error: {ec}")
-
-    print("starting UDK testing phase")
-    watcher.state = State.TESTING
-    test_proc = await asyncio.create_subprocess_exec(
-        (udk_lite_root / "Binaries/Win64/UDK.exe").resolve(),
-        *[
-            "server",
-            "Entry?Mutator=UMBTests.UMBTestsMutator",
-            "-UNATTENDED",
-            "-log",
-        ],
+    _ = await run_udk_build(
+        watcher=watcher,
+        udk_lite_root=udk_lite_root,
+        building_event=building_event,
     )
 
-    ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
-
-    if not ok:
-        raise RuntimeError("timed out waiting for UDK.exe (testing_event) stop event")
-
-    await (await asyncio.create_subprocess_exec(
-        *["taskkill", "/pid", str(test_proc.pid)]
-    )).wait()
-
-    test_ec = await test_proc.wait()
-    print(f"UDK.exe UMB test run exited with code: {test_ec}")
+    ec = await run_udk_server(
+        watcher=watcher,
+        udk_lite_root=udk_lite_root,
+        testing_event=testing_event,
+        udk_args="Entry?Mutator=UMBTests.UMBTestsMutator",
+    )
 
     obs.stop()
     obs.join(timeout=UDK_TEST_TIMEOUT)

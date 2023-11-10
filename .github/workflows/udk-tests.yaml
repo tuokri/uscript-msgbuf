@@ -2,6 +2,11 @@ name: Build and test generated UScript with UDK
 
 on: [ workflow_call ]
 
+# TODO: unify GH env vars with local UDKTests env vars somehow.
+env:
+  UDK_LITE_CACHE: ${{ github.workspace }}/tests/UDKTests/.cache/
+  UDK_LITE_TAG: 1.0.0
+
 jobs:
   build-and-test-with-udk:
     runs-on: ${{ matrix.os }}
@@ -14,6 +19,16 @@ jobs:
     steps:
       - name: Check out UMB repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Cache UDK-Lite release archive
+        uses: actions/cache@v3
+        id: cache-udk-lite-release
+        with:
+          path: ${{ env.UDK_LITE_CACHE }}
+          key: ${{ matrix.os }}-${{ matrix.build_type }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
+          restore-keys: ${{ matrix.os }}-${{ matrix.build_type }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
 
       - name: Download UnrealScript generated messages
         uses: actions/download-artifact@v3
