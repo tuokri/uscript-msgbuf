@@ -164,6 +164,7 @@ def resolve_script_path(path: str) -> Path:
 
 
 def write_cache(file: Path, cache: Cache):
+    print(f"writing cache file: '{file}'")
     file.write_text(json.dumps(asdict(cache), indent=2))
 
 
@@ -191,8 +192,12 @@ def download_file(url: str, out_file: Path):
                     progress.update(resp.num_bytes_downloaded - num_bytes_downloaded)
                     num_bytes_downloaded = resp.num_bytes_downloaded
 
+    print("download finished")
+
 
 def remove_old_extracted(cache: Cache):
+    print("removing old extracted files, if any")
+
     dirs = []
 
     for file in cache.pkg_archive_extracted_files:
@@ -209,6 +214,8 @@ def remove_old_extracted(cache: Cache):
             shutil.rmtree(d)
         else:
             print(f"not removing non-empty directory: '{d}'")
+
+    print("remove_old_extracted done")
 
 
 def already_extracted(archive_file: str, out_dir: Path, cache: Cache) -> bool:
@@ -384,6 +391,7 @@ async def main():
     cache.pkg_archive = str(pkg_file)
     write_cache(cache_file, cache)
 
+    print(f"extracting '{pkg_file}'...")
     with py7zr.SevenZipFile(pkg_file) as pkg:
         filenames = pkg.getnames()
         targets = [
