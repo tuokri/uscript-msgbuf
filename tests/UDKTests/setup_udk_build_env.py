@@ -22,12 +22,14 @@ import json
 import os
 import re
 import shutil
+import sys
 import threading
 import time
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from pathlib import Path
+from traceback import print_exc
 from typing import IO
 
 import httpx
@@ -513,4 +515,9 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"error running main: {e}")
+        print_exc()
+        sys.exit(1)
