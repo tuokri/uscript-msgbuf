@@ -53,6 +53,7 @@ jobs:
 
       - name: TODO TEST
         timeout-minutes: 2
+        if: always()
         run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe make -useunpublished
 
       - name: Print Event Log
