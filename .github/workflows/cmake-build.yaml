@@ -158,7 +158,7 @@ jobs:
             tests/out/*.uc
 
   build-and-test-with-udk:
-    needs: [ build ]
+    # needs: [ build ]
     uses: ./.github/workflows/udk-tests.yaml
 
   archive-umb-generator:
