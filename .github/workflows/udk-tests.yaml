@@ -33,10 +33,10 @@ jobs:
           key: ${{ matrix.os }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
           restore-keys: ${{ matrix.os }}-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
 
-      # - name: Download UnrealScript generated messages
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: umb-generated-uscript-${{ matrix.os }}-${{ matrix.build_type }}
+      - name: Download UnrealScript generated messages
+        uses: actions/download-artifact@v3
+        with:
+          name: umb-generated-uscript-${{ matrix.os }}-${{ matrix.build_type }}
 
       - name: Setup Python
         uses: actions/setup-python@v4
