@@ -51,6 +51,10 @@ jobs:
         timeout-minutes: 2
         run: python .\tests\UDKTests\setup_udk_build_env.py --use-shell
 
+      - name: TODO TEST
+        timeout-minutes: 2
+        run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe make -useunpublished
+
       - name: Print Event Log
         shell: powershell
         run: Get-EventLog -LogName Application
