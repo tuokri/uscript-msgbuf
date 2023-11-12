@@ -49,7 +49,7 @@ jobs:
 
       - name: Try running UDK.exe directly
         timeout-minutes: 1
-        run: start '.\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe make -log -useunpublished'
+        run: Start-Process -NoNewWindow -FilePath ".\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe" -ArgumentList "make" "-log" "-useunpublished"
 
       - name: Run UDK build and test script
         timeout-minutes: 10
