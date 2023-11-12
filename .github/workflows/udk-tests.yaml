@@ -48,8 +48,13 @@ jobs:
       - run: python --version
 
       - name: Run UDK build and test script
-        timeout-minutes: 10
+        timeout-minutes: 2
         run: python .\tests\UDKTests\setup_udk_build_env.py --use-shell
+
+      - name: Print Event Log
+        shell: powershell
+        run: Get-EventLog -LogName Application
+        if: always()
 
       - name: Archive UDK build and test logs
         uses: actions/upload-artifact@v3
