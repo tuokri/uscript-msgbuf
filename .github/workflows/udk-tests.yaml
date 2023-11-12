@@ -47,6 +47,10 @@ jobs:
       - run: pip install -r .\tests\UDKTests\requirements.txt
       - run: python --version
 
+      - name: Try running UDK.exe directly
+        timeout-minutes: 1
+        run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe make -log -useunpublished
+
       - name: Run UDK build and test script
         timeout-minutes: 10
         run: python .\tests\UDKTests\setup_udk_build_env.py --use-shell
