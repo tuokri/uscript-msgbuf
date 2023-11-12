@@ -258,9 +258,10 @@ async def run_udk_build(
 
     if use_shell:
         proc = await asyncio.create_subprocess_shell(
-            cmd=f"start {udk_exe} make -useunpublished -log",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
+            cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
+                f'-ArgumentList "make","-useunpublished","-log","-UNATTENDED"',
+            # stdout=asyncio.subprocess.PIPE,
+            # stderr=asyncio.subprocess.STDOUT,
         )
     else:
         proc = await asyncio.create_subprocess_exec(
@@ -276,10 +277,10 @@ async def run_udk_build(
         await (await asyncio.create_subprocess_exec(
             *["taskkill", "/IM", "UDK.exe", "/F"]
         )).wait()
-    else:
-        await (await asyncio.create_subprocess_exec(
-            *["taskkill", "/pid", str(proc.pid)]
-        )).wait()
+
+    await (await asyncio.create_subprocess_exec(
+        *["taskkill", "/pid", str(proc.pid)]
+    )).wait()
 
     if not ok:
         raise RuntimeError("timed out waiting for UDK.exe (building_event) stop event")
@@ -309,9 +310,10 @@ async def run_udk_server(
     watcher.state = State.TESTING
     if use_shell:
         test_proc = await asyncio.create_subprocess_shell(
-            cmd=f"start {udk_exe} server {udk_args} -log -UNATTENDED",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
+            cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
+                f'-ArgumentList "server","{udk_args}","-log","-UNATTENDED"',
+            # stdout=asyncio.subprocess.PIPE,
+            # stderr=asyncio.subprocess.STDOUT,
         )
     else:
         test_proc = await asyncio.create_subprocess_exec(
@@ -332,10 +334,10 @@ async def run_udk_server(
         await (await asyncio.create_subprocess_exec(
             *["taskkill", "/IM", "UDK.exe", "/F"]
         )).wait()
-    else:
-        await (await asyncio.create_subprocess_exec(
-            *["taskkill", "/pid", str(test_proc.pid)]
-        )).wait()
+
+    await (await asyncio.create_subprocess_exec(
+        *["taskkill", "/pid", str(test_proc.pid)]
+    )).wait()
 
     if not ok:
         raise RuntimeError("timed out waiting for UDK.exe (testing_event) stop event")
@@ -348,6 +350,14 @@ async def run_udk_server(
 
 async def main():
     global UDK_TEST_TIMEOUT
+
+    pwsh_path = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
+    print(f"pwsh_path: '{pwsh_path}', exists={pwsh_path.exists()}")
+
+    os.putenv(
+        "COMSPEC",
+        str(pwsh_path),
+    )
 
     ap = argparse.ArgumentParser()
     ap.add_argument(
