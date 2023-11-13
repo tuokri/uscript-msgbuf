@@ -49,6 +49,9 @@ jobs:
 
       - run: python --version
 
+      - name: Install VC Redist 2010
+        run: .\tests\UDKTests\install_vcredist.ps1
+
       - name: Run UDK build and test script
         timeout-minutes: 1
         shell: PowerShell
