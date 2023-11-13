@@ -31,6 +31,7 @@ from traceback import print_exc
 from typing import IO
 
 import httpx
+import psutil
 import py7zr
 import tqdm
 import watchdog.events
@@ -260,14 +261,20 @@ async def run_udk_build(
     if use_shell:
         proc = await asyncio.create_subprocess_shell(
             cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
-                f'-ArgumentList "make","-useunpublished","-silent","-UNATTENDED","LOG=Launch.log",'
-                f'"-VERBOSE","-WAITFORDEBUGSERVER","-NOPAUSE","-FORCELOGFLUSH","-DEBUG",'
-                f'"-INSTALLFW","-AUTO"',
+                f'-ArgumentList "make","-useunpublished","-UNATTENDED","LOG=Launch.log",'
+                f'"-VERBOSE","-NOPAUSE","-FORCELOGFLUSH","-DEBUG",'
+                f'"-AUTO"',
         )
     else:
         proc = await asyncio.create_subprocess_exec(
             udk_exe,
-            *["make", "-useunpublished", "-log", "-UNATTENDED"],
+            *[
+                "make",
+                "-useunpublished",
+                "-log",
+                "-UNATTENDED",
+                "-FORCELOGFLUSH",
+            ],
         )
 
     print(f"proc: {proc}")
@@ -312,9 +319,9 @@ async def run_udk_server(
     if use_shell:
         test_proc = await asyncio.create_subprocess_shell(
             cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
-                f'-ArgumentList "server","{udk_args}","-silent","-UNATTENDED","LOG=Launch.log",'
-                f'"-VERBOSE","-WAITFORDEBUGSERVER","-NOPAUSE","-FORCELOGFLUSH","-DEBUG",'
-                f'"-INSTALLFW","-AUTO"',
+                f'-ArgumentList "server","{udk_args}","-UNATTENDED","LOG=Launch.log",'
+                f'"-VERBOSE","-NOPAUSE","-FORCELOGFLUSH","-DEBUG",'
+                f'"-AUTO"',
         )
     else:
         test_proc = await asyncio.create_subprocess_exec(
@@ -324,6 +331,7 @@ async def run_udk_server(
                 udk_args,
                 "-UNATTENDED",
                 "-log",
+                "-FORCELOGFLUSH",
             ],
         )
 
@@ -347,6 +355,17 @@ async def run_udk_server(
     print(f"UDK.exe UMB test run exited with code: {test_ec}")
 
     return test_ec
+
+
+def print_udk_processes():
+    while True:
+        sleep_time = 0.01
+        for proc in psutil.process_iter():
+            if "udk" in proc.name().lower():
+                print(f"\t{'#' * 4} {proc}")
+                sleep_time = 0.5
+
+        time.sleep(sleep_time)
 
 
 async def main():
@@ -508,6 +527,11 @@ async def main():
     testing_event = threading.Event()
     poker_event = threading.Event()
 
+    udk_print_spam_thread = threading.Thread(
+        target=print_udk_processes,
+    )
+    udk_print_spam_thread.start()
+
     obs = watchdog.observers.Observer()
     watcher = LogWatcher(building_event, testing_event, log_file)
 
@@ -577,6 +601,8 @@ async def main():
 
     if ec != 0:
         raise RuntimeError(f"UDK.exe error (sum of all exit codes): {ec}")
+
+    udk_print_spam_thread.join()
 
     print(f"finished with {len(watcher.warnings)} warnings")
     print(f"finished with {len(watcher.errors)} errors")
