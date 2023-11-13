@@ -50,8 +50,13 @@ jobs:
       - run: python --version
 
       - name: Run UDK build and test script
-        timeout-minutes: 5
+        timeout-minutes: 1
         run: python .\tests\UDKTests\setup_udk_build_env.py
+
+      - name: TEST TODO
+        timeout-minutes: 1
+        if: always()
+        run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.com make -useunpublished
 
       - name: Archive UDK build and test logs
         uses: actions/upload-artifact@v3
