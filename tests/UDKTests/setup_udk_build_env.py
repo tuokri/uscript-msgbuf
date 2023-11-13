@@ -254,7 +254,7 @@ async def run_udk_build(
 ) -> int:
     print("starting UDK build phase")
 
-    udk_exe = (udk_lite_root / "Binaries/Win64/UDK.exe").resolve()
+    udk_exe = (udk_lite_root / "Binaries/Win64/UDK.com").resolve()
 
     watcher.state = State.BUILDING
 
@@ -313,7 +313,7 @@ async def run_udk_server(
 ) -> int:
     print("starting UDK testing phase")
 
-    udk_exe = (udk_lite_root / "Binaries/Win64/UDK.exe").resolve()
+    udk_exe = (udk_lite_root / "Binaries/Win64/UDK.com").resolve()
 
     watcher.state = State.TESTING
     if use_shell:
@@ -357,8 +357,8 @@ async def run_udk_server(
     return test_ec
 
 
-def print_udk_processes():
-    while True:
+def print_udk_processes(event: threading.Event):
+    while not event.is_set():
         sleep_time = 0.01
         for proc in psutil.process_iter():
             if "udk" in proc.name().lower():
@@ -529,6 +529,7 @@ async def main():
 
     udk_print_spam_thread = threading.Thread(
         target=print_udk_processes,
+        args=(poker_event,),
     )
     udk_print_spam_thread.start()
 
@@ -602,7 +603,7 @@ async def main():
     if ec != 0:
         raise RuntimeError(f"UDK.exe error (sum of all exit codes): {ec}")
 
-    udk_print_spam_thread.join()
+    udk_print_spam_thread.join(timeout=5)
 
     print(f"finished with {len(watcher.warnings)} warnings")
     print(f"finished with {len(watcher.errors)} errors")

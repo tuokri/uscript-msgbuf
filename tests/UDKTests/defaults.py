@@ -13,7 +13,7 @@
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 UDK_TEST_TIMEOUT = 300
-UDK_LITE_TAG = "1.0.0"
+UDK_LITE_TAG = "1.0.1"
 UDK_LITE_ROOT = "./UDK-Lite/"
 UDK_LITE_RELEASE_URL = (f"https://github.com/tuokri/UDK-Lite/releases/download/{UDK_LITE_TAG}/UDK"
                         f"-Lite-{UDK_LITE_TAG}.7z")
