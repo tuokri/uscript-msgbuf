@@ -58,7 +58,7 @@ jobs:
 
       - name: Print Event Log
         shell: powershell
-        run: Get-EventLog -LogName Application
+        run: Get-EventLog -LogName Application | format-table -wrap
         if: always()
 
       - name: Archive UDK build and test logs
