@@ -44,7 +44,9 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: .\tests\UDKTests\requirements.txt
+
       - run: pip install -r .\tests\UDKTests\requirements.txt
+
       - run: python --version
 
       - name: Run UDK build and test script
@@ -56,9 +58,24 @@ jobs:
         if: always()
         run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe make -useunpublished
 
-      - name: Print Event Log
+      - name: Print Application Event Log
         shell: powershell
         run: Get-EventLog -LogName Application | format-table -wrap
+        if: always()
+
+      - name: Print System Event Log
+        shell: powershell
+        run: Get-EventLog -LogName Application | format-table -wrap
+        if: always()
+
+      - name: Print Windows PowerShell Event Log
+        shell: powershell
+        run: Get-EventLog -LogName Windows PowerShell | format-table -wrap
+        if: always()
+
+      - name: Print Security Event Log
+        shell: powershell
+        run: Get-EventLog -LogName Security | format-table -wrap
         if: always()
 
       - name: Archive UDK build and test logs
