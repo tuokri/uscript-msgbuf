@@ -31,6 +31,7 @@ from traceback import print_exc
 from typing import IO
 
 import httpx
+import psutil
 import py7zr
 import tqdm
 import watchdog.events
@@ -262,8 +263,8 @@ async def run_udk_build(
             cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
                 f'-ArgumentList "make","-useunpublished","-UNATTENDED","LOG=Launch.log",'
                 f'"-NOPAUSE","-FORCELOGFLUSH","-AUTO"',
-            # stdout=asyncio.subprocess.PIPE,
-            # stderr=asyncio.subprocess.STDOUT,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
         )
     else:
         proc = await asyncio.create_subprocess_exec(
@@ -278,6 +279,9 @@ async def run_udk_build(
         )
 
     print(f"proc: {proc}")
+
+    while line := await proc.stdout.readline():
+        print(f"### LINE: '{line.strip()}'")
 
     ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
 
@@ -321,8 +325,8 @@ async def run_udk_server(
             cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
                 f'-ArgumentList "server","{udk_args}","-UNATTENDED","LOG=Launch.log",'
                 f'"-NOPAUSE","-FORCELOGFLUSH","-AUTO"',
-            # stdout=asyncio.subprocess.PIPE,
-            # stderr=asyncio.subprocess.STDOUT,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
         )
     else:
         test_proc = await asyncio.create_subprocess_exec(
@@ -337,6 +341,9 @@ async def run_udk_server(
         )
 
     print(f"proc: {test_proc}")
+
+    while line := await test_proc.stdout.readline():
+        print(f"### LINE: '{line.strip()}'")
 
     ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
 
@@ -358,15 +365,15 @@ async def run_udk_server(
     return test_ec
 
 
-# def print_udk_processes(event: threading.Event):
-#     while not event.is_set():
-#         sleep_time = 0.01
-#         for proc in psutil.process_iter():
-#             if "udk" in proc.name().lower():
-#                 print(f"\t{'#' * 4} {proc}")
-#                 sleep_time = 0.5
-#
-#         time.sleep(sleep_time)
+def print_udk_processes(event: threading.Event):
+    while not event.is_set():
+        sleep_time = 0.01
+        for proc in psutil.process_iter():
+            if "udk" in proc.name().lower():
+                print(f"\t{'#' * 4} {proc}")
+                sleep_time = 5.0
+
+        time.sleep(sleep_time)
 
 
 async def main():
@@ -528,11 +535,11 @@ async def main():
     testing_event = threading.Event()
     poker_event = threading.Event()
 
-    # udk_print_spam_thread = threading.Thread(
-    #     target=print_udk_processes,
-    #     args=(poker_event,),
-    # )
-    # udk_print_spam_thread.start()
+    udk_print_spam_thread = threading.Thread(
+        target=print_udk_processes,
+        args=(poker_event,),
+    )
+    udk_print_spam_thread.start()
 
     obs = watchdog.observers.Observer()
     watcher = LogWatcher(building_event, testing_event, log_file)
@@ -604,7 +611,7 @@ async def main():
     if ec != 0:
         raise RuntimeError(f"UDK.exe error (sum of all exit codes): {ec}")
 
-    # udk_print_spam_thread.join(timeout=5)
+    udk_print_spam_thread.join(timeout=5)
 
     print(f"finished with {len(watcher.warnings)} warnings")
     print(f"finished with {len(watcher.errors)} errors")
