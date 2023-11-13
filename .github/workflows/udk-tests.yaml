@@ -63,7 +63,7 @@ jobs:
         shell: PowerShell
         run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.com make -useunpublished
 
-      - name: Archive UDK build and test logs
+      - name: Archive UDK build and test logs and artifacts
         uses: actions/upload-artifact@v3
         if: always()
         with:
@@ -72,3 +72,5 @@ jobs:
             tests/UDKTests/UDK-Lite/UDKGame/Logs/*.log
             tests/UDKTests/UDK-Lite/UDKGame/Logs/*.dmp
             tests/UDKTests/UDK-Lite/UDKGame/Logs/
+            tests/UDKTests/UDK-Lite/UDKGame/Script/UMB*
+            tests/UDKTests/UDK-Lite/UDKGame/Script/Manifest.txt
