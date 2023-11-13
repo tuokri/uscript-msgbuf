@@ -71,3 +71,4 @@ jobs:
           path: |
             tests/UDKTests/UDK-Lite/UDKGame/Logs/*.log
             tests/UDKTests/UDK-Lite/UDKGame/Logs/*.dmp
+            tests/UDKTests/UDK-Lite/UDKGame/Logs/
