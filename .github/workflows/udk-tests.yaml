@@ -51,11 +51,13 @@ jobs:
 
       - name: Run UDK build and test script
         timeout-minutes: 1
+        shell: PowerShell
         run: python .\tests\UDKTests\setup_udk_build_env.py
 
       - name: TEST TODO
         timeout-minutes: 1
         if: always()
+        shell: PowerShell
         run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.com make -useunpublished
 
       - name: Archive UDK build and test logs
