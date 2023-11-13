@@ -280,8 +280,9 @@ async def run_udk_build(
 
     print(f"proc: {proc}")
 
-    while line := await proc.stdout.readline():
-        print(f"### LINE: '{line.strip()}'")
+    if use_shell:
+        while line := await proc.stdout.readline():
+            print(f"### LINE: '{line.strip()}'")
 
     ok = building_event.wait(timeout=UDK_TEST_TIMEOUT)
 
@@ -342,8 +343,9 @@ async def run_udk_server(
 
     print(f"proc: {test_proc}")
 
-    while line := await test_proc.stdout.readline():
-        print(f"### LINE: '{line.strip()}'")
+    if use_shell:
+        while line := await test_proc.stdout.readline():
+            print(f"### LINE: '{line.strip()}'")
 
     ok = testing_event.wait(timeout=UDK_TEST_TIMEOUT)
 
