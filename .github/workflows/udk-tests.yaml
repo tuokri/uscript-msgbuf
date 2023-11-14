@@ -51,6 +51,7 @@ jobs:
 
       - name: Install VC Redist 2010
         run: .\tests\UDKTests\install_vcredist.ps1
+        if: matrix.os != 'self-hosted'
 
       - name: Run UDK build and test script
         timeout-minutes: 1
