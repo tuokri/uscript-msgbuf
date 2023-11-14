@@ -45,18 +45,20 @@ jobs:
           cache: 'pip'
           cache-dependency-path: .\tests\UDKTests\requirements.txt
 
-      - run: pip install -r .\tests\UDKTests\requirements.txt
+      - run: py -m pip install -r .\tests\UDKTests\requirements.txt
 
       - run: python --version
 
-      - name: Install VC Redist 2010
+      - run: py --version
+
+      - name: Install VC Redist 2012
         run: .\tests\UDKTests\install_vcredist.ps1
         if: matrix.os != 'self-hosted'
 
       - name: Run UDK build and test script
         timeout-minutes: 1
         shell: PowerShell
-        run: python .\tests\UDKTests\setup_udk_build_env.py --use-shell
+        run: py .\tests\UDKTests\setup_udk_build_env.py --use-shell
 
       - name: TEST TODO 1
         timeout-minutes: 1
