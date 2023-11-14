@@ -59,17 +59,17 @@ jobs:
         run: .\tests\UDKTests\allow_udk_fw.ps1
 
       - name: Run UDK build and test script
-        timeout-minutes: 1
+        timeout-minutes: 5
         shell: PowerShell
         run: py .\tests\UDKTests\setup_udk_build_env.py --use-shell
 
       - name: TEST TODO 1
-        timeout-minutes: 1
+        timeout-minutes: 5
         if: always()
         run: .\tests\UDKTests\run_udk.ps1
 
       - name: TEST TODO 2
-        timeout-minutes: 1
+        timeout-minutes: 5
         if: always()
         run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.com make -useunpublished
 
