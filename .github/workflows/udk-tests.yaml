@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ self-hosted ]
+        os: [ windows-latest ]
         build_type: [ Debug, Release ]
 
     steps:
@@ -54,6 +54,14 @@ jobs:
       - name: Install VC Redist 2012
         run: .\tests\UDKTests\install_vcredist.ps1
         if: matrix.os != 'self-hosted'
+
+      - name: Allow UDK.exe Inbound Traffic
+        run: New-NetFirewallRule -DisplayName "UDK.exe Inbound" -Direction Inbound -Program
+          ".\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe" -Action Allow
+
+      - name: Allow UDK.exe Outbound Traffic
+        run: New-NetFirewallRule -DisplayName "UDK.exe Outbound" -Direction Outbound -Program
+          ".\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.exe" -Action Allow
 
       - name: Run UDK build and test script
         timeout-minutes: 1
