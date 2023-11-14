@@ -1,1 +1,1 @@
-Start-Process -NoNewWindow -FilePath .\UDK-Lite\Binaries\Win64\UDK.com -ArgumentList "make","-useunpublished"
+Start-Process -NoNewWindow -FilePath $PSScriptRoot\UDK-Lite\Binaries\Win64\UDK.com -ArgumentList "make","-useunpublished"
