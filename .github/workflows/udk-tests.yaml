@@ -60,7 +60,7 @@ jobs:
       - name: TEST TODO
         timeout-minutes: 1
         if: always()
-        shell: PowerShell
+        shell: cmd
         run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.com make -useunpublished
 
       - name: Archive UDK build and test logs and artifacts

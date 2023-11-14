@@ -381,13 +381,12 @@ def print_udk_processes(event: threading.Event):
 async def main():
     global UDK_TEST_TIMEOUT
 
-    pwsh_path = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
-    print(f"pwsh_path: '{pwsh_path}', exists={pwsh_path.exists()}")
-
-    os.putenv(
-        "COMSPEC",
-        str(pwsh_path),
-    )
+    # pwsh_path = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
+    # print(f"pwsh_path: '{pwsh_path}', exists={pwsh_path.exists()}")
+    # os.putenv(
+    #     "COMSPEC",
+    #     str(pwsh_path),
+    # )
 
     ap = argparse.ArgumentParser()
     ap.add_argument(
