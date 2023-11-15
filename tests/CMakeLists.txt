@@ -119,7 +119,7 @@ set_property(
 if (MSVC)
     set(
         UMB_ECHO_SERVER_COMPILE_OPTIONS
-        /await
+        /await:strict
     )
 else ()
     set(

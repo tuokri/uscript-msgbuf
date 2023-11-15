@@ -22,6 +22,19 @@
  *
  */
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+
+#define WINDOWS 1
+
+// Silence "Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately".
+#include <SDKDDKVer.h>
+
+#else
+
+#define WINDOWS 0
+
+#endif
+
 #include <format>
 #include <iostream>
 #include <memory>
@@ -79,7 +92,11 @@ awaitable<void> echo(tcp::socket socket)
 
             const auto type = static_cast<testmessages::umb::MessageType>(
                 data[2] | (data[3] << 8));
+#if WINDOWS
+            const auto mt_str = std::to_string(static_cast<uint16_t>(type));
+#else
             const auto mt_str = testmessages::umb::meta::to_string(type);
+#endif
             std::cout << std::format("type: {}\n", mt_str);
 
             const auto payload = std::span<umb::byte>{data.data(), size};
