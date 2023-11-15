@@ -31,7 +31,10 @@ jobs:
         uses: actions/cache@v3
         id: cache-udk-lite-release
         with:
-          path: ${{ env.UDK_LITE_CACHE }}
+          path: |
+            ${{ env.UDK_LITE_CACHE }}
+            ${{ env.UDK_LITE_CACHE }}/*.json
+            ${{ env.UDK_LITE_CACHE }}/*.7z
           key: windows-latest-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
           restore-keys: windows-latest-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
 
