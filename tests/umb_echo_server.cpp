@@ -22,8 +22,9 @@
  *
  */
 
-#include <iostream>
 #include <format>
+#include <iostream>
+#include <memory>
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
@@ -51,6 +52,7 @@ awaitable<void> echo(tcp::socket socket)
 {
     try
     {
+        std::shared_ptr<umb::Message> msg;
         std::array<umb::byte, 2048> data{};
         std::array<umb::byte, 2048> msg_buf{};
 
@@ -77,7 +79,48 @@ awaitable<void> echo(tcp::socket socket)
 
             const auto type = static_cast<testmessages::umb::MessageType>(
                 data[2] | (data[3] << 8));
-            std::cout << std::format("type: {}\n", testmessages::umb::meta::to_string(type));
+            const auto mt_str = testmessages::umb::meta::to_string(type);
+            std::cout << std::format("type: {}\n", mt_str);
+
+            const auto payload = std::span<umb::byte>{data.data(), size};
+
+            switch (type)
+            {
+                case testmessages::umb::MessageType::GetSomeStuff:
+                    msg = std::make_shared<testmessages::umb::GetSomeStuff>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::BoolPackingMessage:
+                    msg = std::make_shared<testmessages::umb::BoolPackingMessage>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::testmsg:
+                    msg = std::make_shared<testmessages::umb::testmsg>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::JustAnotherTestMessage:
+                    msg = std::make_shared<testmessages::umb::JustAnotherTestMessage>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::DualStringMessage:
+                    msg = std::make_shared<testmessages::umb::DualStringMessage>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::MultiStringMessage:
+                    msg = std::make_shared<testmessages::umb::MultiStringMessage>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::STATIC_BoolPackingMessage:
+                    msg = std::make_shared<testmessages::umb::STATIC_BoolPackingMessage>();
+                    msg->from_bytes(payload);
+                    break;
+
+                case testmessages::umb::MessageType::None:
+                default:
+                    throw std::runtime_error(
+                        std::format("invalid MessageType: {}",
+                                    std::to_string(static_cast<uint16_t>(type))));
+            }
 
             co_await async_write(socket, boost::asio::buffer(data, n), use_awaitable);
         }
