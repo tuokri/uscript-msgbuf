@@ -70,15 +70,15 @@ jobs:
         shell: PowerShell
         run: py .\tests\UDKTests\setup_udk_build_env.py --use-shell --add-fw-rules
 
-      - name: TEST TODO 1
-        timeout-minutes: 5
-        if: always()
-        run: .\tests\UDKTests\run_udk.ps1
+      # - name: TEST TODO 1 (REMOVE ME LATER)
+      #   timeout-minutes: 5
+      #   if: always()
+      #   run: .\tests\UDKTests\run_udk.ps1
 
-      - name: TEST TODO 2
-        timeout-minutes: 5
-        if: always()
-        run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.com make -useunpublished
+      # - name: TEST TODO 2 (REMOVE ME LATER)
+      #   timeout-minutes: 5
+      #   if: always()
+      #   run: .\tests\UDKTests\UDK-Lite\Binaries\Win64\UDK.com make -useunpublished
 
       - name: Archive UDK build and test logs and artifacts
         uses: actions/upload-artifact@v3

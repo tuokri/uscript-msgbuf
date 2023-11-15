@@ -93,6 +93,7 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
     def state(self, state: State):
         print(f"setting state: {state}")
         self._state = state
+        self._pos = 0
 
     def on_any_event(self, event: watchdog.events.FileSystemEvent):
         if Path(event.src_path).name == self._log_filename:
