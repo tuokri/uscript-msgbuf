@@ -9,7 +9,7 @@ Invoke-WebRequest `
 Write-Output "Done"
 
 $DxWebSetupTemp = "C:\Temp\dx_websetup_temp\"
-& $DX_WEB_SETUP /Q /T:$DxWebSetupTemp
+Start-Process -NoNewWindow -FilePath $DX_WEB_SETUP -ArgumentList "/Q", "/T:$DxWebSetupTemp"
 
 $DX_REDIST_EXE = "C:\Temp\dx_redist.exe"
 
@@ -21,9 +21,17 @@ Write-Output "Done"
 
 $DxRedistTemp = "C:\Temp\dx_redist_temp\"
 Write-Output "Running $DX_REDIST_EXE"
-& $DX_REDIST_EXE /Q /T:$DxRedistTemp
+Start-Process -NoNewWindow -FilePath $DX_REDIST_EXE -ArgumentList "/Q", "/T:$DxRedistTemp"
+
+# NOTE: PowerShell does not wait for the external process to finish.
+# We have to wait here manually for dx_redist.exe. This can be flaky.
+# This is because the previous command starts an external program, which creates
+# DXSETUP.exe, which the next command depends on.
+Wait-Process -Id (Get-Process dx_redist).id
+
 Write-Output "Running DXSETUP.exe"
-& $DxRedistTemp\DXSETUP.exe /Silent
+Start-Process -NoNewWindow -FilePath $DxRedistTemp\DXSETUP.exe -ArgumentList "/Silent"
+Wait-Process -Id (Get-Process DXSETUP).id
 
 Write-Output "Done installing all"
 

@@ -10,5 +10,6 @@ Write-Output "Done"
 
 Write-Output "Running $DX_SDK_EXE"
 & $DX_SDK_EXE /U
+Wait-Process -Id (Get-Process dx_sdk).id
 
 Exit $LASTEXITCODE
