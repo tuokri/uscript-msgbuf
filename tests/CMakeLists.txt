@@ -99,5 +99,56 @@ set_property(
     PROPERTY INTERPROCEDURAL_OPTIMIZATION ${UMB_IPO_SUPPORTED}
 )
 
+add_executable(
+    umb_echo_server
+    umb_echo_server.cpp
+)
+target_link_libraries(
+    umb_echo_server
+    PRIVATE
+    Boost::boost
+    umb
+    test_msg_library
+)
+
+set_property(
+    TARGET umb_echo_server
+    PROPERTY INTERPROCEDURAL_OPTIMIZATION ${UMB_IPO_SUPPORTED}
+)
+
+if (MSCV)
+    set(
+        UMB_ECHO_SERVER_COMPILE_OPTIONS
+        /await
+    )
+else ()
+    set(
+        UMB_ECHO_SERVER_COMPILE_OPTIONS
+        -fcoroutines
+    )
+endif ()
+
+target_compile_options(
+    umb_echo_server
+    PRIVATE
+    ${UMB_ECHO_SERVER_COMPILE_OPTIONS}
+)
+
+target_compile_features(
+    umb_echo_server
+    PRIVATE
+    cxx_std_23
+)
+
+# Avoid executable not being found in later targets due to
+# MSVC added /Debug /Release paths.
+if (MSVC)
+    set_target_properties(umb_echo_server
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}
+    )
+endif ()
+
 # TODO: clean up all the unneeded dependency links. The graph is a mess.
 # TODO: make reusable CMake functions to be used in other projects.
