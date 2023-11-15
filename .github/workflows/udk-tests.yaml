@@ -54,18 +54,15 @@ jobs:
       - run: py --version
 
       - name: Install VC Redist 2012
-        shell: cmd
-        run: PowerShell.exe .\tests\UDKTests\install_vcredist.ps1
+        run: .\tests\UDKTests\install_vcredist.ps1
         if: matrix.os != 'self-hosted'
 
       - name: Install DirectX SDK
-        shell: cmd
-        run: PowerShell.exe .\tests\UDKTests\install_dx_sdk.ps1
+        run: .\tests\UDKTests\install_dx_sdk.ps1
         if: matrix.os != 'self-hosted'
 
       - name: Install DirectX Redist
-        shell: cmd
-        run: PowerShell.exe .\tests\UDKTests\install_dx_redist.ps1
+        run: .\tests\UDKTests\install_dx_redist.ps1
         if: matrix.os != 'self-hosted'
 
       - name: Run UDK build and test script
