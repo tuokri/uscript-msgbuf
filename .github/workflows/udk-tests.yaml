@@ -39,6 +39,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: umb-generated-uscript-windows-latest-${{ matrix.build_type }}
+          path: tests/out/
 
       - name: Setup Python
         uses: actions/setup-python@v4
