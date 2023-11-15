@@ -55,10 +55,14 @@ public:
     void set_{{ field.name }}({{ cpp_type_arg(field.type) }});
     {% endfor %}
     friend bool operator==(const {{ message.name }}&, const {{ message.name }}&);
-    [[nodiscard]] inline static constexpr MessageType type()
+    [[nodiscard]] constexpr uint16_t type() const noexcept override
+    {
+        return static_cast<uint16_t>(message_type());
+    }
+    [[nodiscard]] static constexpr MessageType message_type()
     {
         return MessageType::{{ message.name }};
-    };
+    }
 
 private:
     {% for field in message.fields %}
