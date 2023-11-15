@@ -1,3 +1,5 @@
+$ErrorView = 'NormalView'
+
 $UDKPath = "$PSScriptRoot\UDK-Lite\Binaries\Win64\UDK.exe"
 $Description = "UDK.exe allowed rule."
 
