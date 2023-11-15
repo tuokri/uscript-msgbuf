@@ -165,21 +165,6 @@ jobs:
           path: |
             tests/out/*.uc
 
-  build-and-test-with-udk:
-    needs: [ build ]
-    uses: ./.github/workflows/udk-tests.yaml
-
-  archive-umb-generator:
-    name: ${{ matrix.os }}-${{ matrix.build_type }}-${{ github.workflow }}
-    needs: [ build-and-test-with-udk ]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [ Debug, Release ]
-        os: [ ubuntu-latest, windows-latest ]
-
-    steps:
       - name: Archive UMB generator executable
         uses: actions/upload-artifact@v3
         with:
@@ -189,3 +174,8 @@ jobs:
             build/uscript_msgbuf_generator
             build/uscript_msgbuf_generator.exe
             build/*.dll
+
+
+  build-and-test-with-udk:
+    needs: [ build ]
+    uses: ./.github/workflows/udk-tests.yaml
