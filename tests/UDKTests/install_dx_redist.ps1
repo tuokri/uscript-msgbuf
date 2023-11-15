@@ -2,7 +2,7 @@ $DX_WEB_SETUP = "C:\Temp\dxwebsetup.exe"
 
 Invoke-WebRequest `
     https://download.microsoft.com/download/1/7/1/1718CCC4-6315-4D8E-9543-8E28A4E18C4C/dxwebsetup.exe `
-    -OutFile $DX_REDIST_EXE
+    -OutFile $DX_WEB_SETUP
 
 & $DX_WEB_SETUP /Q
 
