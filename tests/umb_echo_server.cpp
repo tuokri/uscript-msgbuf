@@ -122,7 +122,10 @@ awaitable<void> echo(tcp::socket socket)
                                     std::to_string(static_cast<uint16_t>(type))));
             }
 
-            co_await async_write(socket, boost::asio::buffer(data, n), use_awaitable);
+            const auto bytes_out = msg->to_bytes();
+            const auto size_out = msg->serialized_size();
+
+            co_await async_write(socket, boost::asio::buffer(bytes_out, size_out), use_awaitable);
         }
     }
     catch (const std::exception& e)
