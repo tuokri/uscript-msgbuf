@@ -167,6 +167,22 @@ template<MessageType MT>
     }
 }
 
+template<typename MessageType>
+[[nodiscard]] constexpr auto to_string(MessageType mt)
+{
+    const auto type = static_cast<::{{ cpp_namespace }}::MessageType>(mt);
+
+    switch (type)
+    {
+{% for message in messages %}
+    case ::{{ cpp_namespace }}::MessageType::{{ message.name }}:
+        return "::{{ cpp_namespace }}::MessageType::{{ message.name }}";
+{% endfor %}
+    default:
+        return "";
+    }
+}
+
 [[nodiscard]] constexpr auto first_message_type()
 {
     return ::{{ cpp_namespace }}::MessageType::{{ at(messages, 0).name }};
