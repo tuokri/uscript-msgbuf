@@ -252,6 +252,12 @@ TEST_CASE("test TestMessages messages with randomized data")
                 CHECK_MESSAGE(bytes == bytes2, byte_cmp_msg(bytes, bytes2));
                 // TODO: meta comparison functions?
 
+                const auto mt1 = message->type();
+                const auto mt1_str = ::testmessages::umb::meta::to_string(mt1);
+                const auto mt2_str = ::testmessages::umb::meta::to_string(m2->type());
+                CHECK_EQ(mt1, static_cast<uint16_t>(mt));
+                CHECK_EQ(mt1_str, mt2_str);
+
                 std::cout << std::endl;
             }
         });
