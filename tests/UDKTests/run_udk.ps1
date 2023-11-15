@@ -7,3 +7,5 @@ Start-Process -NoNewWindow -FilePath $PSScriptRoot\UDK-Lite\Binaries\Win64\UDK.c
 Get-WinEvent -ListLog * |
         ForEach-Object -parallel { Get-WinEvent @{ logname = $_.logname } -ea 0 } `
             | Where-Object message -Match UDK | Format-Table -Wrap
+
+Exit $LASTEXITCODE

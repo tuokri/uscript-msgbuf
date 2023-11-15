@@ -8,4 +8,7 @@ Invoke-WebRequest `
     -OutFile $DX_SDK_EXE
 Write-Output "Done"
 
+Write-Output "Running $DX_SDK_EXE"
 & $DX_SDK_EXE /U
+
+Exit $LASTEXITCODE

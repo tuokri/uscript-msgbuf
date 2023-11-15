@@ -4,6 +4,10 @@ on: [ push ]
 
 # TODO: just use CMake presets?
 
+# https://github.com/actions/runner/issues/382
+env:
+  ErrorView: NormalView
+
 jobs:
   build:
     env:

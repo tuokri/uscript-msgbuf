@@ -9,6 +9,8 @@ env:
   # Timeout for individual steps in the test script. Not a total timeout.
   UDK_TEST_TIMEOUT: 300
   PYTHONUNBUFFERED: 1
+  # https://github.com/actions/runner/issues/382
+  ErrorView: NormalView
 
 jobs:
   build-and-test-with-udk:

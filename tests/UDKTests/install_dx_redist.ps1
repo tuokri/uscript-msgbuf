@@ -8,7 +8,8 @@ Invoke-WebRequest `
     -OutFile $DX_WEB_SETUP
 Write-Output "Done"
 
-& $DX_WEB_SETUP /Q
+$DxWebSetupTemp = "C:\Temp\dx_websetup_temp\"
+& $DX_WEB_SETUP /Q /T:$DxWebSetupTemp
 
 $DX_REDIST_EXE = "C:\Temp\dx_redist.exe"
 
@@ -18,4 +19,12 @@ Invoke-WebRequest `
     -OutFile $DX_REDIST_EXE
 Write-Output "Done"
 
-& $DX_REDIST_EXE /Q
+$DxRedistTemp = "C:\Temp\dx_redist_temp\"
+Write-Output "Running $DX_REDIST_EXE"
+& $DX_REDIST_EXE /Q /T:$DxRedistTemp
+Write-Output "Running DXSETUP.exe"
+& $DxRedistTemp\DXSETUP.exe /Silent
+
+Write-Output "Done installing all"
+
+Exit $LASTEXITCODE
