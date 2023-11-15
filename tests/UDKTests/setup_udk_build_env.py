@@ -47,6 +47,7 @@ SCRIPT_DIR = Path(__file__).parent
 CACHE_DIR = SCRIPT_DIR / ".cache/"
 UMB_TESTS_TCP_LINK_PATH = SCRIPT_DIR / "UMBTestsTcpLink.uc"
 UMB_TESTS_MACROS_PATH = SCRIPT_DIR / "UMBTestsMacros.uci"
+UDK_FW_SCRIPT_PATH = SCRIPT_DIR / "allow_udk_fw.ps1"
 
 UDK_TEST_TIMEOUT = defaults.UDK_TEST_TIMEOUT
 
@@ -399,10 +400,16 @@ async def main():
         help="start subprocesses using shell",
         action="store_true",
     )
+    ap.add_argument(
+        "--add-fw-rules",
+        help="allow UDK.exe through the windows firewall",
+        action="store_true",
+    )
 
     args = ap.parse_args()
     progress_bar = not args.no_progress_bar
     use_shell = args.use_shell
+    add_fw_rules = args.add_fw_rules
 
     hard_reset = False
     cache = Cache()
@@ -581,6 +588,12 @@ async def main():
 
     with cfg_file.open("w") as f:
         cfg.write(f, space_around_delimiters=False)
+
+    if add_fw_rules:
+        print("adding firewall rules for UDK.exe")
+        await (await asyncio.create_subprocess_exec(
+            *["powershell.exe", str(UDK_FW_SCRIPT_PATH)]
+        )).wait()
 
     ec = await run_udk_build(
         watcher=watcher,
