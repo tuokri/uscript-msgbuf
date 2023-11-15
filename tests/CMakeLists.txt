@@ -116,7 +116,7 @@ set_property(
     PROPERTY INTERPROCEDURAL_OPTIMIZATION ${UMB_IPO_SUPPORTED}
 )
 
-if (MSCV)
+if (MSVC)
     set(
         UMB_ECHO_SERVER_COMPILE_OPTIONS
         /await
