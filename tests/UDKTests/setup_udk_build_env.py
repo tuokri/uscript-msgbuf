@@ -20,7 +20,6 @@ import json
 import os
 import re
 import shutil
-import sys
 import threading
 import time
 from dataclasses import asdict
@@ -450,7 +449,7 @@ async def main():
 
     input_script_msg_files = [
         resolve_script_path(path) for path in
-        glob.glob(uscript_message_files, recursive=True)
+        glob.glob(str(uscript_message_files), recursive=True)
     ]
 
     if not UMB_TESTS_TCP_LINK_PATH.exists():
@@ -649,4 +648,4 @@ if __name__ == "__main__":
     except Exception as _e:
         print(f"error running main: {_e}")
         print_exc()
-        sys.exit(1)
+        raise
