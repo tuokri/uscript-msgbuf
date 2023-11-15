@@ -12,9 +12,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from pathlib import Path
+
+_FILE_DIR = Path(__file__).parent
+
 UDK_TEST_TIMEOUT = 300
 UDK_LITE_TAG = "1.0.1"
 UDK_LITE_ROOT = "./UDK-Lite/"
 UDK_LITE_RELEASE_URL = (f"https://github.com/tuokri/UDK-Lite/releases/download/{UDK_LITE_TAG}/UDK"
                         f"-Lite-{UDK_LITE_TAG}.7z")
-USCRIPT_MESSAGE_FILES = "../out/*.uc"
+USCRIPT_MESSAGE_FILES = _FILE_DIR / "../out/*.uc"
