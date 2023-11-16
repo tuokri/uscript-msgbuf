@@ -71,9 +71,9 @@ jobs:
         run: .\tests\UDKTests\install_vcredist.ps1
         if: matrix.os != 'self-hosted'
 
-      - name: Install DirectX SDK
-        run: .\tests\UDKTests\install_dx_sdk.ps1
-        if: matrix.os != 'self-hosted'
+      # - name: Install DirectX SDK
+      #   run: .\tests\UDKTests\install_dx_sdk.ps1
+      #   if: matrix.os != 'self-hosted'
 
       - name: Install DirectX Redist
         run: .\tests\UDKTests\install_dx_redist.ps1
