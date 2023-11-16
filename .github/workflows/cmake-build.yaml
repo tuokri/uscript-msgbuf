@@ -165,15 +165,18 @@ jobs:
           path: |
             tests/out/*.uc
 
-      - name: Archive UMB generator executable
+      - name: Archive UMB build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: umb-generator-executable-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
             build/templates/
-            build/uscript_msgbuf_generator
-            build/uscript_msgbuf_generator.exe
+            build/*.exe
+            build/*.pdb
             build/*.dll
+            build/*.a
+            build/*.lib
+            build/*.so
 
 
   build-and-test-with-udk:
