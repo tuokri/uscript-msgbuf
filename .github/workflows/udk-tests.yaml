@@ -57,6 +57,16 @@ jobs:
 
       - run: py --version
 
+      - name: Cache Windows redistributables
+        uses: actions/cache@v3
+        id: cache-win-redist
+        with:
+          path: |
+            C:\Temp\VcRedist
+            C:\Temp\*.exe
+          key: win-cached-redist
+          restore-keys: win-cached-redist
+
       - name: Install VC Redist 2012
         run: .\tests\UDKTests\install_vcredist.ps1
         if: matrix.os != 'self-hosted'
