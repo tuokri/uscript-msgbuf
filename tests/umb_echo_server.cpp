@@ -43,6 +43,7 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/read.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/write.hpp>
 
@@ -66,13 +67,25 @@ awaitable<void> echo(tcp::socket socket)
     try
     {
         std::shared_ptr<umb::Message> msg;
-        std::array<umb::byte, 2048> data{};
-        std::array<umb::byte, 2048> msg_buf{};
+        // TODO: should we read into a larger buffer?
+        std::array<umb::byte, 255> data{};
+        std::vector<umb::byte> msg_buf{};
 
         for (;;)
         {
-            std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data),
-                                                            use_awaitable);
+            // 1. read 1 byte, it should be the packet size.
+            //   - if 255, we can expect to receive more than 255 bytes!
+            //     - next byte indicates part, value (0-254), 254 end marker always
+            //   - elif < 255, expect only that amount
+            //     - part should always be 255
+
+            // TODO: read entire header here.
+            co_await boost::asio::async_read(
+                socket, boost::asio::buffer(data),
+                boost::asio::transfer_exactly(umb::g_header_size), use_awaitable);
+
+            // std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data),
+            //                                                 use_awaitable);
 
             // Parse UMB message.
             // Serialize it to bytes, send it back.
@@ -80,18 +93,24 @@ awaitable<void> echo(tcp::socket socket)
             const auto size = static_cast<size_t>(data[0]);
             std::cout << std::format("size: {}\n", size);
 
-            if (n < size)
-            {
-                std::cout << std::format("got {} bytes, size indicates {}, waiting for more...\n",
-                                         n, size);
-                throw std::runtime_error("TODO: handle this");
-            }
-
             const auto part = data[1];
             std::cout << std::format("part: {}\n", part);
 
             const auto type = static_cast<testmessages::umb::MessageType>(
                 data[2] | (data[3] << 8));
+
+            if (size == 0)
+            {
+                std::cout << std::format("got invalid size: {}\n", size);
+                throw std::runtime_error("TODO: handle this");
+            }
+
+            const auto read_num = size - umb::g_header_size;
+            auto d = std::span{data.begin() + umb::g_header_size, data.size() - umb::g_header_size};
+            co_await boost::asio::async_read(
+                socket, boost::asio::buffer(d),
+                boost::asio::transfer_exactly(read_num), use_awaitable);
+
 #if WINDOWS
             const auto mt_str = std::to_string(static_cast<uint16_t>(type));
 #else
@@ -142,7 +161,8 @@ awaitable<void> echo(tcp::socket socket)
             const auto bytes_out = msg->to_bytes();
             const auto size_out = msg->serialized_size();
 
-            co_await async_write(socket, boost::asio::buffer(bytes_out, size_out), use_awaitable);
+            co_await async_write(socket,
+                                 boost::asio::buffer(bytes_out, size_out), use_awaitable);
         }
     }
     catch (const std::exception& e)

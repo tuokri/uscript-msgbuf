@@ -60,6 +60,11 @@ constexpr uint16_t g_max_message_count = std::numeric_limits<uint16_t>::max() - 
 // Max size of dynamic field payload part.
 constexpr auto g_max_dynamic_size = 255;
 
+// Message part field for single part messages is always constant.
+constexpr auto g_part_single_part = 255;
+// Value indicating final part of multipart message.
+constexpr auto g_part_multi_part_end = 254;
+
 constexpr size_t g_sizeof_byte = 1;
 constexpr size_t g_sizeof_int32 = 4;
 constexpr size_t g_sizeof_uint16 = 2;

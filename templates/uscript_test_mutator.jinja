@@ -162,7 +162,7 @@ final simulated function int Test_{{ message.name }}()
     {{ cls }}{{ message.name }}_ToMultiBytes({{ msg1 }}, DynamicBytes);
     `ulog("{{ message.name }}: DynamicBytes.Length =" @ DynamicBytes.Length);
     `ulog("{{ message.name }}: DynamicBytes[0]     =" @ string(DynamicBytes[0]));
-    if ((DynamicBytes.Length < 255) && (DynamicBytes.Length != DynamicBytes[0]))
+    if ((DynamicBytes.Length < PACKET_SIZE) && (DynamicBytes.Length != DynamicBytes[0]))
     {
         `ulog("##CHECK FAILED##: DYNAMIC CODING: dynamic length mismatch");
         for (X = 0; X < Max(DynamicBytes.Length, DynamicBytes[0]); ++X)

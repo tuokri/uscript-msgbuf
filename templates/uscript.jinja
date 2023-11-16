@@ -19,6 +19,7 @@ class {{ class_name }} extends Object
 const HEADER_SIZE = {{ header_size }};
 const PAYLOAD_SIZE = {{ payload_size }};
 const PACKET_SIZE = {{ packet_size }};
+const PART_SINGLE_PART = {{ part_single_part }};
 
 const {{ uscript_message_type_prefix }}_None = 0;
 {% for message in messages %}
@@ -36,9 +37,9 @@ struct Packet
     // should be sent: Size=0, Part=0, Type=0 ({{ uscript_message_type_prefix }}_None).
     var byte Size;
 
-    // 255 for single-part messages. 0-254 for multipart messages. Incremented
+    // {{ part_single_part }} for single-part messages. 0-254 for multipart messages. Incremented
     // for each part. Parts must be sent in an order that matches this field.
-    // The final multipart sequence indicator message has Part set to 0.
+    // The final multipart sequence indicator message has Part set to {{ part_multi_part_end }}.
     var byte Part;
 
     // 16 bit field. 2 bytes. Maximum number of supported messages

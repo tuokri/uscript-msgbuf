@@ -661,6 +661,8 @@ render(
     data["packet_size"] = ::umb::g_packet_size;
     data["sizeof_uscript_char"] = ::umb::g_sizeof_uscript_char;
     data["max_dynamic_size"] = ::umb::g_max_dynamic_size;
+    data["part_single_part"] = ::umb::g_part_single_part;
+    data["part_multi_part_end"] = ::umb::g_part_multi_part_end;
     data["generate_meta_cpp"] = g_generate_meta_cpp;
 
     const auto prog_dir = boost::dll::program_location().parent_path();
