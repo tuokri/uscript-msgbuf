@@ -79,7 +79,6 @@ awaitable<void> echo(tcp::socket socket)
             //   - elif < 255, expect only that amount
             //     - part should always be 255
 
-            // TODO: read entire header here.
             co_await boost::asio::async_read(
                 socket, boost::asio::buffer(data),
                 boost::asio::transfer_exactly(umb::g_header_size), use_awaitable);
