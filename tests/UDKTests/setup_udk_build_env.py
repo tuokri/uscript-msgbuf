@@ -20,6 +20,7 @@ import json
 import os
 import re
 import shutil
+import sys
 import threading
 import time
 from dataclasses import asdict
@@ -51,6 +52,10 @@ UDK_FW_SCRIPT_PATH = SCRIPT_DIR / "allow_udk_fw.ps1"
 UDK_TEST_TIMEOUT = defaults.UDK_TEST_TIMEOUT
 
 LOG_RE = re.compile(r"^\[[\d.]+]\s(\w+):(.*)$")
+
+BUILDING_EVENT: threading.Event | None = None
+TESTING_EVENT: threading.Event | None = None
+POKER_EVENT: threading.Event | None = None
 
 
 class State(enum.StrEnum):
@@ -326,7 +331,7 @@ async def run_udk_server(
         test_proc = await asyncio.create_subprocess_shell(
             cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
                 f'-ArgumentList "server","{udk_args}","LOG=Launch.log",'
-                f'"-NOPAUSE","-FORCELOGFLUSH","-AUTO"',
+                f'"-NOPAUSE","-FORCELOGFLUSH","-AUTO","-LANPLAY"',
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
         )
@@ -381,6 +386,9 @@ def print_udk_processes(event: threading.Event):
 
 async def main():
     global UDK_TEST_TIMEOUT
+    global BUILDING_EVENT
+    global TESTING_EVENT
+    global POKER_EVENT
 
     # pwsh_path = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
     # print(f"pwsh_path: '{pwsh_path}', exists={pwsh_path.exists()}")
@@ -539,18 +547,18 @@ async def main():
     log_dir = udk_lite_root / "UDKGame/Logs/"
     log_file = log_dir / "Launch.log"
 
-    building_event = threading.Event()
-    testing_event = threading.Event()
-    poker_event = threading.Event()
+    BUILDING_EVENT = threading.Event()
+    TESTING_EVENT = threading.Event()
+    POKER_EVENT = threading.Event()
 
     udk_print_spam_thread = threading.Thread(
         target=print_udk_processes,
-        args=(poker_event,),
+        args=(POKER_EVENT,),
     )
     udk_print_spam_thread.start()
 
     obs = watchdog.observers.Observer()
-    watcher = LogWatcher(building_event, testing_event, log_file)
+    watcher = LogWatcher(BUILDING_EVENT, TESTING_EVENT, log_file)
 
     if not log_file.exists():
         print(f"'{log_file}' does not exist yet, touching...")
@@ -564,7 +572,7 @@ async def main():
 
     poker = threading.Thread(
         target=poke_file,
-        args=[log_file, poker_event],
+        args=[log_file, POKER_EVENT],
     )
     poker.start()
 
@@ -573,7 +581,7 @@ async def main():
     #     _ = await run_udk_server(
     #         watcher=watcher,
     #         udk_lite_root=udk_lite_root,
-    #         testing_event=testing_event,
+    #         TESTING_EVENT=TESTING_EVENT,
     #         udk_args="Entry",
     #     )
 
@@ -598,15 +606,15 @@ async def main():
     ec = await run_udk_build(
         watcher=watcher,
         udk_lite_root=udk_lite_root,
-        building_event=building_event,
+        building_event=BUILDING_EVENT,
         use_shell=use_shell,
     )
 
     ec += await run_udk_server(
         watcher=watcher,
         udk_lite_root=udk_lite_root,
-        testing_event=testing_event,
-        udk_args="Entry?Mutator=UMBTests.UMBTestsMutator",
+        testing_event=TESTING_EVENT,
+        udk_args="Entry?Mutator=UMBTests.UMBTestsMutator?bIsLanMatch=true?dedicated=true",
         use_shell=use_shell,
     )
 
@@ -616,7 +624,7 @@ async def main():
     if obs.is_alive():
         raise RuntimeError("timed out waiting for observer thread")
 
-    poker_event.set()
+    POKER_EVENT.set()
     poker.join(timeout=5)
 
     if poker.is_alive():
@@ -648,4 +656,12 @@ if __name__ == "__main__":
     except Exception as _e:
         print(f"error running main: {_e}")
         print_exc()
-        raise
+
+        if BUILDING_EVENT:
+            BUILDING_EVENT.set()
+        if TESTING_EVENT:
+            TESTING_EVENT.set()
+        if POKER_EVENT:
+            POKER_EVENT.set()
+
+        sys.exit(1)
