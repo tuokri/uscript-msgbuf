@@ -26,9 +26,24 @@ const FLOAT_MIN = 0.0000000000000000000000000001175494;
 const PACKET_SIZE = {{ packet_size }};
 
 var UMBTestsTcpLink Link;
+{% for message in messages %}
+var array<{{ message.name }}> MsgQueue_{{ message.name }};
+var bool bClientServerDone_{{ message.name }};
+{% endfor %}
 
+var int TotalFailures;
+var int TotalMessagesToSend;
+var int TotalMessagesReceived;
 var int NumTestRounds;
 var bool bDone;
+var bool bLocalDone;
+
+event Tick(float DeltaTime)
+{
+    super.Tick(DeltaTime);
+
+
+}
 
 function bool MutatorIsAllowed()
 {
@@ -89,12 +104,6 @@ final static function string RandomString(int Size)
 
     return Str;
 }
-
-// final function SendBytes(
-//     const out Bytes[PACKET_SIZE])
-// {
-//
-// }
 
 {% for message in messages %}
 {% set msg1 = "TESTVAR_" + message.name + "_Msg1" %}
@@ -216,14 +225,21 @@ final simulated function int Test_{{ message.name }}()
         ++Failures;
     }
 
+    if (Failures == 0)
+    {
+        MsgQueue_{{ message.name }}.AddItem({{ msg1 }});
+    }
+
     return Failures;
 }
-{% endfor %}
+
+{% endfor -%}
 
 function PreBeginPlay()
 {
     local int Failures;
     local int Round;
+    local int I;
 
     `ulog(self @ "initialized");
 
@@ -239,6 +255,7 @@ function PreBeginPlay()
         Failures += 1;
     }
 
+    // Local tests.
     for (Round = 0; Round < NumTestRounds; ++Round)
     {
 {% for message in messages %}
@@ -253,18 +270,122 @@ function PreBeginPlay()
     `ulog("##TEST RESULTS##: Failures=" $ Failures);
     if (Failures > 0)
     {
-        `ulog("##TEST RESULTS##: TEST SUITE(S) FAILED");
+        `ulog("##TEST RESULTS##: LOCAL TEST SUITE(S) FAILED");
     }
     else
     {
-        `ulog("##TEST RESULTS##: ALL TESTS PASSED");
+        `ulog("##TEST RESULTS##: ALL LOCAL TESTS PASSED");
     }
 
+    TotalFailures = Failures;
+
+    bLocalDone = True;
+
+    RunClientServerTests();
+
+    SetTimer(2.0, True, nameof(Quit));
+}
+
+function SendMsg()
+{
+
+}
+
+function bool IsMsgReceived()
+{
+    return False;
+}
+
+function bool CheckMessage()
+{
+    return False;
+}
+
+{% for message in messages %}
+state Sending_{{ message.name }}
+{
+    function SendMsg()
+    {
+        if (MsgQueue_{{ message.name }}.Length > 0)
+        {
+            // Send with Link.
+
+            GotoState('WaitingFor_{{ message.name }}');
+        }
+        else
+        {
+    {% if loop.is_last %}
+            `ulog("### ### ### ### ### ### ### ### ### ### ### ### ### ###");
+            `ulog("TotalMessagesToSend   :" @ TotalMessagesToSend);
+            `ulog("TotalMessagesReceived :" @ TotalMessagesReceived);
+            `ulog("### ### ### ### ### ### ### ### ### ### ### ### ### ###");
+            TotalFailures += int(TotalMessagesToSend == TotalMessagesReceived);
+
+            `ulog("##TOTAL TEST RESULTS##: TotalFailures=" $ TotalFailures);
+            if (TotalFailures > 0)
+            {
+                `ulog("##TOTAL TEST RESULTS##: TEST SUITE(S) FAILED");
+            }
+            else
+            {
+                `ulog("##TOTAL TEST RESULTS##: ALL TESTS PASSED");
+            }
+
+            // Done with all message types, exit.
+            GotoState('');
+            bDone = True;
+            `ulog("quitting");
+            ConsoleCommand("QUIT", True);
+    {% else %}
+            bClientServerDone_{{ message.name }} = True;
+            // Done with this type, go to next type's queue.
+            GotoState('WaitingFor_{{ at(messages, loop.index + 1).name }}');
+    {% endif %}
+        }
+    }
+
+Begin:
+    `ulog("Begin state Sending_{{ message.name }}");
+}
+
+state WaitingFor_{{ message.name }}
+{
+    function bool IsMsgReceived()
+    {
+        // Check if Link has message ready for us.
+
+        return False;
+    }
+
+    function bool CheckMessage()
+    {
+        // Check that message is valid.
+
+        GotoState('Sending_{{ message.name }}');
+
+        return False;
+    }
+
+Begin:
+    `ulog("Begin state WaitingFor_{{ message.name }}");
+}
+
+// ---------------------------------------------------------------------------
+{% endfor %}
+
+final function RunClientServerTests()
+{
+    TotalMessagesToSend = 0;
+
+{% for message in messages %}
+    TotalMessagesToSend += MsgQueue_{{ message.name }}.Length;
+{% endfor %}
+    `ulog("TotalMessagesToSend:" @ TotalMessagesToSend);
+
+    // TODO: move this elsewhere.
+    bDone = True;
     `ulog("quitting");
     ConsoleCommand("QUIT", True);
-
-    bDone = True;
-    SetTimer(2.0, True, nameof(Quit));
 }
 
 final function Quit()
@@ -277,6 +398,11 @@ final function Quit()
 
 DefaultProperties
 {
+    TotalFailures=0
     NumTestRounds=50
     bDone=False
+    bLocalDone=False
+{% for message in messages %}
+    bClientServerDone_{{ message.name }}=False
+{% endfor %}
 }
