@@ -51,11 +51,9 @@ jobs:
           cache: 'pip'
           cache-dependency-path: .\tests\UDKTests\requirements.txt
 
-      - run: py -m pip install -r .\tests\UDKTests\requirements.txt
+      - run: pip install -r .\tests\UDKTests\requirements.txt
 
       - run: python --version
-
-      - run: py --version
 
       - name: Cache Windows redistributables
         uses: actions/cache@v3
@@ -81,9 +79,10 @@ jobs:
 
       - name: Run UDK build and test script
         timeout-minutes: 5
-        shell: PowerShell
-        run: py .\tests\UDKTests\setup_udk_build_env.py `
-          --use-shell --add-fw-rules `
+        run: >
+          python .\tests\UDKTests\setup_udk_build_env.py
+          --use-shell
+          --add-fw-rules
           --echo-server-path ${{ github.workspace }}/build/umb_echo_server.exe
 
       - name: Archive UDK build and test logs and artifacts
