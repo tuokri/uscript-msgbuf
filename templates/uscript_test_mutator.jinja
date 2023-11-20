@@ -64,7 +64,8 @@ event Tick(float DeltaTime)
         SendMsg_{{ message.name }}();
         break;
     case ETS_WaitingFor_{{ message.name }}:
-        if (MessageReady_{{ message.name }}())
+        // TODO: This is kinda spaghetti-y. Consider refactoring.
+        if (MessageReady_{{ message.name }}() || bClientServerDone_{{ message.name }})
         {
             TotalFailures += CheckMessage_{{ message.name }}();
         }
@@ -143,13 +144,13 @@ final function int Test_{{ message.name }}()
 {
     local int Failures;
     local int X;
+    local array<byte> DynamicBytes;
     local {{ message.name }} {{ msg1 }};
     local {{ message.name }} {{ msg2 }};
 {% if message.has_static_size %}
     local byte StaticBytes[PACKET_SIZE];
     local byte StaticSize;
 {% endif %}
-    local array<byte> DynamicBytes;
 
     `ulog("running tests" @ "(" $ TimeStamp() $ ")" $ "...");
 
@@ -350,10 +351,10 @@ final function SendMsg_{{ message.name }}()
     TestState = ETS_WaitingFor_{{ message.name }};
 }
 
+{% set mt = "class'" + class_name + "'.const." + uscript_message_type_prefix + "_" + message.name %}
 final function bool MessageReady_{{ message.name }}()
 {
-    // TODO: check from Link.
-    return True;
+    return Link.MessageType == {{ mt }};
 }
 
 /*
@@ -383,27 +384,56 @@ ConsoleCommand("QUIT", True);
 
 final function int CheckMessage_{{ message.name }}()
 {
-    // TODO: read from link and compare.
-    ++TotalMessagesReceived;
+    local int Failures;
+    local {{ message.name }} Msg;
+
+    Failures = 0;
 
     if (bClientServerDone_{{ message.name }})
     {
+        Link.MessageType = class'{{ class_name }}'.const.EMT_None;
+        Link.Size = 0;
+        Link.Part = 0;
+
     {% if loop.is_last %}
         // Done with all message types, exit. TODO: move exit away from here.
         Link.Close();
         TestState = ETS_None;
         bDone = True;
     {% else %}
-        // Done with this type. Move to next type's queue.
+        // Done with this type. Move to the next type's queue.
         TestState = ETS_Sending_{{ at(messages, loop.index + 1).name }};
     {% endif %}
+
+        return Failures;
     }
     else
     {
         TestState = ETS_Sending_{{ message.name }};
     }
 
-    return 0;
+    // TODO: read from link and compare.
+
+    if (Link.MessageType != {{ mt }})
+    {
+        `ulog("##ERROR##: wrong MessageType, expected {{ mt }}, got" @ Link.MessageType);
+        ++Failures;
+    }
+
+    // TODO: do both, FromBytes and FromMultiBytes for static messages.
+    //   Only do FromMultiBytes for dynamic messages.
+{% if message.has_static_size %}
+    class'{{ class_name }}'.static.{{ message.name }}_FromBytes(Msg, Link.RecvMsgBufStatic);
+{% endif %}
+    // TODO: (also) read multi bytes.
+
+    Link.MessageType = class'{{ class_name }}'.const.EMT_None;
+    Link.Size = 0;
+    Link.Part = 0;
+
+    ++TotalMessagesReceived;
+
+    return Failures;
 }
 
 {% endfor -%}

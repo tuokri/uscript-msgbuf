@@ -18,6 +18,8 @@ class UMBTestsTcpLink extends TcpLink;
 
 `include(UMBTests\Classes\UMBTestsMacros.uci);
 
+const PACKET_SIZE = 255;
+
 var private int ClientPort;
 
 var string TargetHost;
@@ -26,7 +28,15 @@ var int TargetPort;
 var int Idx;
 var int NumSent;
 var int NumToSend;
-var byte OutBuf[255];
+var byte OutBuf[PACKET_SIZE];
+
+// Received message.
+var byte Size;
+var byte Part;
+var int MessageType;
+var bool bIsStatic;
+var byte RecvMsgBufStatic[PACKET_SIZE];
+var array<byte> RecvMsgBufMulti;
 
 final function ConnectToServer()
 {
@@ -41,7 +51,7 @@ final function SendBytes(
     const out array<byte> Bytes)
 {
     // The easy case.
-    if (Bytes.Length <= 255)
+    if (Bytes.Length <= PACKET_SIZE)
     {
         for (Idx = 0; Idx < Bytes.Length; ++Idx)
         {
@@ -53,6 +63,15 @@ final function SendBytes(
         `ulog("Sent" @ NumSent @ "bytes");
         return;
     }
+
+    // TODO: sending multipart messages.
+    NumToSend = Min(PACKET_SIZE, Bytes.Length);
+    for (Idx = 0; Idx < NumToSend; ++Idx)
+    {
+        OutBuf[Idx] = Bytes[Idx];
+    }
+    NumSent = SendBinary(NumToSend, OutBuf);
+    `ulog("Sent" @ NumSent @ "bytes");
 }
 
 event Resolved(IpAddr Addr)
@@ -87,12 +106,10 @@ event Closed()
     `ulog("closed");
 }
 
-event ReceivedBinary(int Count, byte B[255])
+event ReceivedBinary(int Count, byte B[PACKET_SIZE])
 {
-    local byte Size;
-    local byte Part;
-    local int MessageType;
     local int I;
+    local int J;
 
     `ulog("Count       :" @ Count);
 
@@ -103,6 +120,28 @@ event ReceivedBinary(int Count, byte B[255])
     `ulog("Size        :" @ Size);
     `ulog("Part        :" @ Part);
     `ulog("MessageType :" @ MessageType);
+
+    // TODO: generate reflection helpers for UScript.
+    // E.g.: function bool IsStaticMsg(int MessageType)
+
+    bIsStatic = class'TestMessages'.static.IsStaticMessage(MessageType);
+    if (bIsStatic)
+    {
+        // The easy case.
+        if (Size <= PACKET_SIZE)
+        {
+            for (J = 0; J < Size; ++J)
+            {
+                RecvMsgBufStatic[J] = B[J];
+            }
+        }
+        else
+        {
+            `ulog("##ERROR##: message too large to be static!");
+        }
+
+        return;
+    }
 
     I = 4;
 }
