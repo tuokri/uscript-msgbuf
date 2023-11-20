@@ -15,7 +15,12 @@
     // TODO: for multipart packets, the sender is responsible for splitting the
     //   messages. Document this requirement better somewhere.
     *vi++ = static_cast<::umb::byte>(std::clamp(size, ZERO_SIZE, ::umb::g_packet_size));
-    *vi++ = 0; // Part.
+    *vi++ =
+{% if message.always_single_part %}
+    ::umb::g_part_single_part
+{% else %}
+    (serialized_size() <= ::umb::g_packet_size) ? ::umb::g_part_single_part : 0
+{% endif %}; // Part.
     const auto message_type = static_cast<uint16_t>(type());
     ::umb::encode_uint16(message_type, vi);
 {% for field in message.fields %}
