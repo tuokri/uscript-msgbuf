@@ -428,7 +428,8 @@ final function int CheckMessage_{{ message.name }}()
 
     // TODO: MAKE MESSAGE COMPARISON INTO A MACRO AND/OR FUNCTION!
     // TODO: CHECK EARLIER COMPARISON IMPL. ABOVE!
-    if (Msg != CmpMsg_{{ message.name }})
+    // TODO: CURRENTLY ONLY CHECKING STATIC MESSAGES!!!
+    if (Msg != CmpMsg_{{ message.name }} /*&& Link.bIsStatic*/)
     {
         `ulog("##ERROR##: FAILED CMP, TODO: BETTER MESSAGE");
         ++Failures;
