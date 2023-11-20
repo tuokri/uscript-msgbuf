@@ -330,6 +330,19 @@ static final function bool BytesEqual(
     return True;
 }
 
+static final function bool IsStaticMessage(int MessageType)
+{
+    switch (MessageType)
+    {
+{% for message in messages %}
+    case {{ uscript_message_type_prefix }}_{{ message.name }}:
+        return {% if message.has_static_size %} True{% else %} False{% endif %};
+{% endfor %}
+    }
+
+    return False;
+}
+
 // TODO: does the engine have built-in comparison for structs?
 {% for message in messages %}
 static final operator(24) bool == (
