@@ -121,9 +121,6 @@ event ReceivedBinary(int Count, byte B[PACKET_SIZE])
     `ulog("Part        :" @ Part);
     `ulog("MessageType :" @ MessageType);
 
-    // TODO: generate reflection helpers for UScript.
-    // E.g.: function bool IsStaticMsg(int MessageType)
-
     bIsStatic = class'TestMessages'.static.IsStaticMessage(MessageType);
     if (bIsStatic)
     {
