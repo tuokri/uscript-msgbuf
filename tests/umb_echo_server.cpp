@@ -67,9 +67,10 @@ awaitable<void> echo(tcp::socket socket)
     try
     {
         std::cout
-            << std::format("connection: {}:{}\n",
+            << std::format("connection: {}:{}",
                            socket.remote_endpoint().address().to_string(),
-                           socket.remote_endpoint().port());
+                           socket.remote_endpoint().port())
+            << std::endl;
 
         std::shared_ptr<umb::Message> msg;
         // TODO: should we read into a larger buffer?
@@ -171,6 +172,8 @@ awaitable<void> echo(tcp::socket socket)
 
             co_await async_write(socket,
                                  boost::asio::buffer(bytes_out, size_out), use_awaitable);
+
+            std::cout.flush();
         }
     }
     catch (const std::exception& e)
@@ -198,7 +201,10 @@ int main()
 
         boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
         signals.async_wait([&](auto, auto)
-                           { io_context.stop(); });
+                           {
+                               std::cout << "exiting" << std::endl;
+                               io_context.stop();
+                           });
 
         co_spawn(io_context, listener(), detached);
 

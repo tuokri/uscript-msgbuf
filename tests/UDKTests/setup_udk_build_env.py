@@ -57,6 +57,8 @@ BUILDING_EVENT: threading.Event | None = None
 TESTING_EVENT: threading.Event | None = None
 POKER_EVENT: threading.Event | None = None
 
+UMB_ECHO_SERVER_PROC: asyncio.subprocess.Process | None = None
+
 
 class State(enum.StrEnum):
     NONE = enum.auto()
@@ -384,18 +386,28 @@ def print_udk_processes(event: threading.Event):
         time.sleep(sleep_time)
 
 
+async def start_umb_echo_server(echo_server_path: Path):
+    global UMB_ECHO_SERVER_PROC
+
+    UMB_ECHO_SERVER_PROC = await asyncio.create_subprocess_exec(
+        str(echo_server_path)
+    )
+
+    print(f"{UMB_ECHO_SERVER_PROC=}")
+
+
+async def stop_umb_echo_server():
+    if UMB_ECHO_SERVER_PROC:
+        UMB_ECHO_SERVER_PROC.terminate()
+        ec = await UMB_ECHO_SERVER_PROC.wait()
+        print(f"UMB_ECHO_SERVER_PROC exited with code: {ec}")
+
+
 async def main():
     global UDK_TEST_TIMEOUT
     global BUILDING_EVENT
     global TESTING_EVENT
     global POKER_EVENT
-
-    # pwsh_path = Path(r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe")
-    # print(f"pwsh_path: '{pwsh_path}', exists={pwsh_path.exists()}")
-    # os.putenv(
-    #     "COMSPEC",
-    #     str(pwsh_path),
-    # )
 
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -413,11 +425,17 @@ async def main():
         help="allow UDK.exe through the windows firewall",
         action="store_true",
     )
+    ap.add_argument(
+        "--echo-server-path",
+        help="path to umb_echo_server executable",
+        default="umb_echo_server",
+    )
 
     args = ap.parse_args()
     progress_bar = not args.no_progress_bar
     use_shell = args.use_shell
     add_fw_rules = args.add_fw_rules
+    echo_server_path = Path(args.echo_server_path).resolve()
 
     hard_reset = False
     cache = Cache()
@@ -576,15 +594,6 @@ async def main():
     )
     poker.start()
 
-    # if not cfg_file.exists():
-    #     print(f"'{cfg_file}' does not exist, running dry-run server to create config files")
-    #     _ = await run_udk_server(
-    #         watcher=watcher,
-    #         udk_lite_root=udk_lite_root,
-    #         TESTING_EVENT=TESTING_EVENT,
-    #         udk_args="Entry",
-    #     )
-
     cfg = UDKConfigParser(comment_prefixes=";")
     cfg.read(cfg_file)
 
@@ -615,6 +624,8 @@ async def main():
         use_shell=use_shell,
     )
 
+    await start_umb_echo_server(echo_server_path)
+
     ec += await run_udk_server(
         watcher=watcher,
         udk_lite_root=udk_lite_root,
@@ -622,6 +633,8 @@ async def main():
         udk_args="Entry?Mutator=UMBTests.UMBTestsMutator?bIsLanMatch=true?dedicated=true",
         use_shell=use_shell,
     )
+
+    await stop_umb_echo_server()
 
     obs.stop()
     obs.join(timeout=UDK_TEST_TIMEOUT)
