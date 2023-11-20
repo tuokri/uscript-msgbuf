@@ -594,6 +594,11 @@ async def main():
         edit_packages.append(pkg_name)
         cfg["UnrealEd.EditorEngine"]["+EditPackages"] = "\n".join(edit_packages)
 
+    if not cfg.has_section("IpDrv.TcpNetDriver"):
+        cfg.add_section("IpDrv.TcpNetDriver")
+    cfg["IpDrv.TcpNetDriver"]["NetServerMaxTickRate"] = "120"
+    cfg["IpDrv.TcpNetDriver"]["LanServerMaxTickRate"] = "120"
+
     with cfg_file.open("w") as f:
         cfg.write(f, space_around_delimiters=False)
 
