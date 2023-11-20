@@ -20,14 +20,12 @@ import json
 import os
 import re
 import shutil
-import sys
 import threading
 import time
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import field
 from pathlib import Path
-from traceback import print_exc
 from typing import IO
 
 import httpx
@@ -673,7 +671,6 @@ if __name__ == "__main__":
         asyncio.run(main())
     except Exception as _e:
         print(f"error running main: {_e}")
-        print_exc()
 
         if BUILDING_EVENT:
             BUILDING_EVENT.set()
@@ -682,4 +679,4 @@ if __name__ == "__main__":
         if POKER_EVENT:
             POKER_EVENT.set()
 
-        sys.exit(1)
+        raise
