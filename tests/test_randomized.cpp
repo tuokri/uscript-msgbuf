@@ -253,6 +253,8 @@ TEST_CASE("test TestMessages messages with randomized data")
                 // TODO: meta comparison functions?
 
                 const auto mt1 = message->type();
+                CHECK_NE(mt1, 0);
+                CHECK_NE(m2->type(), 0);
                 const auto mt1_str = ::testmessages::umb::meta::to_string(mt1);
                 const auto mt2_str = ::testmessages::umb::meta::to_string(m2->type());
                 CHECK_EQ(mt1, static_cast<uint16_t>(mt));
