@@ -82,7 +82,9 @@ jobs:
       - name: Run UDK build and test script
         timeout-minutes: 5
         shell: PowerShell
-        run: py .\tests\UDKTests\setup_udk_build_env.py --use-shell --add-fw-rules
+        run: py .\tests\UDKTests\setup_udk_build_env.py `
+          --use-shell --add-fw-rules `
+          --echo-server-path ${{ github.workspace }}/build/umb_echo_server.exe
 
       - name: Archive UDK build and test logs and artifacts
         uses: actions/upload-artifact@v3
