@@ -29,6 +29,7 @@ var UMBTestsTcpLink Link;
 {% for message in messages %}
 var array<{{ message.name }}> MsgQueue_{{ message.name }};
 var bool bClientServerDone_{{ message.name }};
+var {{ message.name }} CmpMsg_{{ message.name }};
 {% endfor %}
 
 enum ETestState
@@ -338,9 +339,7 @@ final function SendMsg_{{ message.name }}()
         Msg = MsgQueue_{{ message.name }}[MsgQueue_{{ message.name }}.Length - 1];
         class'{{ class_name }}'.static.{{ message.name }}_ToMultiBytes(Msg, BytesToSend);
         MsgQueue_{{ message.name }}.Remove(MsgQueue_{{ message.name }}.Length - 1, 1);
-
-        // TODO: Store in temp var for comparison later in CheckMessage_XYZ.
-
+        CmpMsg_{{ message.name }} = Msg;
         Link.SendBytes(BytesToSend);
     }
     else
@@ -426,6 +425,14 @@ final function int CheckMessage_{{ message.name }}()
     class'{{ class_name }}'.static.{{ message.name }}_FromBytes(Msg, Link.RecvMsgBufStatic);
 {% endif %}
     // TODO: (also) read multi bytes.
+
+    // TODO: MAKE MESSAGE COMPARISON INTO A MACRO AND/OR FUNCTION!
+    // TODO: CHECK EARLIER COMPARISON IMPL. ABOVE!
+    if (Msg != CmpMsg_{{ message.name }})
+    {
+        `ulog("##ERROR##: FAILED CMP, TODO: BETTER MESSAGE");
+        ++Failures;
+    }
 
     Link.MessageType = class'{{ class_name }}'.const.EMT_None;
     Link.Size = 0;

@@ -129,6 +129,8 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
                     if match.group(1).lower() == "error":
                         if match.group(2):
                             self._errors.append(line)
+                    elif "##ERROR##" in match.group(2):
+                        self._errors.append(line)
                     elif match.group(1).lower() == "warning":
                         if match.group(2):
                             self._warnings.append(line)
