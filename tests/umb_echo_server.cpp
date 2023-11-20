@@ -66,6 +66,11 @@ awaitable<void> echo(tcp::socket socket)
 {
     try
     {
+        std::cout
+            << std::format("connection: {}:{}\n",
+                           socket.remote_endpoint().address().to_string(),
+                           socket.remote_endpoint().port());
+
         std::shared_ptr<umb::Message> msg;
         // TODO: should we read into a larger buffer?
         std::array<umb::byte, 255> data{};
@@ -125,28 +130,32 @@ awaitable<void> echo(tcp::socket socket)
                     msg = std::make_shared<testmessages::umb::GetSomeStuff>();
                     msg->from_bytes(payload);
                     break;
-                case testmessages::umb::MessageType::BoolPackingMessage:
-                    msg = std::make_shared<testmessages::umb::BoolPackingMessage>();
-                    msg->from_bytes(payload);
-                    break;
-                case testmessages::umb::MessageType::testmsg:
-                    msg = std::make_shared<testmessages::umb::testmsg>();
+                case testmessages::umb::MessageType::GetSomeStuffResp:
+                    msg = std::make_shared<testmessages::umb::GetSomeStuffResp>();
                     msg->from_bytes(payload);
                     break;
                 case testmessages::umb::MessageType::JustAnotherTestMessage:
                     msg = std::make_shared<testmessages::umb::JustAnotherTestMessage>();
                     msg->from_bytes(payload);
                     break;
-                case testmessages::umb::MessageType::DualStringMessage:
-                    msg = std::make_shared<testmessages::umb::DualStringMessage>();
+                case testmessages::umb::MessageType::testmsg:
+                    msg = std::make_shared<testmessages::umb::testmsg>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::BoolPackingMessage:
+                    msg = std::make_shared<testmessages::umb::BoolPackingMessage>();
+                    msg->from_bytes(payload);
+                    break;
+                case testmessages::umb::MessageType::STATIC_BoolPackingMessage:
+                    msg = std::make_shared<testmessages::umb::STATIC_BoolPackingMessage>();
                     msg->from_bytes(payload);
                     break;
                 case testmessages::umb::MessageType::MultiStringMessage:
                     msg = std::make_shared<testmessages::umb::MultiStringMessage>();
                     msg->from_bytes(payload);
                     break;
-                case testmessages::umb::MessageType::STATIC_BoolPackingMessage:
-                    msg = std::make_shared<testmessages::umb::STATIC_BoolPackingMessage>();
+                case testmessages::umb::MessageType::DualStringMessage:
+                    msg = std::make_shared<testmessages::umb::DualStringMessage>();
                     msg->from_bytes(payload);
                     break;
 

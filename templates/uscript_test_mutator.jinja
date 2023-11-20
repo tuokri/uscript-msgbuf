@@ -31,18 +31,48 @@ var array<{{ message.name }}> MsgQueue_{{ message.name }};
 var bool bClientServerDone_{{ message.name }};
 {% endfor %}
 
+enum ETestState
+{
+    ETS_None,
+{% for message in messages %}
+    ETS_Sending_{{ message.name }},
+    ETS_WaitingFor_{{ message.name }},
+{% endfor %}
+};
+
+var ETestState TestState;
+
 var int TotalFailures;
 var int TotalMessagesToSend;
 var int TotalMessagesReceived;
 var int NumTestRounds;
 var bool bDone;
 var bool bLocalDone;
+var array<byte> BytesToSend;
 
 event Tick(float DeltaTime)
 {
     super.Tick(DeltaTime);
 
+    `ulog("TestState:" @ TestState, TestState != ETS_None);
 
+    switch (TestState)
+    {
+{% for message in messages %}
+    case ETS_Sending_{{ message.name }}:
+        `ulog("MsgQueue_{{ message.name }}.Length:" @ MsgQueue_{{ message.name }}.Length);
+        SendMsg_{{ message.name }}();
+        break;
+    case ETS_WaitingFor_{{ message.name }}:
+        if (MessageReady_{{ message.name }}())
+        {
+            TotalFailures += CheckMessage_{{ message.name }}();
+        }
+        break;
+{% endfor %}
+    default:
+        return;
+    }
 }
 
 function bool MutatorIsAllowed()
@@ -109,7 +139,7 @@ final static function string RandomString(int Size)
 {% set msg1 = "TESTVAR_" + message.name + "_Msg1" %}
 {% set msg2 = "TESTVAR_" + message.name + "_Msg2" %}
 {% set cls = "class'" + class_name + "'.static." %}
-final simulated function int Test_{{ message.name }}()
+final function int Test_{{ message.name }}()
 {
     local int Failures;
     local int X;
@@ -254,6 +284,12 @@ function PreBeginPlay()
         `ulog("##ERROR##: Failed to spawn UMBTestsTcpLink");
         Failures += 1;
     }
+    else
+    {
+        Link.TargetHost = "127.0.0.1";
+        Link.TargetPort = 55555;
+        Link.ConnectToServer();
+    }
 
     // Local tests.
     for (Round = 0; Round < NumTestRounds; ++Round)
@@ -281,100 +317,106 @@ function PreBeginPlay()
 
     bLocalDone = True;
 
+    SetTimer(0.5, True, nameof(Quit));
+}
+
+function PostBeginPlay()
+{
+    super.PostBeginPlay();
+
     RunClientServerTests();
-
-    SetTimer(2.0, True, nameof(Quit));
-}
-
-function SendMsg()
-{
-
-}
-
-function bool IsMsgReceived()
-{
-    return False;
-}
-
-function bool CheckMessage()
-{
-    return False;
 }
 
 {% for message in messages %}
-state Sending_{{ message.name }}
+final function SendMsg_{{ message.name }}()
 {
-    function SendMsg()
-    {
-        if (MsgQueue_{{ message.name }}.Length > 0)
-        {
-            // Send with Link.
+    local {{ message.name }} Msg;
 
-            GotoState('WaitingFor_{{ message.name }}');
-        }
-        else
-        {
+    if (MsgQueue_{{ message.name }}.Length > 0)
+    {
+        Msg = MsgQueue_{{ message.name }}[MsgQueue_{{ message.name }}.Length - 1];
+        class'{{ class_name }}'.static.{{ message.name }}_ToMultiBytes(Msg, BytesToSend);
+        MsgQueue_{{ message.name }}.Remove(MsgQueue_{{ message.name }}.Length - 1, 1);
+
+        // TODO: Store in temp var for comparison later in CheckMessage_XYZ.
+
+        Link.SendBytes(BytesToSend);
+    }
+    else
+    {
+        bClientServerDone_{{ message.name }} = True;
+    }
+
+    TestState = ETS_WaitingFor_{{ message.name }};
+}
+
+final function bool MessageReady_{{ message.name }}()
+{
+    // TODO: check from Link.
+    return True;
+}
+
+/*
+// TODO: move this check to a dedicated function! E.g. final test state.
+`ulog("### ### ### ### ### ### ### ### ### ### ### ### ### ###");
+`ulog("TotalMessagesToSend   :" @ TotalMessagesToSend);
+`ulog("TotalMessagesReceived :" @ TotalMessagesReceived);
+`ulog("### ### ### ### ### ### ### ### ### ### ### ### ### ###");
+TotalFailures += int(TotalMessagesToSend == TotalMessagesReceived);
+
+`ulog("##TOTAL TEST RESULTS##: TotalFailures=" $ TotalFailures);
+if (TotalFailures > 0)
+{
+    `ulog("##TOTAL TEST RESULTS##: TEST SUITE(S) FAILED");
+}
+else
+{
+    `ulog("##TOTAL TEST RESULTS##: ALL TESTS PASSED");
+}
+
+// Done with all message types, exit.
+TestState = ETS_None;
+bDone = True;
+`ulog("quitting");
+ConsoleCommand("QUIT", True);
+*/
+
+final function int CheckMessage_{{ message.name }}()
+{
+    // TODO: read from link and compare.
+    ++TotalMessagesReceived;
+
+    if (bClientServerDone_{{ message.name }})
+    {
     {% if loop.is_last %}
-            `ulog("### ### ### ### ### ### ### ### ### ### ### ### ### ###");
-            `ulog("TotalMessagesToSend   :" @ TotalMessagesToSend);
-            `ulog("TotalMessagesReceived :" @ TotalMessagesReceived);
-            `ulog("### ### ### ### ### ### ### ### ### ### ### ### ### ###");
-            TotalFailures += int(TotalMessagesToSend == TotalMessagesReceived);
-
-            `ulog("##TOTAL TEST RESULTS##: TotalFailures=" $ TotalFailures);
-            if (TotalFailures > 0)
-            {
-                `ulog("##TOTAL TEST RESULTS##: TEST SUITE(S) FAILED");
-            }
-            else
-            {
-                `ulog("##TOTAL TEST RESULTS##: ALL TESTS PASSED");
-            }
-
-            // Done with all message types, exit.
-            GotoState('');
-            bDone = True;
-            `ulog("quitting");
-            ConsoleCommand("QUIT", True);
+        // Done with all message types, exit. TODO: move exit away from here.
+        Link.Close();
+        TestState = ETS_None;
+        bDone = True;
     {% else %}
-            bClientServerDone_{{ message.name }} = True;
-            // Done with this type, go to next type's queue.
-            GotoState('WaitingFor_{{ at(messages, loop.index + 1).name }}');
+        // Done with this type. Move to next type's queue.
+        TestState = ETS_Sending_{{ at(messages, loop.index + 1).name }};
     {% endif %}
-        }
+    }
+    else
+    {
+        TestState = ETS_Sending_{{ message.name }};
     }
 
-Begin:
-    `ulog("Begin state Sending_{{ message.name }}");
+    return 0;
 }
 
-state WaitingFor_{{ message.name }}
-{
-    function bool IsMsgReceived()
-    {
-        // Check if Link has message ready for us.
-
-        return False;
-    }
-
-    function bool CheckMessage()
-    {
-        // Check that message is valid.
-
-        GotoState('Sending_{{ message.name }}');
-
-        return False;
-    }
-
-Begin:
-    `ulog("Begin state WaitingFor_{{ message.name }}");
-}
-
-// ---------------------------------------------------------------------------
-{% endfor %}
+{% endfor -%}
 
 final function RunClientServerTests()
 {
+    if (Link.LinkState != STATE_Connected)
+    {
+        `ulog("Link not connected yet, state:" @ Link.LinkState);
+        SetTimer(0.01, False, nameof(RunClientServerTests));
+        return;
+    }
+
     TotalMessagesToSend = 0;
 
 {% for message in messages %}
@@ -382,16 +424,14 @@ final function RunClientServerTests()
 {% endfor %}
     `ulog("TotalMessagesToSend:" @ TotalMessagesToSend);
 
-    // TODO: move this elsewhere.
-    bDone = True;
-    `ulog("quitting");
-    ConsoleCommand("QUIT", True);
+    TestState = ETS_Sending_{{ messages.0.name }};
 }
 
 final function Quit()
 {
     if (bDone)
     {
+        `ulog("quitting");
         ConsoleCommand("QUIT", True);
     }
 }
