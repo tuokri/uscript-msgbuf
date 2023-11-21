@@ -73,9 +73,7 @@ public:
     [[nodiscard]] virtual size_t serialized_size() const = 0;
 
     // TODO: reconsider this API.
-    [[nodiscard]] constexpr virtual uint16_t type() const
-
-    noexcept = 0;
+    [[nodiscard]] constexpr virtual uint16_t type() const noexcept = 0;
 
 protected:
     [[nodiscard]] virtual bool is_equal(const Message& msg) const = 0;
