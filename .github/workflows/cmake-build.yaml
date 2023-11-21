@@ -177,6 +177,8 @@ jobs:
             build/*.a
             build/*.lib
             build/*.so
+            build/uscript_msgbuf_generator
+            build/umb_echo_server
 
 
   build-and-test-with-udk:

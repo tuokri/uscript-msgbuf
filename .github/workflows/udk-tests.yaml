@@ -44,6 +44,12 @@ jobs:
           name: umb-generated-uscript-windows-latest-${{ matrix.build_type }}
           path: tests/out/
 
+      - name: Download UMB executables
+        uses: actions/download-artifact@vc3
+        with:
+          name: umb-generator-executable-windows-latest-${{ matrix.build_type }}
+          path: build/
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
