@@ -421,17 +421,35 @@ final function int CheckMessage_{{ message.name }}()
 
     // TODO: do both, FromBytes and FromMultiBytes for static messages.
     //   Only do FromMultiBytes for dynamic messages.
-{% if message.has_static_size %}
+    {% if message.has_static_size %}
     class'{{ class_name }}'.static.{{ message.name }}_FromBytes(Msg, Link.RecvMsgBufStatic);
-{% endif %}
+    {% endif %}
     // TODO: (also) read multi bytes.
 
     // TODO: MAKE MESSAGE COMPARISON INTO A MACRO AND/OR FUNCTION!
     // TODO: CHECK EARLIER COMPARISON IMPL. ABOVE!
     // TODO: CURRENTLY ONLY CHECKING STATIC MESSAGES!!!
-    if (Msg != CmpMsg_{{ message.name }} /*&& Link.bIsStatic*/)
+    if (Msg != CmpMsg_{{ message.name }} && Link.bIsStatic)
     {
         `ulog("##ERROR##: FAILED CMP, TODO: BETTER MESSAGE");
+    {% if message.has_static_size %}
+        {% for field in message.fields %}
+            {% if field.type == "byte" %}
+                {% set cast_begin = "string(int" %}
+                {% set cast_end = ")" %}
+            {% else %}
+                {% set cast_begin = "string" %}
+                {% set cast_end = "" %}
+            {% endif %}
+        `ulog(" ##CMP##: {{ field.name }}:"
+            @ {{ cast_begin }}(Msg.{{ field.name }}){{ cast_end }}
+            @ "?"
+            @ {{ cast_begin }}(CmpMsg_{{ message.name }}.{{ field.name }}){{ cast_end }}
+        );
+        {% endfor %}
+    {% else %}
+        // TODO: dynamic comparison prints.
+    {% endif %}
         ++Failures;
     }
 
