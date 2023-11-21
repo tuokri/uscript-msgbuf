@@ -250,6 +250,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                 CHECK(ok);
                 const auto bytes2 = m2->to_bytes();
                 CHECK_MESSAGE(bytes == bytes2, byte_cmp_msg(bytes, bytes2));
+                CHECK_EQ(*message, *m2);
                 // TODO: meta comparison functions?
 
                 const auto mt1 = message->type();

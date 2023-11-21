@@ -146,17 +146,18 @@ void {{ message.name }}::set_{{ field.name }}({{ cpp_type_arg(field.type) }} val
     m_{{ field.name }} = value;
 }
 
-{% endfor %}
+{% endfor -%}
 
-bool operator==(const {{ message.name }} & lhs, const {{ message.name }}& rhs)
+bool {{ message.name}}::is_equal(const ::umb::Message& msg) const
 {
+    const auto& m = static_cast<const {{ message.name }}&>(msg);
     return (
 {% for field in message.fields %}
     {% if field.type == "float" %}
-        ::umb::internal::Float{lhs.{{ field.name }}()}.AlmostEquals(
-            ::umb::internal::Float{rhs.{{ field.name }}()})
+        ::umb::internal::Float{ {{ field.name }}() }.AlmostEquals(
+            ::umb::internal::Float{m.{{ field.name }}()})
     {% else %}
-        (lhs.{{ field.name }}() == rhs.{{ field.name }}())
+        ({{ field.name }}() == m.{{ field.name }}())
     {% endif %}
         {% if not loop.is_last %} && {% endif %}
 {% endfor %}

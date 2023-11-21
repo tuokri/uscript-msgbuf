@@ -74,7 +74,17 @@ public:
 
     // TODO: reconsider this API.
     [[nodiscard]] constexpr virtual uint16_t type() const noexcept = 0;
+
+protected:
+    [[nodiscard]] virtual bool is_equal(const Message& msg) const = 0;
+
+    friend bool operator==(const Message&, const Message&);
 };
+
+bool operator==(const Message& lhs, const Message& rhs)
+{
+    return typeid(lhs) == typeid(rhs) && lhs.is_equal(rhs);
+}
 
 }
 
