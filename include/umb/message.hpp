@@ -40,7 +40,7 @@ public:
      *
      * @return Serialized message bytes.
      */
-    [[nodiscard]] virtual std::vector<byte> to_bytes() const = 0;
+    [[nodiscard]] virtual std::vector <byte> to_bytes() const = 0;
 
     /**
      * Serialize message to UMB wire format. \bytes should be
@@ -50,7 +50,7 @@ public:
      * @return true if \bytes contains valid UMB wire format
      *         bytes of this message.
      */
-    [[nodiscard]] virtual bool to_bytes(std::span<byte> bytes) const = 0;
+    [[nodiscard]] virtual bool to_bytes(std::span <byte> bytes) const = 0;
 
     /**
      * Initialize message from \bytes span containing valid
@@ -73,15 +73,19 @@ public:
     [[nodiscard]] virtual size_t serialized_size() const = 0;
 
     // TODO: reconsider this API.
-    [[nodiscard]] constexpr virtual uint16_t type() const noexcept = 0;
+    [[nodiscard]] constexpr virtual uint16_t
+
+    type() const
+
+    noexcept = 0;
 
 protected:
     [[nodiscard]] virtual bool is_equal(const Message& msg) const = 0;
 
-    friend bool operator==(const Message&, const Message&);
+    friend inline bool operator==(const Message&, const Message&);
 };
 
-bool operator==(const Message& lhs, const Message& rhs)
+inline bool operator==(const Message& lhs, const Message& rhs)
 {
     return typeid(lhs) == typeid(rhs) && lhs.is_equal(rhs);
 }
