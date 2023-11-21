@@ -211,6 +211,7 @@ TEST_CASE("encode decode static boolean packing message")
 
     sbpm1.set_bool_10_part_pack__0(false);
     sbpm1.set_bool_10_part_pack__5(false);
+    sbpm1.set_bool_10_part_pack__7(true);
     sbpm1.set_pack2(false);
     sbpm1.set_pack1(true);
     sbpm1.set_int_pack_delimiter(69);
@@ -226,6 +227,13 @@ TEST_CASE("encode decode static boolean packing message")
     ok = sbpm2.from_bytes(vec);
     CHECK(ok);
     CHECK_EQ(sbpm1, sbpm2);
+
+    CHECK_EQ(sbpm1.bool_10_part_pack__0(), false);
+    CHECK_EQ(sbpm2.bool_10_part_pack__0(), false);
+    CHECK_EQ(sbpm1.bool_10_part_pack__5(), false);
+    CHECK_EQ(sbpm2.bool_10_part_pack__5(), false);
+    CHECK_EQ(sbpm1.bool_10_part_pack__7(), true);
+    CHECK_EQ(sbpm2.bool_10_part_pack__7(), true);
 }
 
 TEST_CASE("encode decode float fields")
