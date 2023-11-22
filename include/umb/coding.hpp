@@ -25,6 +25,7 @@
 #include <charconv>
 #include <concepts>
 #include <format>
+#include <functional>
 #include <limits>
 #include <span>
 #include <string>
@@ -392,26 +393,12 @@ encode_bool(bool b, std::span<byte>::iterator& bytes)
 template<BoolType B, std::integral T>
 inline constexpr void
 _write_bool_single_byte(
-    byte& byte_out,
+    std::reference_wrapper<byte> byte_out,
     T& index,
     B in)
 {
-    byte_out |= static_cast<byte>(in) << index++;
-}
-
-template<BoolType B, std::integral T>
-inline constexpr void
-_write_bool_many_bytes(
-    byte& byte_out,
-    T& index,
-    B in,
-    std::span<byte>::iterator& bytes)
-{
-    _write_bool_single_byte(byte_out, index, in);
-    if ((index % g_bools_in_byte) == 0)
-    {
-        byte_out = *bytes++;
-    }
+    const auto set_bit = static_cast<byte>(in) << index++;
+    byte_out.get() |= set_bit;
 }
 
 // TODO: this has to use different parameter order due to how parameter packs work.
@@ -420,7 +407,7 @@ template<BoolType... Bools>
 inline constexpr void
 encode_packed_bools(std::span<byte>::iterator& bytes, Bools... bools)
 {
-    byte& byte_out = *bytes++;
+    auto byte_out = std::ref(*bytes++);
     constexpr size_t num_bools = sizeof...(bools);
     constexpr size_t bytes_to_write = (num_bools / g_bools_in_byte) + 1;
     auto index = 0;
@@ -429,7 +416,11 @@ encode_packed_bools(std::span<byte>::iterator& bytes, Bools... bools)
     {
         ([&]()
         {
-            _write_bool_many_bytes(byte_out, index, bools, bytes);
+            _write_bool_single_byte(byte_out, index, bools);
+            if ((index % g_bools_in_byte) == 0)
+            {
+                byte_out = std::ref(*bytes++);
+            }
         }(), ...);
     }
     else
@@ -513,8 +504,9 @@ encode_float(float f, std::string& out)
 {
     std::string str;
     // NOTE: using double here to ensure we reserve enough to fit all floats.
-    constexpr auto limit = std::numeric_limits<double>::max_digits10;
-    str.resize(limit + 64);
+    constexpr auto limit = std::numeric_limits<double>::max_digits10 + 64;
+    // Reserve extra for special chars like +-e.
+    str.resize(limit + 8);
     const auto fmt = f < 0 ? std::chars_format::fixed : std::chars_format::scientific;
     const auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt, limit);
     if (ec == std::errc())
