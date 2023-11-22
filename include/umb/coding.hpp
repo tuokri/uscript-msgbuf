@@ -503,12 +503,14 @@ inline UMB_CONSTEXPR void
 encode_float(float f, std::string& out)
 {
     std::string str;
-    // NOTE: using double here to ensure we reserve enough to fit all floats.
-    constexpr auto limit = std::numeric_limits<double>::max_digits10 + 64;
-    // Reserve extra for special chars like +-e.
-    str.resize(limit + 8);
+    // TODO: consider this precision. Does it even make sense?
+    constexpr auto pre = 64;
+    constexpr auto longest_float = std::numeric_limits<float>::digits
+                                   - std::numeric_limits<float>::min_exponent;
+    constexpr auto max_str = longest_float + 8;
+    str.resize(max_str);
     const auto fmt = f < 0 ? std::chars_format::fixed : std::chars_format::scientific;
-    const auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt, limit);
+    const auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt, pre);
     if (ec == std::errc())
     {
         out = std::move(str);
