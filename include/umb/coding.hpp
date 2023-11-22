@@ -169,6 +169,7 @@ _read_bool_many_bytes(
     if ((index % g_bools_in_byte) == 0)
     {
         b = *i++;
+        index = 0;
     }
 }
 
@@ -420,6 +421,7 @@ encode_packed_bools(std::span<byte>::iterator& bytes, Bools... bools)
             if ((index % g_bools_in_byte) == 0)
             {
                 byte_out = std::ref(*bytes++);
+                index = 0;
             }
         }(), ...);
     }
