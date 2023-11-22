@@ -45,7 +45,7 @@ jobs:
           path: tests/out/
 
       - name: Download UMB executables
-        uses: actions/download-artifact@vc3
+        uses: actions/download-artifact@v3
         with:
           name: umb-generator-executable-windows-latest-${{ matrix.build_type }}
           path: build/
