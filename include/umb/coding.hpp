@@ -31,7 +31,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "umb/constants.hpp"
 
@@ -506,7 +506,7 @@ encode_float(float f, std::string& out)
 {
     std::string str;
     // TODO: consider this precision. Does it even make sense?
-    constexpr auto pre = 64;
+    const auto pre = f > 0 ? std::numeric_limits<float>::max_digits10 : 32;
     constexpr auto longest_float = std::numeric_limits<float>::digits
                                    - std::numeric_limits<float>::min_exponent;
     constexpr auto max_str = longest_float + 8;
@@ -515,6 +515,12 @@ encode_float(float f, std::string& out)
     const auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt, pre);
     if (ec == std::errc())
     {
+        str.erase(str.find('\0'));
+        // If the string has trailing zeros, trim them.
+        if ((str.size() > 1) && (str.find('0') == (str.size() - 1)))
+        {
+            boost::algorithm::trim_right_if(str, boost::algorithm::is_any_of("0"));
+        }
         out = std::move(str);
     }
     else
