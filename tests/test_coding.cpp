@@ -18,6 +18,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #endif
 
+#include <cmath>
 #include <limits>
 
 #include <unicode/unistr.h>
@@ -338,6 +339,15 @@ TEST_CASE("encode decode float fields")
     CHECK_EQ(jatm1, jatm2);
 
     jatm1.set_some_floatVAR(-0.0);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(-10101011100001e-40);
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);

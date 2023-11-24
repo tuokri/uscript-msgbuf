@@ -118,29 +118,29 @@ class FloatingPoint
 public:
     // Defines the unsigned integer type that has the same size as the
     // floating point number.
-    typedef typename TypeWithSize<sizeof(RawType)>::UInt Bits;
+    using Bits = TypeWithSize<sizeof(RawType)>::UInt;
 
     // Constants.
 
     // # of bits in a number.
-    static const std::size_t kBitCount = 8 * sizeof(RawType);
+    static constexpr std::size_t kBitCount = 8 * sizeof(RawType);
 
     // # of fraction bits in a number.
-    static const std::size_t kFractionBitCount =
+    static constexpr std::size_t kFractionBitCount =
         std::numeric_limits<RawType>::digits - 1;
 
     // # of exponent bits in a number.
-    static const std::size_t kExponentBitCount = kBitCount - 1 - kFractionBitCount;
+    static constexpr std::size_t kExponentBitCount = kBitCount - 1 - kFractionBitCount;
 
     // The mask for the sign bit.
-    static const Bits kSignBitMask = static_cast<Bits>(1) << (kBitCount - 1);
+    static constexpr Bits kSignBitMask = static_cast<Bits>(1) << (kBitCount - 1);
 
     // The mask for the fraction bits.
-    static const Bits kFractionBitMask = ~static_cast<Bits>(0) >>
-                                                               (kExponentBitCount + 1);
+    static constexpr Bits kFractionBitMask = ~static_cast<Bits>(0) >>
+                                                                   (kExponentBitCount + 1);
 
     // The mask for the exponent bits.
-    static const Bits kExponentBitMask = ~(kSignBitMask | kFractionBitMask);
+    static constexpr Bits kExponentBitMask = ~(kSignBitMask | kFractionBitMask);
 
     // How many ULPs (Units in the Last Place) we want to tolerate when
     // comparing two numbers.  The larger the value, the more error we
@@ -154,7 +154,7 @@ public:
     //
     // See the following article for more details on ULP:
     // https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
-    static const uint32_t kMaxUlps = 4;
+    static constexpr uint32_t kMaxUlps = 16;
 
     // Constructs a FloatingPoint from a raw floating-point number.
     //
@@ -183,10 +183,6 @@ public:
 
     // Non-static methods
 
-    // Returns the bits that represents this number.
-    const Bits& bits() const
-    { return u_.bits_; }
-
     // Returns the exponent bits of this number.
     Bits exponent_bits() const
     { return kExponentBitMask & u_.bits_; }
@@ -200,7 +196,7 @@ public:
     { return kSignBitMask & u_.bits_; }
 
     // Returns true if and only if this is NAN (not a number).
-    bool is_nan() const
+    [[nodiscard]] bool is_nan() const
     {
         // It's a NAN if the exponent bits are all ones and the fraction
         // bits are not entirely zeros.
@@ -275,8 +271,8 @@ private:
 
 // Typedefs the instances of the FloatingPoint template class that we
 // care to use.
-typedef FloatingPoint<float> Float;
-typedef FloatingPoint<double> Double;
+using Float = FloatingPoint<float>;
+using Double = FloatingPoint<double>;
 
 } // namespace umb::internal
 
