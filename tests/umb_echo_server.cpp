@@ -349,7 +349,7 @@ awaitable<void> echo(tcp::socket socket)
             std::cout << std::format("part: {}\n", header.part);
 
 #if WINDOWS
-            const auto mt_str = std::to_string(static_cast<uint16_t>(type));
+            const auto mt_str = std::to_string(static_cast<uint16_t>(header.type));
 #else
             const auto mt_str = testmessages::umb::meta::to_string(header.type);
 #endif
