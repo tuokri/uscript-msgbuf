@@ -29,6 +29,19 @@
 namespace umb
 {
 
+#if _MSC_VER && !__INTEL_COMPILER
+// Workaround for C3615. Some constexpr functions
+// do not compile on MSVC, but compile without errors
+// on Clang and GCC.
+// TODO: They are probably not constexpr
+//   on Clang/GCC either, but they just allow it silently?
+// NOTE: GCC implements some standard library functions as constexpr
+//   even when the standard doesn't state that they should be constexpr.
+#define UMB_CONSTEXPR
+#else
+#define UMB_CONSTEXPR constexpr
+#endif
+
 using byte = uint8_t;
 
 constexpr auto g_template_dir = "templates";
