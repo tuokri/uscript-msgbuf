@@ -30,6 +30,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <sstream>
 #include <utility>
 
 #include <boost/hana.hpp>
@@ -45,23 +46,21 @@
 // TODO: include this in top level CMake as an option.
 // Warning: going too high will hit the stack limit.
 #ifndef UMB_META_TEST_ROUNDS
-#define UMB_META_TEST_ROUNDS 16
+#define UMB_META_TEST_ROUNDS 48
 #endif
 
 namespace
 {
 
-template<uint64_t X, uint64_t Y, uint64_t Z, uint64_t W = 1>
+template<uint64_t Iteration, uint64_t W = 0>
 constexpr uint64_t get_rand()
 {
-    constexpr auto counter = __COUNTER__ + X + Y + Z + W;
-    return ::umb::meta::rng::KissValue<counter>;
+    constexpr auto iter = Iteration + W;
+    return ::umb::meta::rng::hash(::umb::meta::rng::KissValue<iter>);
 }
 
 template<
-    auto Index,
-    auto FIndex,
-    auto Round,
+    auto RngIteration,
     typename IndexType = size_t,
     IndexType... Is>
 constexpr std::u16string get_rand_str(std::integer_sequence<IndexType, Is...> slen_seq)
@@ -71,17 +70,17 @@ constexpr std::u16string get_rand_str(std::integer_sequence<IndexType, Is...> sl
     boost::hana::for_each(slen_seq, [&](const auto i)
     {
         constexpr auto i64 = static_cast<uint64_t>(i);
-        constexpr auto rnd_idx = get_rand<Index, FIndex, Round, i64>();
-        str_in.append(1, static_cast<char16_t>(rnd_idx & 0xffff));
+        constexpr auto rnd = get_rand<RngIteration, i64>();
+        constexpr auto half = std::numeric_limits<uint64_t>::max() / 2;
+        constexpr auto shift = rnd > half ? 0 : 8;
+        str_in.append(1, static_cast<char16_t>((rnd >> shift) & 0xffff));
     });
 
     return str_in;
 }
 
 template<
-    auto Index,
-    auto FIndex,
-    auto Round,
+    auto RngInteration,
     typename IndexType = size_t,
     IndexType... Is>
 std::vector<::umb::byte> get_rand_bytes(std::integer_sequence<IndexType, Is...> blen_seq)
@@ -91,7 +90,7 @@ std::vector<::umb::byte> get_rand_bytes(std::integer_sequence<IndexType, Is...> 
     boost::hana::for_each(blen_seq, [&](const auto i)
     {
         constexpr auto i64 = static_cast<uint64_t>(i);
-        constexpr auto rnd_idx = get_rand<Index, FIndex, Round, i64>();
+        constexpr auto rnd_idx = get_rand<RngInteration, i64>();
         bytes.emplace_back(static_cast<::umb::byte>(rnd_idx & 0xff));
     });
     return bytes;
@@ -126,15 +125,21 @@ byte_cmp_msg(const std::vector<::umb::byte>& b1, const std::vector<::umb::byte>&
     return ss.str();
 }
 
-}
+} // namespace
 
 TEST_CASE("test TestMessages messages with randomized data")
 {
+    std::cout << std::unitbuf;
+
     namespace meta = ::testmessages::umb::meta;
 
     constexpr auto rounds = std::make_integer_sequence<uint64_t, UMB_META_TEST_ROUNDS>();
     constexpr auto mts = meta::message_types();
     constexpr auto seq = std::make_integer_sequence<uint64_t, mts.size()>();
+
+    // "Fire up" the RNG. TODO: does this actually help with anything?
+    constexpr uint64_t r_initial = get_rand<0, 0>();
+    std::cout << std::format("*** begin RNG tests, r_initial={} ***\n\n", r_initial);
 
     boost::hana::for_each(rounds, [&](const auto round)
     {
@@ -161,9 +166,12 @@ TEST_CASE("test TestMessages messages with randomized data")
                 boost::hana::for_each(field_seq, [&](const auto findex)
                 {
                     constexpr auto field = meta::Message<mt>::template field<findex>();
+                    constexpr auto rng_iter =
+                        findex + field_seq.size() * (index + seq.size() * round);
                     std::cout << std::format("-- field.name={}\n", field.name);
 
-                    constexpr uint64_t r = get_rand<index, findex, round>();
+                    constexpr uint64_t r = get_rand<rng_iter>();
+                    std::cout << std::format("-- rng_iter={}\n", std::to_string(rng_iter));
                     std::cout << std::format("-- r={}\n", std::to_string(r));
 
                     if constexpr (field.type == ::umb::meta::FieldType::Integer)
@@ -213,8 +221,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                         constexpr auto slen = static_cast<uint8_t>(r & 0xFF);
                         constexpr auto slen_seq = std::make_integer_sequence<uint64_t, slen>();
                         std::cout << std::format("-- DYNAMIC slen: {}\n", slen);
-                        const std::u16string str_in = get_rand_str<index, findex, round>(
-                            slen_seq);
+                        const std::u16string str_in = get_rand_str<rng_iter>(slen_seq);
                         meta::set_field_dynamic<mt, field.type, field.name>(message, str_in);
                         const auto str_val = meta::get_field<mt, field.type, field.name>(message);
                         const auto icu_string = icu::UnicodeString(str_val.data());
@@ -228,7 +235,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                         constexpr auto blen = static_cast<uint8_t>((r >> bshift) & 0xFF);
                         constexpr auto blen_seq = std::make_integer_sequence<uint64_t, blen>();
                         std::cout << std::format("-- DYNAMIC blen: {}\n", blen);
-                        const std::vector<::umb::byte> bytes_in = get_rand_bytes<index, findex, round>(
+                        const std::vector<::umb::byte> bytes_in = get_rand_bytes<rng_iter>(
                             blen_seq);
                         meta::set_field_dynamic<mt, field.type, field.name>(message, bytes_in);
                         const auto bytes_val = meta::get_field<mt, field.type, field.name>(message);
