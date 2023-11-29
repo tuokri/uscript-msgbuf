@@ -31,7 +31,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/algorithm/string.hpp>
 
 #include "umb/constants.hpp"
 
@@ -40,17 +39,6 @@ static_assert(sizeof(float) * std::numeric_limits<unsigned char>::digits == 32,
 
 namespace umb
 {
-
-#if _MSC_VER && !__INTEL_COMPILER
-// Workaround for C3615. Some constexpr functions
-// do not compile on MSVC, but compile without errors
-// on Clang and GCC.
-// TODO: They are probably not constexpr
-//   on Clang/GCC either, but they just allow it silently?
-#define UMB_CONSTEXPR
-#else
-#define UMB_CONSTEXPR constexpr
-#endif
 
 template<typename T = bool>
 concept BoolType = std::is_convertible_v<T, bool>;
@@ -505,22 +493,17 @@ inline UMB_CONSTEXPR void
 encode_float(float f, std::string& out)
 {
     std::string str;
-    // TODO: consider this precision. Does it even make sense?
-    const auto pre = f > 0 ? std::numeric_limits<float>::max_digits10 : 32;
+    constexpr auto pre = std::numeric_limits<float>::max_digits10;
     constexpr auto longest_float = std::numeric_limits<float>::digits
                                    - std::numeric_limits<float>::min_exponent;
+    // Reserve space for longest possible float string + special chars.
     constexpr auto max_str = longest_float + 8;
     str.resize(max_str);
-    const auto fmt = f < 0 ? std::chars_format::fixed : std::chars_format::scientific;
+    constexpr auto fmt = std::chars_format::scientific;
     const auto [ptr, ec] = std::to_chars(str.data(), str.data() + str.size(), f, fmt, pre);
     if (ec == std::errc())
     {
         str.erase(str.find('\0'));
-        // If the string has trailing zeros, trim them.
-        if ((str.size() > 1) && (str.find('0') == (str.size() - 1)))
-        {
-            boost::algorithm::trim_right_if(str, boost::algorithm::is_any_of("0"));
-        }
         out = std::move(str);
     }
     else
