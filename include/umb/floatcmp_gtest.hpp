@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <limits>
 
@@ -154,7 +155,7 @@ public:
     //
     // See the following article for more details on ULP:
     // https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
-    static constexpr uint32_t kMaxUlps = 16;
+    static constexpr uint32_t kMaxUlps = 4;
 
     // Constructs a FloatingPoint from a raw floating-point number.
     //
