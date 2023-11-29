@@ -12,6 +12,10 @@
 {# You should have received a copy of the GNU Lesser General Public License #}
 {#     along with this program.  If not, see <https://www.gnu.org/licenses/>. -#}
     FloatStr = string(Msg.{{ field.name }});
+    if (Msg.{{ field.name }} > 0.0 && Msg.{{ field.name }} < 0.0001)
+    {
+        FloatStr $= (int(Msg.{{ field.name }}) * 10000000);
+    }
     StrLen = Len(FloatStr);
     Bytes.Length = Bytes.Length + StrLen + 1;
     Bytes[I++] = StrLen;

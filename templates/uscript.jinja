@@ -343,9 +343,9 @@ static final function bool IsStaticMessage(int MessageType)
     return False;
 }
 
-// TODO: does the engine have built-in comparison for structs?
 {% for message in messages %}
-static final operator(24) bool == (
+{% if message.has_float_fields or message.has_bytes_fields %}
+static final function bool {{ message.name }}_EQ (
     const out {{ message.name }} A,
     const out {{ message.name }} B)
 {
@@ -353,6 +353,8 @@ static final operator(24) bool == (
     {% for field in message.fields %}
         {% if field.type == "bytes" %}
         BytesEqual(A.{{ field.name }}, B.{{ field.name }})
+        {% else if field.type == "float" %}
+        (A.{{ field.name }} ~= B.{{ field.name }})
         {% else %}
         (A.{{ field.name }} == B.{{ field.name }})
         {% endif %}
@@ -363,11 +365,11 @@ static final operator(24) bool == (
     );
 }
 
-static final operator(26) bool != (
+static final function bool {{ message.name }}_NEQ (
     const out {{ message.name }} a,
     const out {{ message.name }} b)
 {
-    return !(a == b);
+    return !{{ message.name }}_EQ(A, B);
 }
-
+{% endif %}
 {% endfor %}

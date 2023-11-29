@@ -137,6 +137,55 @@ final static function string RandomString(int Size)
     return Str;
 }
 
+`define CHECK(Field, Value, Type, Msg1, Msg2, Failures, Bytes)              \n\
+    `Msg1.`Field = `Value;                                                  \n\
+    Bytes.Length = 0;                                                       \n\
+    class'TestMessages'.static.`{Type}_ToMultiBytes(`Msg1, `Bytes);         \n\
+    class'TestMessages'.static.`{Type}_FromMultiBytes(`Msg2, `Bytes);       \n\
+    if (class'TestMessages'.static.`{Type}_NEQ(`Msg1, `Msg2))               \n\
+    {                                                                       \n\
+        `ulog("##CHECK FAILED##:" @ `Msg1.`Field @ "???" @ `Msg2.`Field);   \n\
+        `ulog("~=" @ `Msg1.`Field ~= `Msg2.`Field);                         \n\
+        `ulog("==" @ `Msg1 == `Msg2);                                       \n\
+        `ulog("!=" @ `Msg1 != `Msg2);                                       \n\
+        `ulog("BB" @ `Msg1.ByteVarX == `Msg2.ByteVarX);                     \n\
+        ++`Failures;                                                        \n\
+    }
+
+final function int Test_StaticTests()
+{
+    local JustAnotherTestMessage Msg1;
+    local JustAnotherTestMessage Msg2;
+    local array<byte> Bytes;
+    local int Failures;
+
+    Failures = 0;
+
+    // Check empty message.
+    class'TestMessages'.static.JustAnotherTestMessage_ToMultiBytes(Msg1, Bytes);
+    class'TestMessages'.static.JustAnotherTestMessage_FromMultiBytes(Msg2, Bytes);
+    if (Msg1 != Msg2)
+    {
+        `ulog("##CHECK FAILED##: Empty JustAnotherTestMessage");
+        ++Failures;
+    }
+
+    `CHECK(Some_floatVAR,  0.0,        JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR,  1.0,        JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR, -1.0,        JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR, -1.100000,   JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR, -1.111111,   JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR,  0.57485758, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR,  1.57485758, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR, -1.57485758, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR, -0.00000118, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR, -1.00000118, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR,  0.00000118, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR,  1.00000118, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+
+    return Failures;
+}
+
 {% for message in messages %}
 {% set msg1 = "TESTVAR_" + message.name + "_Msg1" %}
 {% set msg2 = "TESTVAR_" + message.name + "_Msg2" %}
@@ -160,6 +209,7 @@ final function int Test_{{ message.name }}()
 {% for field in message.fields %}
     {% if field.type == "int" %}
     {{ msg1 }}.{{ field.name }} = Rand(MaxInt);
+    if (FRand() > 0.5) {{ msg1 }}.{{ field.name }} *= -1;
     {% else if field.type == "float" %}
     {{ msg1 }}.{{ field.name }} = RandRange(FLOAT_MIN, FLOAT_MAX);
     {% else if field.type == "byte" %}
@@ -293,7 +343,14 @@ function PreBeginPlay()
         Link.ConnectToServer();
     }
 
-    // Local tests.
+    // Local tests with hard-coded data.
+    `ulog("##########################################");
+    `ulog("##BEGIN TEST##: StaticTests");
+    Failures += Test_StaticTests();
+    `ulog("##END TEST##");
+    `ulog("##########################################");
+
+    // Local tests with random data. No networking.
     for (Round = 0; Round < NumTestRounds; ++Round)
     {
 {% for message in messages %}
@@ -309,6 +366,7 @@ function PreBeginPlay()
     if (Failures > 0)
     {
         `ulog("##TEST RESULTS##: LOCAL TEST SUITE(S) FAILED");
+        `log("Test failures detected!",, 'Error');
     }
     else
     {
