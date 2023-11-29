@@ -269,7 +269,7 @@ async def run_udk_build(
     if use_shell:
         proc = await asyncio.create_subprocess_shell(
             cmd=f'powershell.exe Start-Process -NoNewWindow -FilePath "{udk_exe}" '
-                f'-ArgumentList "make","-useunpublished","LOG=Launch.log",'
+                f'-ArgumentList "make","-intermediate","-useunpublished","LOG=Launch.log",'
                 f'"-NOPAUSE","-FORCELOGFLUSH","-AUTO"',
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
@@ -279,6 +279,7 @@ async def run_udk_build(
             udk_exe,
             *[
                 "make",
+                "-intermediate",
                 "-useunpublished",
                 "-log",
                 "-UNATTENDED",
