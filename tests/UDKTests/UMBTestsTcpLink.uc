@@ -19,16 +19,25 @@ class UMBTestsTcpLink extends TcpLink;
 `include(UMBTests\Classes\UMBTestsMacros.uci);
 
 const PACKET_SIZE = 255;
+const HEADER_SIZE = 4;
 
 var private int ClientPort;
 
 var string TargetHost;
 var int TargetPort;
 
-var int Idx;
-var int NumSent;
-var int NumToSend;
-var byte OutBuf[PACKET_SIZE];
+var private int BytesSent;
+var private int TotalBytesToSend;
+var private int NumExtraHeaderBytes;
+var private byte NumPartsOut;
+var private byte PartOut;
+var private byte MTOut0;
+var private byte MTOut1;
+var private int Idx;
+var private int BufIdx;
+var private int NumSent;
+var private int NumToSend;
+var private byte OutBuf[PACKET_SIZE];
 
 // Received message.
 var byte Size;
@@ -47,11 +56,25 @@ final function ConnectToServer()
 
 // TODO: dedicated function for sending static bytes.
 
-final function SendBytes(
-    const out array<byte> Bytes)
+// TODO: take Size, Part, MessageType as arguments here?
+final function SendBytes(const out array<byte> Bytes)
 {
+    // TODO: should this be calculated somewhere else?
+    NumExtraHeaderBytes = FCeil((Bytes.Length - HEADER_SIZE) / PACKET_SIZE) * HEADER_SIZE;
+    NumPartsOut = FCeil((NumExtraHeaderBytes + (Bytes.Length - HEADER_SIZE)) / PACKET_SIZE);
+    TotalBytesToSend = Bytes.Length + NumExtraHeaderBytes;
+
+    if (NumPartsOut == 0)
+    {
+        `ulog("ERROR: invalid NumParts:" @ NumPartsOut);
+        `log("invalid NumParts:" @ NumPartsOut,, 'ERROR');
+        return;
+    }
+
     // The easy case.
-    if (Bytes.Length <= PACKET_SIZE)
+    // TODO: validate that more than PACKET_SIZE
+    //   bytes are not trying to be sent in a single part?
+    if (NumPartsOut == 1 || Bytes.Length <= PACKET_SIZE)
     {
         for (Idx = 0; Idx < Bytes.Length; ++Idx)
         {
@@ -64,14 +87,35 @@ final function SendBytes(
         return;
     }
 
-    // TODO: sending multipart messages.
-    NumToSend = Min(PACKET_SIZE, Bytes.Length);
-    for (Idx = 0; Idx < NumToSend; ++Idx)
+    // TODO:
+    // 1. set header bytes
+    // 2. take PACKET_SIZE - num_header_bytes bytes
+    // 3. send bytes
+
+    // Multipart messages.
+    NumToSend = 0;
+    Idx = 4; // Skip first header.
+    MTOut0 = Bytes[2];
+    MTOut1 = Bytes[3];
+    for (PartOut = 0; PartOut < NumPartsOut; ++PartOut)
     {
-        OutBuf[Idx] = Bytes[Idx];
+        BufIdx = 0;
+        NumToSend = Min(PACKET_SIZE, TotalBytesToSend - BytesSent);
+        OutBuf[BufIdx++] = NumToSend;
+        OutBuf[BufIdx++] = Part;
+        OutBuf[BufIdx++] = MTOut0;
+        OutBuf[BufIdx++] = MTOut1;
+
+        while (BufIdx < NumToSend)
+        {
+            OutBuf[BufIdx++] = Bytes[Idx++];
+        }
+
+        NumSent = SendBinary(NumToSend, OutBuf);
+        `ulog("Sent" @ NumSent @ "bytes," @ "part:" @ PartOut);
+        // TODO: verify NumSent == NumToSend;
+        BytesSent += NumToSend;
     }
-    NumSent = SendBinary(NumToSend, OutBuf);
-    `ulog("Sent" @ NumSent @ "bytes");
 }
 
 event Resolved(IpAddr Addr)
