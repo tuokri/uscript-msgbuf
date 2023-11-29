@@ -329,7 +329,7 @@ TEST_CASE("encode decode float fields")
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
-    jatm1.set_some_floatVAR(-8553588573958e-27);
+    jatm1.set_some_floatVAR(static_cast<float>(-8553588573958e-27));
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
@@ -347,7 +347,36 @@ TEST_CASE("encode decode float fields")
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
-    jatm1.set_some_floatVAR(-10101011100001e-40);
+    jatm1.set_some_floatVAR(static_cast<float>(-10101011100001e-40));
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    // Doesn't work for extremely small negative floats.
+    // CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(static_cast<float>(-3.828379e-38));
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    // Doesn't work for extremely small negative floats.
+    // CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(0.300000011920928955078125);
+    vec = jatm1.to_bytes();
+    ok = jatm2.from_bytes(vec);
+    CHECK(ok);
+
+    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
+    CHECK_EQ(jatm1, jatm2);
+
+    jatm1.set_some_floatVAR(static_cast<float>(3.8571562e-30));
     vec = jatm1.to_bytes();
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
@@ -387,5 +416,8 @@ TEST_CASE("encode decode float inf/nan fields")
 
     CHECK(std::isnan(jatm1.some_floatVAR()));
     CHECK(std::isnan(jatm2.some_floatVAR()));
-    CHECK_NE(jatm1, jatm2); // Comparing nan to anything is always false.
+    // NOTE: Comparing nan to anything is always false.
+    // However, for UMB message comparison, we want to
+    // return true if both messages have the field as nan!
+    CHECK_EQ(jatm1, jatm2);
 }
