@@ -18,6 +18,35 @@
 
 #include "{{class_name }}{{ cpp_hdr_extension }}"
 
+namespace
+{
+
+UMB_CONSTEXPR bool float_fields_equal(float lhs, float rhs)
+{
+    if (std::isnan(lhs))
+    {
+        return std::isnan(rhs);
+    }
+
+    if (std::isinf(lhs))
+    {
+        return std::isinf(rhs);
+    }
+
+    // TODO: is this even needed?
+    /*
+    if (lhs < 0 && rhs < 0)
+    {
+        return ::umb::internal::approx_equal(lhs, rhs, 0.01f);
+    }
+    */
+
+    return ::umb::internal::Float{lhs}.AlmostEquals(
+        ::umb::internal::Float{rhs});
+}
+
+} // namespace
+
 namespace {{ cpp_namespace }}
 {
 
@@ -154,8 +183,7 @@ bool {{ message.name}}::is_equal(const ::umb::Message& msg) const
     return (
 {% for field in message.fields %}
     {% if field.type == "float" %}
-        ::umb::internal::Float{ {{ field.name }}() }.AlmostEquals(
-            ::umb::internal::Float{m.{{ field.name }}()})
+        float_fields_equal({{ field.name }}(), m.{{ field.name }}())
     {% else %}
         ({{ field.name }}() == m.{{ field.name }}())
     {% endif %}
