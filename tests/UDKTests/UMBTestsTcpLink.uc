@@ -20,6 +20,7 @@ class UMBTestsTcpLink extends TcpLink;
 
 const PACKET_SIZE = 255;
 const HEADER_SIZE = 4;
+const MULTI_PART_END = 254;
 
 var private int ClientPort;
 
@@ -28,7 +29,7 @@ var int TargetPort;
 
 var private int BytesSent;
 var private int TotalBytesToSend;
-var private int NumExtraHeaderBytes;
+var private int NumHeaderBytes;
 var private byte NumPartsOut;
 var private byte PartOut;
 var private byte MTOut0;
@@ -60,14 +61,19 @@ final function ConnectToServer()
 final function SendBytes(const out array<byte> Bytes)
 {
     // TODO: should this be calculated somewhere else?
-    NumExtraHeaderBytes = FCeil((Bytes.Length - HEADER_SIZE) / PACKET_SIZE) * HEADER_SIZE;
-    NumPartsOut = FCeil((NumExtraHeaderBytes + (Bytes.Length - HEADER_SIZE)) / PACKET_SIZE);
-    TotalBytesToSend = Bytes.Length + NumExtraHeaderBytes;
+    NumHeaderBytes = FCeil(float(Bytes.Length - HEADER_SIZE) / PACKET_SIZE) * HEADER_SIZE;
+    NumPartsOut = FCeil(float(NumHeaderBytes + (Bytes.Length - HEADER_SIZE)) / PACKET_SIZE);
+    TotalBytesToSend = Bytes.Length + NumHeaderBytes - HEADER_SIZE;
+
+    `ulog("Bytes.Length:" @ Bytes.Length
+        @ "NumHeaderBytes:" @ NumHeaderBytes
+        @ "NumPartsOut:" @ NumPartsOut
+        @ "TotalBytesToSend:" @ TotalBytesToSend);
 
     if (NumPartsOut == 0)
     {
-        `ulog("ERROR: invalid NumParts:" @ NumPartsOut);
-        `log("invalid NumParts:" @ NumPartsOut,, 'ERROR');
+        `ulog("ERROR: invalid NumPartsOut:" @ NumPartsOut);
+        `log("invalid NumPartsOut:" @ NumPartsOut,, 'ERROR');
         return;
     }
 
@@ -81,40 +87,45 @@ final function SendBytes(const out array<byte> Bytes)
             OutBuf[Idx] = Bytes[Idx];
         }
 
+        OutBuf[1] = 255; // TODO: maybe document this a bit.
+
         NumToSend = Bytes.Length;
         NumSent = SendBinary(NumToSend, OutBuf);
         `ulog("Sent" @ NumSent @ "bytes");
         return;
     }
 
-    // TODO:
-    // 1. set header bytes
-    // 2. take PACKET_SIZE - num_header_bytes bytes
-    // 3. send bytes
-
     // Multipart messages.
-    NumToSend = 0;
-    Idx = 4; // Skip first header.
+    // Skip first header.
+    Idx = 4;
+    BytesSent = 4;
+
     MTOut0 = Bytes[2];
     MTOut1 = Bytes[3];
+
     for (PartOut = 0; PartOut < NumPartsOut; ++PartOut)
     {
+        if (PartOut == (NumPartsOut - 1))
+        {
+            PartOut = MULTI_PART_END;
+        }
+
         BufIdx = 0;
         NumToSend = Min(PACKET_SIZE, TotalBytesToSend - BytesSent);
         OutBuf[BufIdx++] = NumToSend;
-        OutBuf[BufIdx++] = Part;
+        OutBuf[BufIdx++] = PartOut;
         OutBuf[BufIdx++] = MTOut0;
         OutBuf[BufIdx++] = MTOut1;
 
+        // TODO: does this error with the first header?
         while (BufIdx < NumToSend)
         {
             OutBuf[BufIdx++] = Bytes[Idx++];
         }
 
         NumSent = SendBinary(NumToSend, OutBuf);
-        `ulog("Sent" @ NumSent @ "bytes," @ "part:" @ PartOut);
-        // TODO: verify NumSent == NumToSend;
         BytesSent += NumToSend;
+        `ulog("Sent" @ NumSent @ "bytes," @ "part:" @ PartOut @ "NumToSend:" @ NumToSend @ "BytesSent:" @ BytesSent);
     }
 }
 
@@ -176,9 +187,11 @@ event ReceivedBinary(int Count, byte B[PACKET_SIZE])
                 RecvMsgBufStatic[J] = B[J];
             }
         }
+        // TODO: this check makes no fucking sense.
         else
         {
             `ulog("##ERROR##: message too large to be static!");
+            `log("##ERROR##: message too large to be static!",, 'ERROR');
         }
 
         return;

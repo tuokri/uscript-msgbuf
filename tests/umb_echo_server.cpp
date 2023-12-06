@@ -71,6 +71,7 @@ enum class Error
 {
     invalid_size,
     boost_error,
+    todo,
 };
 
 struct Header
@@ -79,6 +80,19 @@ struct Header
     umb::byte part{};
     testmessages::umb::MessageType type{};
 };
+
+void print_header(const Header& header)
+{
+    std::cout << std::format("size: {}\n", header.size);
+    std::cout << std::format("part: {}\n", header.part);
+
+#if WINDOWS
+    const auto mt_str = std::to_string(static_cast<uint16_t>(header.type));
+#else
+    const auto mt_str = testmessages::umb::meta::to_string(header.type);
+#endif
+    std::cout << std::format("type: {}\n", mt_str);
+}
 
 boost::asio::experimental::coro<void() noexcept, std::expected<Header, Error>>
 read_header(
@@ -172,21 +186,22 @@ handle_single_part_msg(
 
         case testmessages::umb::MessageType::None:
         default:
+            /*
             throw std::runtime_error(
                 std::format("invalid MessageType: {}",
                             std::to_string(static_cast<uint16_t>(type))));
+            */
+            co_return std::unexpected(Error::todo);
     }
 
     const auto bytes_out = msg->to_bytes();
 
     // TODO: check ec.
-    // TODO: multipart sending.
+    std::cout << std::format("sending {} bytes\n", bytes_out.size());
     co_await async_write(
         socket,
         boost::asio::buffer(bytes_out),
         deferred);
-
-    std::cout.flush();
 }
 
 boost::asio::experimental::coro<void() noexcept, std::expected<void, Error>>
@@ -204,8 +219,9 @@ handle_multi_part_msg(
 
     // TODO: pass in span into this function, with the header bytes already
     //   assumed to be "skipped" by the caller?
-    const auto read_num = size - umb::g_header_size;
+    auto read_num = size - umb::g_header_size;
     auto d = std::span{data.begin() + umb::g_header_size, data.size() - umb::g_header_size};
+    std::cout << std::format("reading {} bytes\n", read_num);
     const auto [ec, num_read] = co_await boost::asio::async_read(
         socket,
         boost::asio::buffer(d),
@@ -228,22 +244,34 @@ handle_multi_part_msg(
         }
 
         const auto header = *result;
+        print_header(header);
 
-        if (header.part != next_part)
+        if (header.part != next_part && header.part != umb::g_part_multi_part_end)
         {
             // TODO
+            std::cout << std::format("expected part {}, got {}\n", next_part, header.part);
+            co_return std::unexpected(Error::todo);
         }
 
         if (header.type != type)
         {
             // TODO
+            std::cout << std::format("expected type {}, got {}\n",
+                                     static_cast<uint64_t>(type),
+                                     static_cast<uint16_t>(header.type));
+            co_return std::unexpected(Error::todo);
         }
 
+        read_num = header.size - umb::g_header_size;
+        std::cout << std::format("reading {} bytes\n", read_num);
         const auto [ec, num_read] = co_await boost::asio::async_read(
             socket,
             boost::asio::buffer(data),
             boost::asio::transfer_exactly(read_num),
             as_tuple(deferred));
+
+        msg_buf.reserve(msg_buf.size() + read_num);
+        msg_buf.insert(msg_buf.end(), data.cbegin(), data.cend());
 
         part = header.part;
         next_part = part + 1;
@@ -288,8 +316,8 @@ handle_multi_part_msg(
 
         case testmessages::umb::MessageType::None:
         default:
-            // TODO: use error code.
-            break;
+            // TODO
+            co_return std::unexpected(Error::todo);
 //            throw std::runtime_error(
 //                std::format("invalid MessageType: {}",
 //                            std::to_string(static_cast<uint16_t>(type))));
@@ -297,13 +325,54 @@ handle_multi_part_msg(
 
     const auto bytes_out = msg->to_bytes();
 
-    // TODO: check ec.
-    co_await async_write(
-        socket,
-        boost::asio::buffer(bytes_out),
-        deferred);
+    const auto num_hdr_bytes = static_cast<size_t>(std::ceil(
+        static_cast<float>(bytes_out.size() - umb::g_header_size) /
+        static_cast<float>(umb::g_packet_size)) * umb::g_header_size);
+    const auto num_parts_out = static_cast<size_t>(std::ceil(
+        static_cast<float>(num_hdr_bytes + (bytes_out.size() - umb::g_header_size)) /
+        static_cast<float>(umb::g_packet_size)));
+    const auto total_bytes_to_send = bytes_out.size() + num_hdr_bytes - umb::g_header_size;
 
-    std::cout.flush();
+    const auto mt0 = bytes_out[2];
+    const auto mt1 = bytes_out[3];
+    std::array<umb::byte, umb::g_packet_size> send_buf{};
+
+    // Skip header from bytes_out. It will be written in the loop below.
+    unsigned bytes_sent = umb::g_header_size;
+    unsigned offset = umb::g_header_size;
+
+    std::cout << std::format(
+        "bytes_out: {}, num_hdr_bytes: {}, num_parts_out: {}, total_bytes_to_send: {}\n",
+        bytes_out.size(), num_hdr_bytes, num_parts_out, total_bytes_to_send);
+
+    // TODO: rethink this. We want a neat way of doing this... Is this neat?
+    for (size_t part_out = 0; part_out < num_parts_out; ++part_out)
+    {
+        if (part_out == (num_parts_out - 1))
+        {
+            part_out = umb::g_part_multi_part_end;
+        }
+
+        const auto num_to_send = std::min(umb::g_packet_size, total_bytes_to_send - bytes_sent);
+        send_buf[0] = num_to_send;
+        send_buf[1] = part_out;
+        send_buf[2] = mt0;
+        send_buf[3] = mt1;
+
+        const std::span<const umb::byte> send_data{bytes_out.cbegin() + offset,
+                                                   bytes_out.cend()};
+        std::copy_n(send_data.cbegin(), num_to_send - umb::g_header_size, send_buf.begin());
+
+        // TODO: check ec.
+        std::cout << std::format("sending {} bytes, offset: {}\n", num_to_send, offset);
+        co_await async_write(
+            socket,
+            boost::asio::buffer(send_buf, num_to_send),
+            deferred);
+
+        bytes_sent += num_to_send;
+        offset = bytes_sent - umb::g_header_size;
+    }
 }
 
 // TODO: close connection on bad data, error, etc.?
@@ -345,15 +414,7 @@ awaitable<void> echo(tcp::socket socket)
             // Parse UMB message.
             // Serialize it to bytes, send it back.
 
-            std::cout << std::format("size: {}\n", header.size);
-            std::cout << std::format("part: {}\n", header.part);
-
-#if WINDOWS
-            const auto mt_str = std::to_string(static_cast<uint16_t>(header.type));
-#else
-            const auto mt_str = testmessages::umb::meta::to_string(header.type);
-#endif
-            std::cout << std::format("type: {}\n", mt_str);
+            print_header(header);
 
             // Part == 255       -> handle single-part read
             // Part == 0         -> begin multipart read
@@ -410,6 +471,8 @@ awaitable<void> listener()
 
 int main()
 {
+    std::cout << std::unitbuf;
+
     try
     {
         boost::asio::io_context io_context(1);
