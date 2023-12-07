@@ -48,6 +48,26 @@ var bool bIsStatic;
 var byte RecvMsgBufStatic[PACKET_SIZE];
 var array<byte> RecvMsgBufMulti;
 
+event Tick(float DeltaTime)
+{
+    super.Tick();
+
+    if (!IsConnected())
+    {
+        return;
+    }
+
+    if (!IsDataPending())
+    {
+        return;
+    }
+
+    // Read size byte.
+    // Read desired byte count.
+    // Parse message. If multipart, go into state to wait for more bytes.
+    // If single part, just wait for next size byte.
+}
+
 final function ConnectToServer()
 {
     LinkMode = MODE_Binary;
@@ -161,6 +181,7 @@ event Closed()
     `ulog("closed");
 }
 
+// TODO: this gives garbage if packet size >= 255.
 event ReceivedBinary(int Count, byte B[PACKET_SIZE])
 {
     local int I;

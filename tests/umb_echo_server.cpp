@@ -99,6 +99,7 @@ read_header(
     tcp::socket& socket,
     std::array<umb::byte, umb::g_packet_size>& data)
 {
+    std::cout << std::format("reading {} bytes\n", umb::g_header_size);
     const auto [ec, num_read] = co_await boost::asio::async_read(
         socket,
         boost::asio::buffer(data),
@@ -364,7 +365,8 @@ handle_multi_part_msg(
         std::copy_n(send_data.cbegin(), num_to_send - umb::g_header_size, send_buf.begin());
 
         // TODO: check ec.
-        std::cout << std::format("sending {} bytes, offset: {}\n", num_to_send, offset);
+        std::cout << std::format("sending {} bytes, offset: {}, part_out: {}\n",
+                                 num_to_send, offset, part_out);
         co_await async_write(
             socket,
             boost::asio::buffer(send_buf, num_to_send),
