@@ -41,6 +41,7 @@ var private int NumToSend;
 var private byte OutBuf[PACKET_SIZE];
 
 // Received message.
+var private int ReadCount;
 var byte Size;
 var byte Part;
 var int MessageType;
@@ -48,9 +49,16 @@ var bool bIsStatic;
 var byte RecvMsgBufStatic[PACKET_SIZE];
 var array<byte> RecvMsgBufMulti;
 
+// TODO: Should messages be classes instead of structs?
+// - Provide a way to generate both, or choose one or the other?
+// TODO: Should really benchmark it.
+// Passing around object references. Using new operator when creating messages.
+// -> OO way, makes life a bit easier in certain parts.
+// -> Does it lead to more copying of data?
+
 event Tick(float DeltaTime)
 {
-    super.Tick();
+    super.Tick(DeltaTime);
 
     if (!IsConnected())
     {
@@ -62,6 +70,17 @@ event Tick(float DeltaTime)
         return;
     }
 
+    // TODO: limit the time we can spend here in a single tick?
+    do
+    {
+        `ulog("DataPending:" @ DataPending);
+
+        // Header.
+        ReadCount = ReadBinary(HEADER_SIZE, RecvMsgBufStatic);
+
+    }
+    until (ReadCount == 0);
+
     // Read size byte.
     // Read desired byte count.
     // Parse message. If multipart, go into state to wait for more bytes.
@@ -71,7 +90,12 @@ event Tick(float DeltaTime)
 final function ConnectToServer()
 {
     LinkMode = MODE_Binary;
-    ReceiveMode = RMODE_Event;
+    ReceiveMode = RMODE_Manual;
+
+    // TODO: do these do anything for binary?
+    InLineMode = LMODE_UNIX;
+    OutLineMode = LMODE_UNIX;
+
     Resolve(TargetHost);
 }
 
