@@ -30,6 +30,11 @@ set(Boost_USE_DEBUG_LIBS $<$<CONFIG:Debug>:ON,OFF>)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_LIBS ON)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "adding compile definition: BOOST_ASIO_ENABLE_BUFFER_DEBUGGING")
+    add_compile_definitions("BOOST_ASIO_ENABLE_BUFFER_DEBUGGING")
+endif ()
+
 find_package(
     inja
     CONFIG

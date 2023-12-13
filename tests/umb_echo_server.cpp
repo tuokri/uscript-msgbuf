@@ -279,40 +279,41 @@ handle_multi_part_msg(
     }
 
     std::shared_ptr<umb::Message> msg;
+    bool ok = false;
 
     switch (type)
     {
         case testmessages::umb::MessageType::GetSomeStuff:
             msg = std::make_shared<testmessages::umb::GetSomeStuff>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
         case testmessages::umb::MessageType::GetSomeStuffResp:
             msg = std::make_shared<testmessages::umb::GetSomeStuffResp>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
         case testmessages::umb::MessageType::JustAnotherTestMessage:
             msg = std::make_shared<testmessages::umb::JustAnotherTestMessage>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
         case testmessages::umb::MessageType::testmsg:
             msg = std::make_shared<testmessages::umb::testmsg>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
         case testmessages::umb::MessageType::BoolPackingMessage:
             msg = std::make_shared<testmessages::umb::BoolPackingMessage>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
         case testmessages::umb::MessageType::STATIC_BoolPackingMessage:
             msg = std::make_shared<testmessages::umb::STATIC_BoolPackingMessage>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
         case testmessages::umb::MessageType::MultiStringMessage:
             msg = std::make_shared<testmessages::umb::MultiStringMessage>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
         case testmessages::umb::MessageType::DualStringMessage:
             msg = std::make_shared<testmessages::umb::DualStringMessage>();
-            msg->from_bytes(msg_buf);
+            ok = msg->from_bytes(msg_buf);
             break;
 
         case testmessages::umb::MessageType::None:
@@ -322,6 +323,13 @@ handle_multi_part_msg(
 //            throw std::runtime_error(
 //                std::format("invalid MessageType: {}",
 //                            std::to_string(static_cast<uint16_t>(type))));
+    }
+
+    if (!ok)
+    {
+        std::cout
+            << std::format("umb_echo_server ERROR: msg->from_bytes failed for MessageType {}\n",
+                           static_cast<int>(type));
     }
 
     const auto bytes_out = msg->to_bytes();
@@ -338,8 +346,7 @@ handle_multi_part_msg(
     const auto mt1 = bytes_out[3];
     std::array<umb::byte, umb::g_packet_size> send_buf{};
 
-    // Skip header from bytes_out. It will be written in the loop below.
-    unsigned bytes_sent = umb::g_header_size;
+    unsigned bytes_sent = 0;
     unsigned offset = umb::g_header_size;
 
     std::cout << std::format(
@@ -355,25 +362,32 @@ handle_multi_part_msg(
         }
 
         const auto num_to_send = std::min(umb::g_packet_size, total_bytes_to_send - bytes_sent);
-        send_buf[0] = num_to_send;
-        send_buf[1] = part_out;
-        send_buf[2] = mt0;
-        send_buf[3] = mt1;
+        const auto num_to_take_from_buffer = num_to_send - umb::g_header_size;
+        std::cout << std::format(
+            "sending {} bytes, offset: {}, part_out: {}, num_to_take_from_buffer: {}\n",
+            num_to_send, offset, part_out, num_to_take_from_buffer);
 
+        // Header.
+        auto it_send_buf = send_buf.begin();
+        *it_send_buf++ = num_to_send;
+        *it_send_buf++ = part_out;
+        *it_send_buf++ = mt0;
+        *it_send_buf++ = mt1;
+
+        // Grab the bytes we need for this part from the buffer containing
+        // all message bytes for the multipart message.
         const std::span<const umb::byte> send_data{bytes_out.cbegin() + offset,
                                                    bytes_out.cend()};
-        std::copy_n(send_data.cbegin(), num_to_send - umb::g_header_size, send_buf.begin());
+        std::copy_n(send_data.cbegin(), num_to_take_from_buffer, it_send_buf);
 
         // TODO: check ec.
-        std::cout << std::format("sending {} bytes, offset: {}, part_out: {}\n",
-                                 num_to_send, offset, part_out);
         co_await async_write(
             socket,
             boost::asio::buffer(send_buf, num_to_send),
             deferred);
 
         bytes_sent += num_to_send;
-        offset = bytes_sent - umb::g_header_size;
+        offset += num_to_send - umb::g_header_size;
     }
 }
 

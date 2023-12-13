@@ -23,6 +23,9 @@ class {{ uscript_test_mutator }} extends Mutator
 const FLOAT_MAX = 34028237000000000000000000000.f;
 const FLOAT_MIN = 0.0000000000000000000000000001175494;
 
+const FLOAT_MAX_SMALL = 50000.0;
+const FLOAT_MIN_SMALL = 0.00005;
+
 const PACKET_SIZE = {{ packet_size }};
 
 var UMBTestsTcpLink Link;
@@ -47,6 +50,7 @@ var int TotalFailures;
 var int TotalMessagesToSend;
 var int TotalMessagesReceived;
 var int NumTestRounds;
+var int LastLinkNumMsgs;
 var bool bDone;
 var bool bLocalDone;
 var array<byte> BytesToSend;
@@ -55,7 +59,10 @@ event Tick(float DeltaTime)
 {
     super.Tick(DeltaTime);
 
-    `ulog("TestState:" @ TestState, TestState != ETS_None);
+    `ulog("TestState:" @ TestState
+        @ "LastLinkNumMsgs:" @ LastLinkNumMsgs
+        @ "Link.NumMessagesReceived:" @ Link.NumMessagesReceived,
+        TestState != ETS_None);
 
     switch (TestState)
     {
@@ -69,6 +76,7 @@ event Tick(float DeltaTime)
         if (MessageReady_{{ message.name }}() || bClientServerDone_{{ message.name }})
         {
             TotalFailures += CheckMessage_{{ message.name }}();
+            LastLinkNumMsgs = Link.NumMessagesReceived;
         }
         break;
 {% endfor %}
@@ -104,7 +112,28 @@ final static function string BytesToString(const out array<byte> Bytes)
             Str $= ",";
         }
     }
-    Str = "]";
+    Str $= "]";
+
+    return Str;
+}
+
+final static function string StaticBytesToString(
+    const out byte Bytes[PACKET_SIZE],
+    int Count)
+{
+    local string Str;
+    local int I;
+
+    Str = "[";
+    for (I = 0; I < Count; ++I)
+    {
+        Str $= string(int(Bytes[I]));
+        if (I < (Count - 1))
+        {
+            Str $= ",";
+        }
+    }
+    Str $= "]";
 
     return Str;
 }
@@ -137,12 +166,38 @@ final static function string RandomString(int Size)
     return Str;
 }
 
+final static function float RandomFloat()
+{
+    local float MaxFloat;
+    local float MinFloat;
+    local float Ret;
+
+    if (FRand() > 0.5)
+    {
+        MaxFloat = FLOAT_MAX;
+        MinFloat = FLOAT_MIN;
+    }
+    else
+    {
+        MaxFloat = FLOAT_MAX_SMALL;
+        MinFloat = FLOAT_MIN_SMALL;
+    }
+
+    Ret = RandRange(MinFloat, MaxFloat);
+    if (FRand() < 0.5)
+    {
+        Ret *= -1.0;
+    }
+
+    return Ret;
+}
+
 `define CHECK(Field, Value, Type, Msg1, Msg2, Failures, Bytes)              \n\
     `Msg1.`Field = `Value;                                                  \n\
     Bytes.Length = 0;                                                       \n\
-    class'TestMessages'.static.`{Type}_ToMultiBytes(`Msg1, `Bytes);         \n\
-    class'TestMessages'.static.`{Type}_FromMultiBytes(`Msg2, `Bytes);       \n\
-    if (class'TestMessages'.static.`{Type}_NEQ(`Msg1, `Msg2))               \n\
+    class'{{ class_name }}'.static.`{Type}_ToMultiBytes(`Msg1, `Bytes);     \n\
+    class'{{ class_name }}'.static.`{Type}_FromMultiBytes(`Msg2, `Bytes);   \n\
+    if (class'{{ class_name }}'.static.`{Type}_NEQ(`Msg1, `Msg2))           \n\
     {                                                                       \n\
         `ulog("##CHECK FAILED##:" @ `Msg1.`Field @ "???" @ `Msg2.`Field);   \n\
         `ulog("~=" @ `Msg1.`Field ~= `Msg2.`Field);                         \n\
@@ -162,8 +217,8 @@ final function int Test_StaticTests()
     Failures = 0;
 
     // Check empty message.
-    class'TestMessages'.static.JustAnotherTestMessage_ToMultiBytes(Msg1, Bytes);
-    class'TestMessages'.static.JustAnotherTestMessage_FromMultiBytes(Msg2, Bytes);
+    class'{{ class_name }}'.static.JustAnotherTestMessage_ToMultiBytes(Msg1, Bytes);
+    class'{{ class_name }}'.static.JustAnotherTestMessage_FromMultiBytes(Msg2, Bytes);
     if (Msg1 != Msg2)
     {
         `ulog("##CHECK FAILED##: Empty JustAnotherTestMessage");
@@ -182,6 +237,8 @@ final function int Test_StaticTests()
     `CHECK(Some_floatVAR, -1.00000118, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
     `CHECK(Some_floatVAR,  0.00000118, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
     `CHECK(Some_floatVAR,  1.00000118, JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR,  0.0005,     JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
+    `CHECK(Some_floatVAR, -0.0005,     JustAnotherTestMessage, Msg1, Msg2, Failures, Bytes)
 
     return Failures;
 }
@@ -211,7 +268,7 @@ final function int Test_{{ message.name }}()
     {{ msg1 }}.{{ field.name }} = Rand(MaxInt);
     if (FRand() > 0.5) {{ msg1 }}.{{ field.name }} *= -1;
     {% else if field.type == "float" %}
-    {{ msg1 }}.{{ field.name }} = RandRange(FLOAT_MIN, FLOAT_MAX);
+    {{ msg1 }}.{{ field.name }} = RandomFloat();
     {% else if field.type == "byte" %}
     {{ msg1 }}.{{ field.name }} = byte(Rand(256));
     {% else if field.type == "bool" %}
@@ -281,7 +338,11 @@ final function int Test_{{ message.name }}()
         ++Failures;
     }
     {{ cls }}{{ message.name }}_FromMultiBytes({{ msg2 }}, DynamicBytes);
+    {% if message.has_float_fields %}
+    if (class'{{ class_name }}'.static.{{ message.name }}_NEQ({{ msg1 }}, {{ msg2 }}))
+    {% else %}
     if ({{ msg1 }} != {{ msg2 }})
+    {% endif %}
     {
         `ulog("##CHECK FAILED##: DYNAMIC CODING: {{ msg1 }} != {{ msg2 }}");
     {% for field in message.fields %}
@@ -321,7 +382,6 @@ function PreBeginPlay()
 {
     local int Failures;
     local int Round;
-    local int I;
 
     `ulog(self @ "initialized");
 
@@ -398,6 +458,16 @@ final function SendMsg_{{ message.name }}()
         class'{{ class_name }}'.static.{{ message.name }}_ToMultiBytes(Msg, BytesToSend);
         MsgQueue_{{ message.name }}.Remove(MsgQueue_{{ message.name }}.Length - 1, 1);
         CmpMsg_{{ message.name }} = Msg;
+
+    {% if message.name == "testmsg" %}
+        {% for field in message.fields %}
+            {% if field.type == "float" %}
+        // Debugging float decoding issue on C++ side.
+        `ulog("### FLOAT DEBUG ###: Msg.{{ field.name }}:" @ Msg.{{ field.name }});
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
         Link.SendBytes(BytesToSend);
     }
     else
@@ -411,7 +481,8 @@ final function SendMsg_{{ message.name }}()
 {% set mt = "class'" + class_name + "'.const." + uscript_message_type_prefix + "_" + message.name %}
 final function bool MessageReady_{{ message.name }}()
 {
-    return Link.MessageType == {{ mt }};
+    return (Link.In_MessageType == {{ mt }});
+        // && (Link.NumMessagesReceived == LastLinkNumMsgs + 1);
 }
 
 /*
@@ -448,9 +519,9 @@ final function int CheckMessage_{{ message.name }}()
 
     if (bClientServerDone_{{ message.name }})
     {
-        Link.MessageType = class'{{ class_name }}'.const.EMT_None;
-        Link.Size = 0;
-        Link.Part = 0;
+        Link.In_MessageType = class'{{ class_name }}'.const.EMT_None;
+        Link.In_Size = 0;
+        Link.In_Part = 0;
 
     {% if loop.is_last %}
         // Done with all message types, exit. TODO: move exit away from here.
@@ -471,23 +542,23 @@ final function int CheckMessage_{{ message.name }}()
 
     // TODO: read from link and compare.
 
-    if (Link.MessageType != {{ mt }})
+    if (Link.In_MessageType != {{ mt }})
     {
-        `ulog("##ERROR##: wrong MessageType, expected {{ mt }}, got" @ Link.MessageType);
+        `ulog("##ERROR##: wrong MessageType, expected {{ mt }}, got" @ Link.In_MessageType);
         ++Failures;
     }
 
     // TODO: do both, FromBytes and FromMultiBytes for static messages.
     //   Only do FromMultiBytes for dynamic messages.
     {% if message.has_static_size %}
-    class'{{ class_name }}'.static.{{ message.name }}_FromBytes(Msg, Link.RecvMsgBufStatic);
+    class'{{ class_name }}'.static.{{ message.name }}_FromBytes(Msg, Link.RecvMsgBufSingle);
     {% endif %}
     // TODO: (also) read multi bytes.
 
     // TODO: MAKE MESSAGE COMPARISON INTO A MACRO AND/OR FUNCTION!
     // TODO: CHECK EARLIER COMPARISON IMPL. ABOVE!
     // TODO: CURRENTLY ONLY CHECKING STATIC MESSAGES!!!
-    if (Msg != CmpMsg_{{ message.name }} && Link.bIsStatic)
+    if (Msg != CmpMsg_{{ message.name }} && Link.In_bIsStatic)
     {
         `ulog("##ERROR##: FAILED CMP, TODO: BETTER MESSAGE");
     {% if message.has_static_size %}
@@ -511,9 +582,9 @@ final function int CheckMessage_{{ message.name }}()
         ++Failures;
     }
 
-    Link.MessageType = class'{{ class_name }}'.const.EMT_None;
-    Link.Size = 0;
-    Link.Part = 0;
+    Link.In_MessageType = class'{{ class_name }}'.const.EMT_None;
+    Link.In_Size = 0;
+    Link.In_Part = 0;
 
     ++TotalMessagesReceived;
 

@@ -2,3 +2,6 @@
     `log(self.class.name $ "::" $ GetFuncName() $ "(): " $ `msg, \
     `cond, \
     `if(`tag) name("UMBTests-" $ string(`tag)) `else 'UMBTests' `endif)
+
+`define uerror(msg, cond) \
+    `log(self.class.name $ "::" $ GetFuncName() $ "(): ##ERROR##:" @ `msg, `cond, 'ERROR')

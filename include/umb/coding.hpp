@@ -281,7 +281,9 @@ decode_float(
     else
     {
         throw std::runtime_error(
-            std::format("TODO: better handling: {}", std::make_error_condition(ec).message()));
+            std::format("TODO: decode_float: better handling: {}: '{}'",
+                        std::make_error_condition(ec).message(),
+                        float_str));
     }
 }
 
