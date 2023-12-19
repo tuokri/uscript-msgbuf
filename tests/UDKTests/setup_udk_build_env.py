@@ -431,12 +431,18 @@ async def main():
         help="path to umb_echo_server executable",
         default="umb_echo_server",
     )
+    ap.add_argument(
+        "--no-echo-server",
+        help="do not start umb_echo_server, assume already running",
+        action="store_true",
+    )
 
     args = ap.parse_args()
     progress_bar = not args.no_progress_bar
     use_shell = args.use_shell
     add_fw_rules = args.add_fw_rules
     echo_server_path = Path(args.echo_server_path).resolve()
+    no_echo_server = args.no_echo_server
 
     hard_reset = False
     cache = Cache()
@@ -625,7 +631,8 @@ async def main():
         use_shell=use_shell,
     )
 
-    await start_umb_echo_server(echo_server_path)
+    if not no_echo_server:
+        await start_umb_echo_server(echo_server_path)
 
     ec += await run_udk_server(
         watcher=watcher,
@@ -635,7 +642,8 @@ async def main():
         use_shell=use_shell,
     )
 
-    await stop_umb_echo_server()
+    if not no_echo_server:
+        await stop_umb_echo_server()
 
     obs.stop()
     obs.join(timeout=UDK_TEST_TIMEOUT)
