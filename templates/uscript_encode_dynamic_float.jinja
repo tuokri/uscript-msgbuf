@@ -17,10 +17,6 @@
         FloatStr $= (int(Msg.{{ field.name }}) * 10000000);
     }
     StrLen = Len(FloatStr);
-
-    // TODO: debugging.
-    `log("{{ message.name }}.{{ field.name }} StrLen:" @ StrLen @ "FloatStr:" @ FloatStr);
-
     Bytes.Length = Bytes.Length + StrLen + 1;
     Bytes[I++] = StrLen;
     for (StrIdx = 0; StrIdx < StrLen; ++StrIdx)
