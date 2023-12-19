@@ -35,11 +35,10 @@ var private byte NumPartsOut;
 var private byte PartOut;
 var private byte MTOut0;
 var private byte MTOut1;
-var private int Idx;
-var private int BufIdx;
+var private int ByteIdx;
+var private int OutBufIdx;
 var private int NumSent;
 var private int NumToSend;
-var private int NumToTakeFromBuffer;
 var private byte OutBuf[PACKET_SIZE];
 
 // Received message.
@@ -129,12 +128,17 @@ event Tick(float DeltaTime)
             `ulog("In_Part        :" @ In_Part);
             `ulog("In_MessageType :" @ In_MessageType);
 
+            // TODO: this check is unnecessary. Does the test mutator code using
+            //       this actually need it for anything?
+            In_bIsStatic = class'TestMessages'.static.IsStaticMessage(In_MessageType);
+
             if (In_Part == SINGLE_PART)
             {
                 RecvMsgBufSingle[0] = RecvMsgBuf[0];
                 RecvMsgBufSingle[1] = RecvMsgBuf[1];
                 RecvMsgBufSingle[2] = RecvMsgBuf[2];
                 RecvMsgBufSingle[3] = RecvMsgBuf[3];
+                In_MsgBufIdx = HEADER_SIZE;
                 ReadState = ERS_WaitingForSingleBytes;
             }
             else if (In_Part < MULTI_PART_END)
@@ -216,11 +220,6 @@ event Tick(float DeltaTime)
                 break;
             }
 
-            // TODO: this check is unnecessary. Does the test mutator code using
-            //       this actually need it for anything?
-            In_bIsStatic = class'TestMessages'.static.IsStaticMessage(In_MessageType);
-            // Header has been read already. Only read payload bytes here.
-            In_MsgBufIdx = HEADER_SIZE;
             if (In_bIsStatic)
             {
                 for (In_RecvBufIdx = 0; In_RecvBufIdx < In_ReadCount; ++In_RecvBufIdx)
@@ -318,6 +317,9 @@ final function ConnectToServer()
 // TODO: dedicated function for sending static bytes.
 
 // TODO: take Size, Part, MessageType as arguments here?
+// TODO: REALLY CONSIDER ADDING HEADERS TO MULTIPART MESSAGE ENCODING
+//       ALREADY IN THE ENCODING PHASE. THIS IS A LOT OF ADDED COMPLEXITY
+//       TO PERFORM THE PACKAGE SPLITTING HERE.
 final function SendBytes(const out array<byte> Bytes)
 {
     // TODO: should this be calculated somewhere else?
@@ -341,9 +343,9 @@ final function SendBytes(const out array<byte> Bytes)
     //   bytes are not trying to be sent in a single part?
     if (NumPartsOut == 1 || Bytes.Length <= PACKET_SIZE)
     {
-        for (Idx = 0; Idx < Bytes.Length; ++Idx)
+        for (ByteIdx = 0; ByteIdx < Bytes.Length; ++ByteIdx)
         {
-            OutBuf[Idx] = Bytes[Idx];
+            OutBuf[ByteIdx] = Bytes[ByteIdx];
         }
 
         OutBuf[1] = SINGLE_PART;
@@ -356,7 +358,7 @@ final function SendBytes(const out array<byte> Bytes)
 
     // Multipart messages.
     // Skip first header.
-    Idx = 4;
+    ByteIdx = 4;
 
     // Cache MessageType, should be re-used as such in
     // all multipart message packets.
@@ -371,29 +373,26 @@ final function SendBytes(const out array<byte> Bytes)
             PartOut = MULTI_PART_END;
         }
 
-        BufIdx = 0;
-        NumToSend = Min(PACKET_SIZE, TotalBytesToSend - BytesSent);
-        NumToTakeFromBuffer = NumToSend - HEADER_SIZE; // TODO: this goes negative sometimes.
-        OutBuf[BufIdx++] = NumToSend;
-        OutBuf[BufIdx++] = PartOut;
-        OutBuf[BufIdx++] = MTOut0;
-        OutBuf[BufIdx++] = MTOut1;
-
-        while (BufIdx < (NumToTakeFromBuffer + HEADER_SIZE))
+        // Write size later.
+        OutBufIdx = 1;
+        OutBuf[OutBufIdx++] = PartOut;
+        OutBuf[OutBufIdx++] = MTOut0;
+        OutBuf[OutBufIdx++] = MTOut1;
+        while ((OutBufIdx < PACKET_SIZE) && (ByteIdx < Bytes.Length))
         {
-            OutBuf[BufIdx++] = Bytes[Idx++];
+            OutBuf[OutBufIdx++] = Bytes[ByteIdx++];
         }
+        NumToSend = OutBufIdx;
+        OutBuf[0] = NumToSend;
 
         NumSent = SendBinary(NumToSend, OutBuf);
         BytesSent += NumSent;
-        `ulog(
-            "Sent" @ NumSent @ "bytes,"
+        `ulog("Sent" @ NumSent @ "bytes,"
             @ "part:" @ PartOut
             @ "NumToSend:" @ NumToSend
-            @ "NumToTakeFromBuffer:" @ NumToTakeFromBuffer
             @ "BytesSent:" @ BytesSent);
 
-        `ulog("Buffer:" @ class'UMBTestsMutator'.static.StaticBytesToString(OutBuf, NumToSend));
+        // `ulog("Buffer:" @ class'UMBTestsMutator'.static.StaticBytesToString(OutBuf, NumToSend));
     }
 }
 
