@@ -458,16 +458,14 @@ final function SendMsg_{{ message.name }}()
         class'{{ class_name }}'.static.{{ message.name }}_ToMultiBytes(Msg, BytesToSend);
         MsgQueue_{{ message.name }}.Remove(MsgQueue_{{ message.name }}.Length - 1, 1);
         CmpMsg_{{ message.name }} = Msg;
-
-    {% if message.name == "testmsg" %}
-        {% for field in message.fields %}
-            {% if field.type == "float" %}
-        // Debugging float decoding issue on C++ side.
-        `ulog("### FLOAT DEBUG ###: Msg.{{ field.name }}:" @ Msg.{{ field.name }});
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-
+{#    {% if message.name == "testmsg" %}#}
+{#        {% for field in message.fields %}#}
+{#            {% if field.type == "float" %}#}
+{#        // Debugging float decoding issue on C++ side.#}
+{#        `ulog("### FLOAT DEBUG ###: Msg.{{ field.name }}:" @ Msg.{{ field.name }});#}
+{#            {% endif %}#}
+{#        {% endfor %}#}
+{#    {% endif %}#}
         Link.SendBytes(BytesToSend);
     }
     else
@@ -552,16 +550,17 @@ final function int CheckMessage_{{ message.name }}()
     //   Only do FromMultiBytes for dynamic messages.
     {% if message.has_static_size %}
     class'{{ class_name }}'.static.{{ message.name }}_FromBytes(Msg, Link.RecvMsgBufSingle);
+    {% else %}
+    class'{{ class_name }}'.static.{{ message.name }}_FromMultiBytes(Msg, Link.RecvMsgBufMulti);
     {% endif %}
-    // TODO: (also) read multi bytes.
 
     // TODO: MAKE MESSAGE COMPARISON INTO A MACRO AND/OR FUNCTION!
     // TODO: CHECK EARLIER COMPARISON IMPL. ABOVE!
     // TODO: CURRENTLY ONLY CHECKING STATIC MESSAGES!!!
-    if (Msg != CmpMsg_{{ message.name }} && Link.In_bIsStatic)
+    if (Msg != CmpMsg_{{ message.name }} /*&& Link.In_bIsStatic*/)
     {
-        `ulog("##ERROR##: FAILED CMP, TODO: BETTER MESSAGE");
     {% if message.has_static_size %}
+        `ulog("##CHECK FAILED##: STATIC CODING: Msg != CmpMsg_{{ message.name }}");
         {% for field in message.fields %}
             {% if field.type == "byte" %}
                 {% set cast_begin = "string(int" %}
@@ -577,7 +576,27 @@ final function int CheckMessage_{{ message.name }}()
         );
         {% endfor %}
     {% else %}
-        // TODO: dynamic comparison prints.
+        `ulog("##CHECK FAILED##: DYNAMIC CODING: Msg != CmpMsg_{{ message.name }}");
+        {% for field in message.fields %}
+            {% if field.type == "string" %}
+                {% set cast_begin = "" %}
+                {% set cast_end = "" %}
+            {% else if field.type == "bytes" %}
+                {% set cast_begin = "BytesToString" %}
+                {% set cast_end = "" %}
+            {% else if field.type == "byte" %}
+                {% set cast_begin = "string(int" %}
+                {% set cast_end = ")" %}
+            {% else %}
+                {% set cast_begin = "string" %}
+                {% set cast_end = "" %}
+            {% endif %}
+        `ulog(" ##CMP##: {{ field.name }}:"
+            @ {{ cast_begin }}(Msg.{{ field.name }}){{ cast_end }}
+            @ "?"
+            @ {{ cast_begin }}(CmpMsg_{{ message.name }}.{{ field.name }}){{ cast_end }}
+        );
+        {% endfor %}
     {% endif %}
         ++Failures;
     }
