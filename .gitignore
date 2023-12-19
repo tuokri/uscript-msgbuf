@@ -194,3 +194,7 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Some external tools
+fixdates.py
+rebase.py
