@@ -54,3 +54,6 @@
         {{ error("invalid type: '", field.type, "' in ", message.name) }}
     {% endif %}
 {% endfor %}
+
+{# TODO: set number of parts field after serializing the message? #}
+{#       - helps later down the road when sending multipart messages #}
