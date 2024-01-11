@@ -6,6 +6,7 @@ on: [ workflow_call ]
 env:
   UDK_LITE_CACHE: ${{ github.workspace }}/tests/UDKTests/.cache/
   UDK_LITE_TAG: 1.0.1
+  UDK_USCRIPT_MESSAGE_FILES: build/generated/*.uc
   # Timeout for individual steps in the test script. Not a total timeout.
   UDK_TEST_TIMEOUT: 300
   PYTHONUNBUFFERED: 1
@@ -42,7 +43,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: umb-generated-uscript-windows-latest-${{ matrix.build_type }}
-          path: tests/out/
+          path: build/generated/
 
       - name: Download UMB executables
         uses: actions/download-artifact@v3

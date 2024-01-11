@@ -155,15 +155,15 @@ jobs:
         with:
           name: umb-generated-cpp-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
-            tests/out/*.umb.cpp
-            tests/out/*.umb.hpp
+            build/generated/*.umb.cpp
+            build/generated/*.umb.hpp
 
       - name: Archive UMB generated UnrealScript files
         uses: actions/upload-artifact@v3
         with:
           name: umb-generated-uscript-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
-            tests/out/*.uc
+            build/generated/*.uc
 
       - name: Archive UMB build artifacts
         uses: actions/upload-artifact@v3

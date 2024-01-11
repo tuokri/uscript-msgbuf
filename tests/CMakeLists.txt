@@ -37,7 +37,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif ()
 
 set(UMB_USCRIPT_TEST_MUTATOR "UMBTestsMutator")
-set(UMB_GENERATED_TEST_OUT ${CMAKE_CURRENT_SOURCE_DIR}/out)
+set(UMB_GENERATED_TEST_OUT ${CMAKE_BINARY_DIR}/generated)
 set(UMB_GENERATED_OUTPUT_TEST_FILES "")
 file(GLOB UMB_TEST_MSG_DEFINITION_FILES data/*.json)
 cmake_print_variables(UMB_TEST_MSG_DEFINITION_FILES)
@@ -59,7 +59,7 @@ set(
     UMB_GENERATOR_TESTING_ARGS
     ${UMB_TEST_MSG_DEFINITION_FILES}
     --cpp-out=${UMB_GENERATED_TEST_OUT}
-    --uscript-out=${UMB_GENERATED_TEST_OUT}  # TODO: put generated code in build dir!
+    --uscript-out=${UMB_GENERATED_TEST_OUT}
     --uscript-test-mutator=${UMB_USCRIPT_TEST_MUTATOR}
 )
 if (NOT UMB_RUN_CLANG_FORMAT)
@@ -80,7 +80,7 @@ add_dependencies(generate_test_data copy_templates)
 add_library(test_msg_library ${UMB_GENERATED_OUTPUT_TEST_FILES})
 # Always enable reflection for testing, regardless of global setting.
 target_compile_definitions(test_msg_library PRIVATE -DUMB_INCLUDE_META)
-target_include_directories(test_msg_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/out)
+target_include_directories(test_msg_library PUBLIC ${UMB_GENERATED_TEST_OUT})
 target_link_libraries(test_msg_library PUBLIC umb ICU::uc ICU::dt ICU::in ICU::io)
 target_compile_features(test_msg_library PRIVATE cxx_std_23)
 
@@ -152,3 +152,4 @@ endif ()
 
 # TODO: clean up all the unneeded dependency links. The graph is a mess.
 # TODO: make reusable CMake functions to be used in other projects.
+#   - protobuf style cmake generation funcs

@@ -470,7 +470,8 @@ async def main():
     udk_lite_tag = os.environ.get("UDK_LITE_TAG", defaults.UDK_LITE_TAG)
     udk_lite_root = Path(os.environ.get("UDK_LITE_ROOT", defaults.UDK_LITE_ROOT))
     udk_lite_release_url = os.environ.get("UDK_LITE_RELEASE_URL", defaults.UDK_LITE_RELEASE_URL)
-    uscript_message_files = os.environ.get("USCRIPT_MESSAGE_FILES", defaults.USCRIPT_MESSAGE_FILES)
+    uscript_message_files = os.environ.get("UDK_USCRIPT_MESSAGE_FILES",
+                                           defaults.UDK_USCRIPT_MESSAGE_FILES)
 
     if not udk_lite_root.is_absolute():
         udk_lite_root = (SCRIPT_DIR / udk_lite_root).resolve()
@@ -478,7 +479,7 @@ async def main():
     print(f"UDK_LITE_TAG={udk_lite_tag}")
     print(f"UDK_LITE_ROOT={udk_lite_root}")
     print(f"UDK_LITE_RELEASE_URL={udk_lite_release_url}")
-    print(f"USCRIPT_MESSAGE_FILES={uscript_message_files}")
+    print(f"UDK_USCRIPT_MESSAGE_FILES={uscript_message_files}")
 
     input_script_msg_files = [
         resolve_script_path(path) for path in

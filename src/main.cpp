@@ -514,7 +514,15 @@ void render_uscript(inja::Environment& env, const std::string& file, const inja:
     fs::path out_file = fs::path{uscript_out_dir} / out_filename;
     std::cout << std::format("writing '{}'\n", out_file.string());
     fs::ofstream out{out_file};
+    if (!out)
+    {
+        throw std::runtime_error(std::format("failed to open '{}' for writing", out_file.string()));
+    }
     out << r;
+    if (out.fail())
+    {
+        throw std::runtime_error(std::format("failed to write '{}'", out_file.string()));
+    }
 }
 
 // TODO: add option for passing in custom .clang-format file.
@@ -539,6 +547,7 @@ void clang_format(const std::vector<fs::path>& paths)
         const auto& pstr = path.string();
         std::cout << std::format("running clang-format on '{}'\n", pstr);
         bp::execute(bp::process(ctx, cf_prog, {pstr, style_arg, "-i", "--Werror"}));
+        // TODO: check exit code and throw on clang_format failure?
     }
     ctx.run();
 }
@@ -572,8 +581,29 @@ void render_cpp(inja::Environment& env,
     std::cout << std::format("writing: '{}'\n", src_out_file.string());
     fs::ofstream hdr_out{hdr_out_file};
     fs::ofstream src_out{src_out_file};
+
+    if (!hdr_out)
+    {
+        throw std::runtime_error(
+            std::format("failed to open '{}' for writing", hdr_out_file.string()));
+    }
+    if (!src_out)
+    {
+        throw std::runtime_error(
+            std::format("failed to open '{}' for writing", src_out_file.string()));
+    }
+
     hdr_out << hdr;
     src_out << src;
+
+    if (hdr_out.fail())
+    {
+        throw std::runtime_error(std::format("failed to write '{}'", hdr_out_file.string()));
+    }
+    if (src_out.fail())
+    {
+        throw std::runtime_error(std::format("failed to write '{}'", src_out_file.string()));
+    }
 
     if (run_clang_format)
     {
@@ -676,6 +706,10 @@ render(
         data["class_name"].get<std::string>()).filename().replace_extension(".uc").string();
 
     std::cout << std::format("rendering '{}'\n", file);
+
+    fs::create_directories(fs::path(uscript_out_dir));
+    fs::create_directories(fs::path(cpp_out_dir));
+
     render_uscript(env, us_template.string(), data, uscript_out_name, uscript_out_dir);
     render_cpp(env, cpp_hdr_template.string(), cpp_src_template.string(), data, cpp_out_dir,
                run_clang_format);

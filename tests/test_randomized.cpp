@@ -139,7 +139,8 @@ TEST_CASE("test TestMessages messages with randomized data")
 
     // "Fire up" the RNG. TODO: does this actually help with anything?
     constexpr uint64_t r_initial = get_rand<0, 0>();
-    std::cout << std::format("*** begin RNG tests, r_initial={} ***\n\n", r_initial);
+    std::cout << std::format("*** begin RNG tests, r_initial={}, kiss_seed={} ***\n\n",
+                             r_initial, ::umb::meta::rng::kiss_seed);
 
     boost::hana::for_each(rounds, [&](const auto round)
     {
