@@ -37,6 +37,10 @@ vcpkg install inja boost doctest icu
 
 ## TODO:
 
+- Improve vcpkg dependency handling.
+    - Fork vcpkg?
+    - Pin version in manifest (vckpg.json)?
+
 - Probably have to force some more dependencies since unit test messages
   are sometimes not regenerated even though the templates or generator changes.
 
