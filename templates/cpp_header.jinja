@@ -50,8 +50,9 @@ public:
     [[nodiscard]] bool to_bytes(std::span<::umb::byte> bytes) const override;
     bool from_bytes(std::span<const ::umb::byte> bytes) override;
     [[nodiscard]] size_t serialized_size() const override;
+    [[nodiscard]] std::wstring to_string() const override;
     {% for field in message.fields %}
-    [[nodiscard]] {{ cpp_type(field.type) }} {{ field.name }}() const;
+    [[nodiscard]] const {{ cpp_type(field.type) }}& {{ field.name }}() const;
     void set_{{ field.name }}({{ cpp_type_arg(field.type) }});
     {% endfor %}
     [[nodiscard]] constexpr uint16_t type() const noexcept override

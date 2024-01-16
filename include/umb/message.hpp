@@ -20,6 +20,7 @@
 #pragma once
 
 #include <span>
+#include <string>
 #include <vector>
 
 #include "umb/coding.hpp"
@@ -32,6 +33,16 @@ namespace umb
 class Message
 {
 public:
+    Message() = default;
+
+    Message(const Message&) = delete;
+
+    Message& operator=(const Message&) = delete;
+
+    Message(Message&&) noexcept = delete;
+
+    Message& operator=(Message&&) noexcept = delete;
+
     virtual ~Message() = default;
 
     /**
@@ -72,7 +83,16 @@ public:
      */
     [[nodiscard]] virtual size_t serialized_size() const = 0;
 
-    // TODO: reconsider this API.
+    /**
+     * Return human-readable string representation of this
+     * message. This is not portable.
+     * TODO: string encoding?
+     *
+     * @return message as a human-readable string.
+     */
+    [[nodiscard]] virtual std::wstring to_string() const = 0;
+
+    // TODO: reconsider this API. Don't use uint16_t directly?
     [[nodiscard]] constexpr virtual uint16_t type() const noexcept = 0;
 
 protected:

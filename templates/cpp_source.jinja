@@ -160,8 +160,22 @@ size_t {{ message.name }}::serialized_size() const
 {% endif %}
 }
 
+std::wstring {{ message.name }}::to_string() const
+{
+    std::wstring str;
+
 {% for field in message.fields %}
-{{ cpp_type(field.type) }} {{ message.name }}::{{ field.name }}() const
+    str += std::format(L"{{ field.name }}={}", ::umb::fmt::to_wstring({{ field.name }}()));
+    {% if not loop.is_last %}
+        str += L", ";
+    {% endif %}
+{% endfor %}
+
+    return str;
+}
+
+{% for field in message.fields %}
+const {{ cpp_type(field.type) }}& {{ message.name }}::{{ field.name }}() const
 {
     return m_{{ field.name }};
 }
