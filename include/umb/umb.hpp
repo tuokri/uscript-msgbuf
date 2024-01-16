@@ -22,6 +22,7 @@
 #include "umb/coding.hpp"
 #include "umb/constants.hpp"
 #include "umb/floatcmp.hpp"
+#include "umb/fmt.hpp"
 #include "umb/message.hpp"
 
 #ifdef UMB_INCLUDE_META
