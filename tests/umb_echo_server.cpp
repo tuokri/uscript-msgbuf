@@ -334,6 +334,11 @@ handle_multi_part_msg(
                            static_cast<int>(type));
     }
 
+    // TODO: what the fuck is going on here?
+    std::wcout << std::format(L"*** received message: {} ***\n\n\n", msg->to_string()) << std::endl;
+    std::wcout << std::endl;
+    std::cout << std::endl;
+
     const auto bytes_out = msg->to_bytes();
     // Only count the number of payload bytes left here.
     auto bytes_left = bytes_out.size() - umb::g_header_size;
@@ -504,6 +509,7 @@ awaitable<void> listener()
 int main()
 {
     std::cout << std::unitbuf;
+    std::wcout << std::unitbuf;
 
     try
     {
