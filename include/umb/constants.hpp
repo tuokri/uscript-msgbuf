@@ -114,7 +114,7 @@ static const std::unordered_map<std::string, std::string> g_type_to_cpp_type_arg
     {"float",  "float"},
     {"bool",   "bool"},
     {"bytes",  "const std::vector<::umb::byte>&"},
-    {"string", "const std::u16string&"},
+    {"string", "const std::u16string_view"},
 };
 
 static const std::unordered_map<std::string, std::string> g_cpp_default_value{
