@@ -12,6 +12,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# TODO: set Valgrind arguments here?
+
 cmake_minimum_required(VERSION 3.25)
 project(uscript-msgbuf)
 
