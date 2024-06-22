@@ -37,6 +37,8 @@ vcpkg install inja boost doctest icu
 
 ## TODO:
 
+- ADD VCPKG AS A SUBMODULE FOR SELF-CONTAINED DEPENDENCY MANAGEMENT
+
 - Improve vcpkg dependency handling.
     - Fork vcpkg?
     - Pin version in manifest (vckpg.json)?
