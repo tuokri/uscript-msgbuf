@@ -322,12 +322,12 @@ decode_string(
     char_buf.reserve(str_size);
 
     char16_t previous = 0x00;
-    auto shift = 0;
+    byte shift = 0;
     for (const auto& byte: byte_buf)
     {
         if (shift == 8)
         {
-            char_buf.emplace_back(previous | (byte << shift));
+            char_buf.emplace_back(static_cast<char16_t>(previous | (byte << shift)));
         }
         else
         {

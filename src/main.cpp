@@ -14,7 +14,12 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#include "umb/umb.hpp"
+// Always include meta explicitly, needed by the generator
+// even if not doing a meta build for generated messages.
+#include "umb/meta.hpp"
+
+#if UMB_WINDOWS
 
 // Silence "Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately".
 #include <SDKDDKVer.h>
@@ -38,11 +43,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/process/v2.hpp>
 #include <boost/program_options.hpp>
-
-#include "umb/umb.hpp"
-// Always include meta explicitly, needed by the generator
-// even if not doing a meta build for generated messages.
-#include "umb/meta.hpp"
 
 namespace
 {
@@ -381,7 +381,7 @@ constexpr T var(const inja::Arguments& args)
     auto action = args.at(1)->get<std::string>();
 
     boost::algorithm::to_upper(action);
-    VarAction va = g_str_to_varaction.at(action);
+    const VarAction va = g_str_to_varaction.at(action);
 
     T value;
 

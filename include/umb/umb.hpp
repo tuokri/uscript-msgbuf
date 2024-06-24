@@ -19,6 +19,24 @@
 
 #pragma once
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#define UMB_WINDOWS 1
+#else
+#define UMB_WINDOWS 0
+#endif
+
+#ifdef _MSC_VER
+#define UMB_SUPPRESS_MSVC_WARNING(n) __pragma(warning(suppress : n))
+#define UMB_WARNING_PUSH_MSVC __pragma(warning(push))
+#define UMB_WARNING_POP_MSVC __pragma(warning(pop))
+#define UMB_WARNING_DISABLE_MSVC(n) __pragma(warning(disable: n))
+#else
+#define UMB_SUPPRESS_MSVC_WARNING(n)
+#define UMB_WARNING_PUSH_MSVC
+#define UMB_WARNING_POP_MSVC
+#define UMB_WARNING_DISABLE_MSVC(n)
+#endif
+
 #include "umb/coding.hpp"
 #include "umb/constants.hpp"
 #include "umb/floatcmp.hpp"

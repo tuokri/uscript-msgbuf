@@ -107,6 +107,8 @@ TEST_CASE("encode decode long unicode string")
     testmessages::umb::testmsg msg1;
     testmessages::umb::testmsg msg2;
 
+    UMB_WARNING_PUSH_MSVC
+    UMB_WARNING_DISABLE_MSVC(4566)
     constexpr auto raw_str = u"\u4b9f\uc09d\ubfe3\ubc86\ube5a"
                              "\uc172\uc2a3\u9b33\uc416\ufc4b"
                              "\u51b9\ufa94\uc81d\u8d71\u96f4"
@@ -128,6 +130,7 @@ TEST_CASE("encode decode long unicode string")
                              "\ua783\u11f0\u5011\uff70\u81ec"
                              "\u0e57\u5a5e\u3ac9\u0075\u0067"
                              "\u0069\u0066";
+    UMB_WARNING_POP_MSVC
 
     msg1.set_ffffff(raw_str);
 
