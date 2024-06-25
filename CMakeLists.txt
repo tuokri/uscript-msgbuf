@@ -189,8 +189,18 @@ option(UMB_INCLUDE_META "include meta/reflection C++ templates" ON)
 option(UMB_RUN_CLANG_FORMAT "run clang-format on generated C++ files" ON)
 
 if (BUILD_TESTS)
-    find_program(MEMORYCHECK_COMMAND valgrind)
-    set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full --track-origins=yes --error-exitcode=1")
+    # TODO: make this optional even on Unix builds?
+    if (UNIX)
+        find_program(
+            MEMORYCHECK_COMMAND
+            NAMES
+            valgrind
+            HINTS
+            $ENV{UMB_VALGRIND_BIN} # Used in GitHub Actions.
+            REQUIRED
+        )
+        set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full --track-origins=yes --error-exitcode=1")
+    endif ()
     include(CTest)
     enable_testing()
     add_subdirectory(tests)
