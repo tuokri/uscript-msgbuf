@@ -59,7 +59,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: Cache Valgrind
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-valgrind
         if: matrix.os == 'ubuntu-latest'
         with:
@@ -165,7 +165,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: Archive UMB generated C++ files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: umb-generated-cpp-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
@@ -173,14 +173,14 @@ jobs:
             build/generated/*.umb.hpp
 
       - name: Archive UMB generated UnrealScript files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: umb-generated-uscript-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
             build/generated/*.uc
 
       - name: Archive UMB build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: umb-generator-executable-${{ matrix.os }}-${{ matrix.build_type }}
           path: |
