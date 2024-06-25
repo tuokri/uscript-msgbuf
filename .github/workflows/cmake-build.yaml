@@ -70,8 +70,8 @@ jobs:
         if: matrix.os == 'ubuntu-24.04'
         with:
           path: ${{ env.VALGRIND_PREFIX }}
-          key: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
-          restore-keys: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
+          key: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}-${{ matrix.build_type }}
+          restore-keys: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}-${{ matrix.build_type }}
 
       - name: Install Valgrind
         if: ${{ (matrix.os == 'ubuntu-24.04') && (steps.cache-valgrind.outputs.cache-hit != 'true') }}
