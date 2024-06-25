@@ -51,8 +51,9 @@ jobs:
         run: REG ADD HKCU\Console\%SystemRoot^%_System32_WindowsPowerShell_v1.0_powershell.exe /v CodePage /t REG_DWORD /d 65001
         if: matrix.os == 'windows-latest'
 
-      - name: Add Universe repository
+      - name: Add Universe repository and check package availability
         run: sudo add-apt-repository universe
+          && apt search gcc-14
         if: matrix.os == 'ubuntu-latest'
 
       - name: Install apt dependencies
