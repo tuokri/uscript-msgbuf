@@ -53,6 +53,7 @@ jobs:
 
       - name: Add Universe repository and check package availability
         run: sudo add-apt-repository universe
+          && sudo apt update
           && apt search gcc-14
         if: matrix.os == 'ubuntu-latest'
 
