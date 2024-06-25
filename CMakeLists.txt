@@ -196,7 +196,9 @@ if (BUILD_TESTS)
             NAMES
             valgrind
             HINTS
-            $ENV{UMB_VALGRIND_BIN} # Used in GitHub Actions.
+            # Used in GitHub Actions.
+            $ENV{UMB_VALGRIND_BIN}
+            $ENV{VALGRIND_PREFIX}/bin/
             REQUIRED
         )
         set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full --track-origins=yes --error-exitcode=1")
