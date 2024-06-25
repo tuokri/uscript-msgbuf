@@ -12,8 +12,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 #     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-include(CTest)
-
 find_package(doctest REQUIRED)
 find_package(ICU REQUIRED COMPONENTS uc dt in io)
 find_package(Boost REQUIRED)

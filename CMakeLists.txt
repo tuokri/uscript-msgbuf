@@ -189,6 +189,7 @@ option(UMB_INCLUDE_META "include meta/reflection C++ templates" ON)
 option(UMB_RUN_CLANG_FORMAT "run clang-format on generated C++ files" ON)
 
 if (BUILD_TESTS)
+    include(CTest)
     enable_testing()
     add_subdirectory(tests)
 endif ()
