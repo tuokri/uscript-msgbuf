@@ -51,6 +51,10 @@ jobs:
         run: REG ADD HKCU\Console\%SystemRoot^%_System32_WindowsPowerShell_v1.0_powershell.exe /v CodePage /t REG_DWORD /d 65001
         if: matrix.os == 'windows-latest'
 
+      - name: Add Universe repository
+        run: sudo add-apt-repository universe
+        if: matrix.os == 'ubuntu-latest'
+
       - name: Install apt dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
