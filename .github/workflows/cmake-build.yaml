@@ -11,7 +11,7 @@ env:
 jobs:
   build:
     env:
-      VALGRIND_GIT_TAG: VALGRIND_3_22_0
+      VALGRIND_GIT_TAG: VALGRIND_3_23_0
       VALGRIND_PREFIX: ${{ github.workspace }}/valgrind/
       UMB_VALGRIND_BIN: ${{ github.workspace }}/valgrind/bin/valgrind
 
@@ -30,7 +30,7 @@ jobs:
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
             cmake_extra_args: -A x64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
             umb_include_meta: ON
             umb_run_clang_format: ON
@@ -55,26 +55,26 @@ jobs:
         run: sudo add-apt-repository universe
           && sudo apt update
           && apt search gcc-14
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Install apt dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: autoconf-archive build-essential gcc-14 g++14 libc6-dbg
           version: 1.1  # NOTE: this is cache version according to the docs.
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Cache Valgrind
         uses: actions/cache@v4
         id: cache-valgrind
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
         with:
           path: ${{ env.VALGRIND_PREFIX }}
           key: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
           restore-keys: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
 
       - name: Install Valgrind
-        if: ${{ (matrix.os == 'ubuntu-latest') && (steps.cache-valgrind.outputs.cache-hit != 'true') }}
+        if: ${{ (matrix.os == 'ubuntu-24.04') && (steps.cache-valgrind.outputs.cache-hit != 'true') }}
         run: git clone https://sourceware.org/git/valgrind.git --depth 1 --branch ${{ env.VALGRIND_GIT_TAG }}
           && cd valgrind
           && ./autogen.sh
@@ -90,20 +90,20 @@ jobs:
           && whereis g++
           && whereis gcc-14
           && whereis g++-14
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Set default GCC
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 10
           --slave /usr/bin/g++ g++ /usr/bin/g++-14
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Print GCC version
         run: gcc --version
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Print clang-format version
         run: clang-format --version
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -155,20 +155,20 @@ jobs:
         run:
           # find / -name valgrind 2>/dev/null &&
           ${{ env.UMB_VALGRIND_BIN }} --version
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Run CTest with Valgrind
         env:
           VALGRIND_LIB: ${{ env.VALGRIND_PREFIX }}/libexec/valgrind/
         run: ctest -C ${{ matrix.build_type }} --verbose -T memcheck
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Run UMB generator with Valgrind
         env:
           UMB_GEN_BIN: build/uscript_msgbuf_generator
           VALGRIND_LIB: ${{ env.VALGRIND_PREFIX }}/libexec/valgrind/
         run: tests/gen_test_messages_with_valgrind.sh
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
 
       - name: Archive UMB generated C++ files
         uses: actions/upload-artifact@v4
