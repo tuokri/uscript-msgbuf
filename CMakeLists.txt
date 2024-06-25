@@ -189,6 +189,8 @@ option(UMB_INCLUDE_META "include meta/reflection C++ templates" ON)
 option(UMB_RUN_CLANG_FORMAT "run clang-format on generated C++ files" ON)
 
 if (BUILD_TESTS)
+    find_program(MEMORYCHECK_COMMAND valgrind)
+    set(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full --track-origins=yes --error-exitcode=1")
     include(CTest)
     enable_testing()
     add_subdirectory(tests)

@@ -31,7 +31,7 @@ echo "using valgrind: '${VALGRIND}'"
 echo "using UMB generator: '${UMB_GEN}'"
 echo "generating Valgrind run UMB output in: '${OUT_DIR}'"
 
-${VALGRIND} --leak-check=full --track-origins=yes --error-exitcode=1 \
+${VALGRIND} --trace-children=yes --leak-check=full --track-origins=yes --error-exitcode=1 \
   "${UMB_GEN}" "${DATA_FILES[@]}" \
   --cpp-out="${OUT_DIR}" \
   --uscript-out="${OUT_DIR}"
