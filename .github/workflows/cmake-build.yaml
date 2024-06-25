@@ -54,7 +54,7 @@ jobs:
       - name: Install apt dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: autoconf-archive build-essential gcc-13 g++13 libc6-dbg
+          packages: autoconf-archive build-essential gcc-14 g++14 libc6-dbg
           version: 1.0  # NOTE: this is cache version according to the docs.
         if: matrix.os == 'ubuntu-latest'
 
@@ -79,8 +79,8 @@ jobs:
         # && test -e ${{ env.UMB_VALGRIND_BIN }} && echo "Valgrind bin found" || echo "Valgrind bin not found"
 
       - name: Set default GCC
-        run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13
-          --slave /usr/bin/g++ g++ /usr/bin/g++-13
+        run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 10
+          --slave /usr/bin/g++ g++ /usr/bin/g++-14
         if: matrix.os == 'ubuntu-latest'
 
       - name: Print GCC version
