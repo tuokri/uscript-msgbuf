@@ -163,6 +163,7 @@ jobs:
         if: matrix.os == 'ubuntu-24.04'
 
       - name: Run CTest with Valgrind
+        working-directory: ${{ github.workspace }}/build
         env:
           VALGRIND_LIB: ${{ env.VALGRIND_PREFIX }}/libexec/valgrind/
         run: ctest -C ${{ matrix.build_type }} --verbose -T memcheck
