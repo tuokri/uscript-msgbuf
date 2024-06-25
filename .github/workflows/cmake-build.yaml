@@ -147,6 +147,7 @@ jobs:
         env:
           VALGRIND_LIB: ${{ env.VALGRIND_PREFIX }}/libexec/valgrind/
         run: ctest -C ${{ matrix.build_type }} --verbose -T memcheck
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Run UMB generator with Valgrind
         env:
