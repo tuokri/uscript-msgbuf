@@ -87,7 +87,6 @@ jobs:
         with:
           path: ${{ env.VALGRIND_PREFIX }}
           key: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
-          restore-keys: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
 
       - name: List installed gcc binaries
         run: find /usr/bin/ -name "*gcc*"
@@ -166,7 +165,16 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         env:
           VALGRIND_LIB: ${{ env.VALGRIND_PREFIX }}/libexec/valgrind/
-        run: ctest -C ${{ matrix.build_type }} --verbose -T memcheck
+        run: |
+          ctest -C ${{ matrix.build_type }} --verbose -T memcheck
+          find ${{ github.workspace }}/build/Testing/Temporary -name "MemoryChecker.*.log" -exec cat {} +
+        if: matrix.os == 'ubuntu-24.04'
+
+      - name: Archive Valgrind memory check logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: umb-ctest-valgrind-logs-${{ matrix.os }}-${{ matrix.build_type }}
+          path: ${{ github.workspace }}/build/Testing/Temporary/MemoryChecker.*.log
         if: matrix.os == 'ubuntu-24.04'
 
       - name: Run UMB generator with Valgrind
