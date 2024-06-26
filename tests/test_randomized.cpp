@@ -34,6 +34,7 @@
 #include <utility>
 
 #include <boost/hana.hpp>
+#include <boost/hana/for_each.hpp>
 
 #include <unicode/unistr.h>
 #include <unicode/ustream.h>
@@ -52,6 +53,43 @@
 namespace
 {
 
+/* Generate a compile-time sequence of Integers from Start to End
+ *
+ * typename IntegralType : the type of the sequence
+ * End: end of the sequence
+ * Start(0): beginning of the sequence
+ * Step(1): optionally define an amount to increment by
+ *
+ * The same parameters for the range<> variable template also
+ * perform the same function
+ */
+template<typename IntegralType, IntegralType End, IntegralType Start = 0, IntegralType Step = 1, IntegralType... Ints>
+struct integer_range: std::conditional<
+    std::integral_constant<bool,
+        Start >= End>::value,                      // Check if we're at the end
+    std::integer_sequence<IntegralType, Ints..., End>,                      // End of the sequence
+    integer_range<IntegralType, End, Start + Step, Step, Ints..., Start>    // Add the next element
+>::type
+{
+}; // Result type is an std::integer_sequence<...>
+
+// Variable template for constructing a range
+template<typename IntegralType, IntegralType End, IntegralType Start = 0, IntegralType Step = 1>
+constexpr auto integer_range_v = integer_range<IntegralType, End, Start, Step>();
+
+// Create an std::array from some sequence
+template<typename IntegralType, IntegralType Size, IntegralType... Seq>
+constexpr auto create_array(std::integer_sequence<IntegralType, Seq...>)
+{
+    return std::array<IntegralType, Size>{Seq...};
+}
+
+// Create an std::array for a range
+template<typename IntegralType, IntegralType End, IntegralType Start = 0, IntegralType Step = 1, IntegralType Size = (
+    ((End - Start) / Step) + 1)>
+constexpr auto range = create_array<IntegralType, Size>(
+    integer_range_v<IntegralType, End, Start, Step>);
+
 template<uint64_t Iteration, uint64_t W = 0>
 constexpr uint64_t get_rand()
 {
@@ -67,7 +105,7 @@ constexpr std::u16string get_rand_str(std::integer_sequence<IndexType, Is...> sl
 {
     std::u16string str_in;
     str_in.reserve(slen_seq.size());
-    boost::hana::for_each(slen_seq, [&](const auto i)
+    boost::hana::for_each(slen_seq, [&str_in](const auto i)
     {
         constexpr auto i64 = static_cast<uint64_t>(i);
         constexpr auto rnd = get_rand<RngIteration, i64>();
@@ -135,22 +173,29 @@ TEST_CASE("test TestMessages messages with randomized data")
 
     constexpr auto rounds = std::make_integer_sequence<uint64_t, UMB_META_TEST_ROUNDS>();
     constexpr auto mts = meta::message_types();
-    constexpr auto seq = std::make_integer_sequence<uint64_t, mts.size()>();
+    constexpr auto seq = std::make_integer_sequence<uint16_t, mts.size()>();
+    // constexpr auto seq = range<uint16_t, mts.size(), 1>;
+    constexpr auto seq_size = seq.size();
 
     // "Fire up" the RNG. TODO: does this actually help with anything?
     constexpr uint64_t r_initial = get_rand<0, 0>();
     std::cout << std::format("*** begin RNG tests, r_initial={}, kiss_seed={} ***\n\n",
                              r_initial, ::umb::meta::rng::kiss_seed);
 
-    boost::hana::for_each(rounds, [&](const auto round)
+    boost::hana::for_each(rounds, [
+        &seq = std::as_const(seq),
+        seq_size
+    ](const auto round)
     {
-        std::cout << std::format("\n####### round: {}\n", static_cast<uint64_t>(round));
+        std::cout << std::format("\n####### round: {}\n", static_cast<uint16_t>(round));
 
-        boost::hana::for_each(seq, [&](const auto index)
+        boost::hana::for_each(seq, [round, seq_size](const auto index)
         {
-            constexpr auto i = static_cast<uint16_t>(index);
-            constexpr auto mt = static_cast<::testmessages::umb::MessageType>(i);
+            constexpr auto idx = decltype(index)::value;
+            constexpr auto mt = static_cast<::testmessages::umb::MessageType>(idx);
             constexpr auto field_count = meta::Message<mt>::field_count();
+            constexpr auto field_seq = std::make_integer_sequence<uint64_t, field_count>();
+            constexpr auto field_seq_size = field_seq.size();
 
             // Skip MessageType::None.
             // TODO: is there a constexpr way to specify start index for
@@ -158,17 +203,18 @@ TEST_CASE("test TestMessages messages with randomized data")
             if constexpr (index > 0)
             {
                 std::cout << std::format("index={}, mt={}, field_count={}\n",
-                                         std::to_string(index),
+                                         std::to_string(idx),
                                          meta::to_string<mt>(), field_count);
 
                 std::shared_ptr<::umb::Message> message = meta::make_shared_message<mt>();
 
-                constexpr auto field_seq = std::make_integer_sequence<uint64_t, field_count>();
-                boost::hana::for_each(field_seq, [&](const auto findex)
+                boost::hana::for_each(field_seq, [
+                    round, idx, seq_size, message, field_seq_size, mt
+                ](const auto findex)
                 {
                     constexpr auto field = meta::Message<mt>::template field<findex>();
-                    constexpr auto rng_iter =
-                        findex + field_seq.size() * (index + seq.size() * round);
+                    constexpr uint64_t rng_iter =
+                        findex + field_seq_size * (idx + seq_size * round);
                     std::cout << std::format("-- field.name={}\n", field.name);
 
                     constexpr uint64_t r = get_rand<rng_iter>();
@@ -214,7 +260,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                         }
                         else
                         {
-                            REQUIRE(float_in == doctest::Approx(float_val));
+                            REQUIRE((float_in == doctest::Approx(float_val)));
                         }
                     }
                     else if constexpr (field.type == ::umb::meta::FieldType::String)
@@ -257,7 +303,7 @@ TEST_CASE("test TestMessages messages with randomized data")
                 bool ok = m2->from_bytes(bytes);
                 CHECK(ok);
                 const auto bytes2 = m2->to_bytes();
-                CHECK_MESSAGE(bytes == bytes2, byte_cmp_msg(bytes, bytes2));
+                CHECK_MESSAGE((bytes == bytes2), byte_cmp_msg(bytes, bytes2));
                 CHECK_EQ(*message, *m2);
                 // TODO: meta comparison functions?
 

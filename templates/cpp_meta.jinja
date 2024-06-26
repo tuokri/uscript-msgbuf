@@ -148,7 +148,7 @@ template<MessageType MT>
 }
 
 template<MessageType MT>
-[[nodiscard]] constexpr auto to_string()
+[[nodiscard]] constexpr auto to_string() noexcept
 {
     if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
     {
@@ -240,7 +240,7 @@ public:
         }
     }
 
-    [[nodiscard]] static constexpr auto field_count()
+    [[nodiscard]] static constexpr size_t field_count() noexcept
     {
         if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
         {
