@@ -29,7 +29,7 @@ jobs:
           submodules: true
 
       - name: Cache UDK-Lite release archive
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-udk-lite-release
         with:
           path: |
@@ -40,19 +40,19 @@ jobs:
           restore-keys: windows-latest-cache-udk-lite-release-${{ env.UDK_LITE_TAG }}
 
       - name: Download UnrealScript generated messages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: umb-generated-uscript-windows-latest-${{ matrix.build_type }}
           path: build/generated/
 
       - name: Download UMB executables
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: umb-generator-executable-windows-latest-${{ matrix.build_type }}
           path: build/
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -63,7 +63,7 @@ jobs:
       - run: python --version
 
       - name: Cache Windows redistributables
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-win-redist
         with:
           path: |
@@ -93,7 +93,7 @@ jobs:
           --echo-server-path ${{ github.workspace }}/build/umb_echo_server.exe
 
       - name: Archive UDK build and test logs and artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: udk-logs-${{ matrix.os }}-${{ matrix.build_type }}
