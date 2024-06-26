@@ -102,7 +102,7 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
     def on_any_event(self, event: watchdog.events.FileSystemEvent):
         if Path(event.src_path).name == self._log_filename:
             print(f"fs event: {event.event_type}, {event.src_path}")
-            self._fh = open(self._log_file, errors="replace")
+            self._fh = open(self._log_file, errors="replace", encoding="utf-8")
 
     # TODO: better state handling, this is a mess ATM.
     def on_modified(self, event: watchdog.events.FileSystemEvent):
