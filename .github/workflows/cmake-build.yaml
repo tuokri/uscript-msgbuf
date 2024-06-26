@@ -83,7 +83,7 @@ jobs:
           && make install
         # && find / -name valgrind 2>/dev/null
         # && test -e ${{ env.UMB_VALGRIND_BIN }} && echo "Valgrind bin found" || echo "Valgrind bin not found"
-      - uses: actions/cache/save@v4
+        uses: actions/cache/save@v4
         with:
           path: ${{ env.VALGRIND_PREFIX }}
           key: ${{ runner.os }}-cache-${{ env.VALGRIND_GIT_TAG }}
