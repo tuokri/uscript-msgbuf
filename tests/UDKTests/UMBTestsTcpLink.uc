@@ -132,6 +132,9 @@ event Tick(float DeltaTime)
             //       this actually need it for anything?
             In_bIsStatic = class'TestMessages'.static.IsStaticMessage(In_MessageType);
 
+            // Clear old data from any previous multipart message.
+            RecvMsgBufMulti.Length = 0;
+
             if (In_Part == SINGLE_PART)
             {
                 RecvMsgBufSingle[0] = RecvMsgBuf[0];

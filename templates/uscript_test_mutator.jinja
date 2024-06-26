@@ -76,6 +76,14 @@ event Tick(float DeltaTime)
         if (MessageReady_{{ message.name }}() || bClientServerDone_{{ message.name }})
         {
             TotalFailures += CheckMessage_{{ message.name }}();
+            if (TotalFailures > 0)
+            {
+                `uerror("failed client-server tests, bailing");
+                TestState = ETS_None;
+                bDone = True;
+                ConsoleCommand("QUIT", True);
+                return;
+            }
             LastLinkNumMsgs = Link.NumMessagesReceived;
         }
         break;
@@ -556,8 +564,11 @@ final function int CheckMessage_{{ message.name }}()
 
     // TODO: MAKE MESSAGE COMPARISON INTO A MACRO AND/OR FUNCTION!
     // TODO: CHECK EARLIER COMPARISON IMPL. ABOVE!
-    // TODO: CURRENTLY ONLY CHECKING STATIC MESSAGES!!!
+    {% if message.has_float_fields %}
+    if (class'{{ class_name }}'.static.{{ message.name }}_NEQ(Msg, CmpMsg_{{ message.name }}))
+    {% else %}
     if (Msg != CmpMsg_{{ message.name }} /*&& Link.In_bIsStatic*/)
+    {% endif %}
     {
     {% if message.has_static_size %}
         `ulog("##CHECK FAILED##: STATIC CODING: Msg != CmpMsg_{{ message.name }}");
