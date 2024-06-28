@@ -74,6 +74,8 @@ enum class Error
     todo,
 };
 
+// TODO: should we generate something like this for all generated message
+//   "packages"? E.g. testmessages::umb::MessageHeader?
 struct Header
 {
     umb::byte size{};
