@@ -798,7 +798,7 @@ int main(int argc, char* argv[])
 
         const auto uscript_out_dir = vm["uscript-out"].as<std::string>();
         const auto cpp_out_dir = vm["cpp-out"].as<std::string>();
-        auto uscript_test_mutator = vm["uscript-test-mutator"].as<std::string>();
+        const auto uscript_test_mutator = vm["uscript-test-mutator"].as<std::string>();
 
         const bool run_clang_format = !no_run_clang_format;
         for (const auto& file: vm["input-file"].as<std::vector<std::string>>())
