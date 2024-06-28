@@ -47,6 +47,27 @@
 namespace
 {
 
+#ifndef NDEBUG
+
+bool debugger_present()
+{
+#if UMB_WINDOWS
+    return IsDebuggerPresent();
+#else
+    // TODO: Linux version?
+    return false;
+#endif // UMB_WINDOWS
+}
+
+#else
+
+constexpr bool debugger_present()
+{
+    return false;
+}
+
+#endif // NDEBUG
+
 #ifdef UMB_INCLUDE_META
 constexpr bool g_generate_meta_cpp = true;
 #else
@@ -186,7 +207,7 @@ std::ostream& operator<<(std::ostream& os, const MsgAnalysisResult& result)
 }
 
 template<typename T>
-inline constexpr bool in_vector(const std::vector<T>& v, T t)
+constexpr bool in_vector(const std::vector<T>& v, T t)
 {
     return std::find(v.cbegin(), v.cend(), t) != v.cend();
 }
@@ -348,7 +369,7 @@ constexpr auto capitalize = [](const inja::Arguments& args)
 // Bytes[ 10]
 // ...
 // Bytes[101]
-constexpr auto pad = [](const inja::Arguments& args)
+constexpr auto pad = [](const inja::Arguments& args) constexpr
 {
     const auto& index = args.at(0)->get<size_t>();
     const auto& size = args.at(1)->get<size_t>();
@@ -402,12 +423,12 @@ constexpr T var(const inja::Arguments& args)
     }
 }
 
-constexpr auto var_bool = [](const inja::Arguments& args)
+constexpr auto var_bool = [](const inja::Arguments& args) constexpr
 {
     return var<bool>(args);
 };
 
-constexpr auto var_int = [](const inja::Arguments& args)
+constexpr auto var_int = [](const inja::Arguments& args) constexpr
 {
     return var<int>(args);
 };
@@ -422,19 +443,19 @@ constexpr auto error = [](const inja::Arguments& args)
     throw std::invalid_argument(ss.str());
 };
 
-constexpr auto cpp_type = [](const inja::Arguments& args)
+constexpr auto cpp_type = [](const inja::Arguments& args) constexpr
 {
     const auto& type = args.at(0)->get<std::string>();
     return ::umb::g_type_to_cpp_type.at(type);
 };
 
-constexpr auto cpp_type_arg = [](const inja::Arguments& args)
+constexpr auto cpp_type_arg = [](const inja::Arguments& args) constexpr
 {
     const auto& type = args.at(0)->get<std::string>();
     return ::umb::g_type_to_cpp_type_arg.at(type);
 };
 
-constexpr auto cpp_default_value = [](const inja::Arguments& args)
+constexpr auto cpp_default_value = [](const inja::Arguments& args) constexpr
 {
     const auto& type = args.at(0)->get<std::string>();
     return ::umb::g_cpp_default_value.at(type);
@@ -450,7 +471,7 @@ constexpr auto uscript_type = [](const inja::Arguments& args)
     return ::umb::g_type_to_uscript_type.at(type);
 };
 
-constexpr auto bp_is_packed = [](const inja::Arguments& args)
+constexpr auto bp_is_packed = [](const inja::Arguments& args) constexpr
 {
     const auto& msg = args.at(0)->get<inja::json>();
     const auto& name = args.at(1)->get<std::string>();
@@ -463,7 +484,7 @@ constexpr auto bp_is_packed = [](const inja::Arguments& args)
 };
 
 template<typename T>
-T bp_get(const inja::json& bps, const std::string& field_name, const std::string& key)
+constexpr T bp_get(const inja::json& bps, const std::string& field_name, const std::string& key)
 {
     for (const auto& bp: bps)
     {
@@ -475,21 +496,21 @@ T bp_get(const inja::json& bps, const std::string& field_name, const std::string
     throw std::invalid_argument(std::format("cannot find '{}' in '{}'", key, field_name));
 }
 
-constexpr auto bp_pack_index = [](const inja::Arguments& args)
+constexpr auto bp_pack_index = [](const inja::Arguments& args) constexpr
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
     return bp_get<int>(bps, name, "pack_index");
 };
 
-constexpr auto bp_is_last = [](const inja::Arguments& args)
+constexpr auto bp_is_last = [](const inja::Arguments& args) constexpr
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
     return bp_get<bool>(bps, name, "last");
 };
 
-constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args)
+constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args) constexpr
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
@@ -497,7 +518,7 @@ constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args)
 };
 
 // TODO: don't call this from Inja if not generating meta code?
-constexpr auto meta_field_type = [](const inja::Arguments& args)
+constexpr auto meta_field_type = [](const inja::Arguments& args) constexpr
 {
     // UMB type string -> FieldType -> FieldType as string.
     const auto& type = args.at(0)->get<std::string>();
@@ -788,20 +809,20 @@ int main(int argc, char* argv[])
     catch (const std::exception& ex)
     {
         std::cout << "error: " << ex.what() << std::endl;
-#ifndef NDEBUG
-        throw;
-#else
+        if (debugger_present())
+        {
+            throw;
+        }
         return EXIT_FAILURE;
-#endif
     }
     catch (...)
     {
         std::cout << "unknown error" << std::endl;
-#ifndef NDEBUG
-        throw;
-#else
+        if (debugger_present())
+        {
+            throw;
+        }
         return EXIT_FAILURE;
-#endif
     }
 
     return EXIT_SUCCESS;
