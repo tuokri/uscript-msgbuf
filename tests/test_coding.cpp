@@ -256,7 +256,7 @@ TEST_CASE("encode decode float fields")
     bool ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -265,7 +265,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -274,7 +274,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -283,7 +283,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -292,7 +292,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -301,7 +301,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -310,7 +310,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -319,7 +319,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -328,7 +328,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -337,7 +337,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -346,7 +346,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -355,7 +355,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     // Doesn't work for extremely small negative floats.
     // CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
@@ -365,7 +365,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     // Doesn't work for extremely small negative floats.
     // CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
@@ -375,7 +375,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 
@@ -384,7 +384,7 @@ TEST_CASE("encode decode float fields")
     ok = jatm2.from_bytes(vec);
     CHECK(ok);
 
-    REQUIRE(jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR()));
+    REQUIRE((jatm1.some_floatVAR() == doctest::Approx(jatm2.some_floatVAR())));
     CHECK(Float(jatm1.some_floatVAR()).AlmostEquals(Float(jatm2.some_floatVAR())));
     CHECK_EQ(jatm1, jatm2);
 }
