@@ -105,7 +105,7 @@ constexpr std::u16string get_rand_str(std::integer_sequence<IndexType, Is...> sl
 {
     std::u16string str_in;
     str_in.reserve(slen_seq.size());
-    boost::hana::for_each(slen_seq, [&str_in](const auto i)
+    boost::hana::for_each(slen_seq, [&str_in](const auto i) constexpr
     {
         constexpr auto i64 = static_cast<uint64_t>(i);
         constexpr auto rnd = get_rand<RngIteration, i64>();
@@ -125,7 +125,7 @@ std::vector<::umb::byte> get_rand_bytes(std::integer_sequence<IndexType, Is...> 
 {
     std::vector<::umb::byte> bytes;
     bytes.reserve(blen_seq.size());
-    boost::hana::for_each(blen_seq, [&](const auto i)
+    boost::hana::for_each(blen_seq, [&](const auto i) constexpr
     {
         constexpr auto i64 = static_cast<uint64_t>(i);
         constexpr auto rnd_idx = get_rand<RngInteration, i64>();
@@ -182,14 +182,17 @@ TEST_CASE("test TestMessages messages with randomized data")
     std::cout << std::format("*** begin RNG tests, r_initial={}, kiss_seed={} ***\n\n",
                              r_initial, ::umb::meta::rng::kiss_seed);
 
+    // TODO: this does not work on MSVC currently. Compiler bug?
+    // See: https://developercommunity.visualstudio.com/t/Capture-of-constexpr-variable-not-workin/10190629?sort=active&topics=windows+10.0
+
     boost::hana::for_each(rounds, [
         &seq = std::as_const(seq),
         seq_size
-    ](const auto round)
+    ](const auto round) constexpr
     {
         std::cout << std::format("\n####### round: {}\n", static_cast<uint16_t>(round));
 
-        boost::hana::for_each(seq, [round, seq_size](const auto index)
+        boost::hana::for_each(seq, [round, seq_size](const auto index) constexpr
         {
             constexpr auto idx = decltype(index)::value;
             constexpr auto mt = static_cast<::testmessages::umb::MessageType>(idx);
@@ -210,7 +213,7 @@ TEST_CASE("test TestMessages messages with randomized data")
 
                 boost::hana::for_each(field_seq, [
                     round, idx, seq_size, message, field_seq_size, mt
-                ](const auto findex)
+                ](const auto findex) constexpr
                 {
                     constexpr auto field = meta::Message<mt>::template field<findex>();
                     constexpr uint64_t rng_iter =
