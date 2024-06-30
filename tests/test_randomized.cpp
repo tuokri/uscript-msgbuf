@@ -53,43 +53,6 @@
 namespace
 {
 
-/* Generate a compile-time sequence of Integers from Start to End
- *
- * typename IntegralType : the type of the sequence
- * End: end of the sequence
- * Start(0): beginning of the sequence
- * Step(1): optionally define an amount to increment by
- *
- * The same parameters for the range<> variable template also
- * perform the same function
- */
-template<typename IntegralType, IntegralType End, IntegralType Start = 0, IntegralType Step = 1, IntegralType... Ints>
-struct integer_range: std::conditional<
-    std::integral_constant<bool,
-        Start >= End>::value,                      // Check if we're at the end
-    std::integer_sequence<IntegralType, Ints..., End>,                      // End of the sequence
-    integer_range<IntegralType, End, Start + Step, Step, Ints..., Start>    // Add the next element
->::type
-{
-}; // Result type is an std::integer_sequence<...>
-
-// Variable template for constructing a range
-template<typename IntegralType, IntegralType End, IntegralType Start = 0, IntegralType Step = 1>
-constexpr auto integer_range_v = integer_range<IntegralType, End, Start, Step>();
-
-// Create an std::array from some sequence
-template<typename IntegralType, IntegralType Size, IntegralType... Seq>
-constexpr auto create_array(std::integer_sequence<IntegralType, Seq...>)
-{
-    return std::array<IntegralType, Size>{Seq...};
-}
-
-// Create an std::array for a range
-template<typename IntegralType, IntegralType End, IntegralType Start = 0, IntegralType Step = 1, IntegralType Size = (
-    ((End - Start) / Step) + 1)>
-constexpr auto range = create_array<IntegralType, Size>(
-    integer_range_v<IntegralType, End, Start, Step>);
-
 template<uint64_t Iteration, uint64_t W = 0>
 constexpr uint64_t get_rand()
 {
@@ -174,7 +137,6 @@ TEST_CASE("test TestMessages messages with randomized data")
     constexpr auto rounds = std::make_integer_sequence<uint64_t, UMB_META_TEST_ROUNDS>();
     constexpr auto mts = meta::message_types();
     constexpr auto seq = std::make_integer_sequence<uint16_t, mts.size()>();
-    // constexpr auto seq = range<uint16_t, mts.size(), 1>;
     constexpr auto seq_size = seq.size();
 
     // "Fire up" the RNG. TODO: does this actually help with anything?
