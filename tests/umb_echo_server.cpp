@@ -50,6 +50,15 @@
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/write.hpp>
 
+#include <unicode/unistr.h>
+#include <unicode/ustream.h>
+#include <unicode/ustring.h>
+
+#include "spdlog/async.h"
+#include "spdlog/sinks/rotating_file_sink.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
+
 #include "umb/umb.hpp"
 #include "TestMessages.umb.hpp"
 
@@ -66,6 +75,8 @@ namespace this_coro = boost::asio::this_coro;
 # define use_awaitable \
   boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
 #endif
+
+std::shared_ptr<spdlog::async_logger> g_logger;
 
 enum class Error
 {
@@ -85,15 +96,15 @@ struct Header
 
 void print_header(const Header& header)
 {
-    std::cout << std::format("size: {}\n", header.size);
-    std::cout << std::format("part: {}\n", header.part);
+    g_logger->info("size: {}\n", header.size);
+    g_logger->info("part: {}\n", header.part);
 
 #if WINDOWS
     const auto mt_str = std::to_string(static_cast<uint16_t>(header.type));
 #else
     const auto mt_str = testmessages::umb::meta::to_string(header.type);
 #endif
-    std::cout << std::format("type: {}\n", mt_str);
+    g_logger->info("type: {}\n", mt_str);
 }
 
 // TODO: unify error codes!
@@ -103,7 +114,7 @@ read_header(
     tcp::socket& socket,
     std::array<umb::byte, umb::g_packet_size>& data)
 {
-    std::cout << std::format("reading {} bytes\n", umb::g_header_size);
+    g_logger->info("reading {} bytes\n", umb::g_header_size);
     const auto [ec, num_read] = co_await boost::asio::async_read(
         socket,
         boost::asio::buffer(data),
@@ -202,7 +213,7 @@ handle_single_part_msg(
     const auto bytes_out = msg->to_bytes();
 
     // TODO: check ec.
-    std::cout << std::format("sending {} bytes\n", bytes_out.size());
+    g_logger->info("sending {} bytes\n", bytes_out.size());
     co_await async_write(
         socket,
         boost::asio::buffer(bytes_out),
@@ -226,7 +237,7 @@ handle_multi_part_msg(
     //   assumed to be "skipped" by the caller?
     auto read_num = size - umb::g_header_size;
     auto d = std::span{data.begin() + umb::g_header_size, data.size() - umb::g_header_size};
-    std::cout << std::format("reading {} bytes\n", read_num);
+    g_logger->info("reading {} bytes\n");
     const auto [ec, num_read] = co_await boost::asio::async_read(
         socket,
         boost::asio::buffer(d),
@@ -243,7 +254,7 @@ handle_multi_part_msg(
         if (!result.has_value())
         {
             const auto err = result.error();
-            std::cout << std::format("error: {}\n", static_cast<int>(err));
+            g_logger->error("error: {}\n", static_cast<int>(err));
             // TODO
             co_return std::unexpected(err);
         }
@@ -254,21 +265,21 @@ handle_multi_part_msg(
         if (header.part != next_part && header.part != umb::g_part_multi_part_end)
         {
             // TODO
-            std::cout << std::format("expected part {}, got {}\n", next_part, header.part);
+            g_logger->error("expected part {}, got {}\n", next_part, header.part);
             co_return std::unexpected(Error::todo);
         }
 
         if (header.type != type)
         {
             // TODO
-            std::cout << std::format("expected type {}, got {}\n",
-                                     static_cast<uint64_t>(type),
-                                     static_cast<uint16_t>(header.type));
+            g_logger->error("expected type {}, got {}\n",
+                            static_cast<uint64_t>(type),
+                            static_cast<uint16_t>(header.type));
             co_return std::unexpected(Error::todo);
         }
 
         read_num = header.size - umb::g_header_size;
-        std::cout << std::format("reading {} bytes\n", read_num);
+        g_logger->info("reading {} bytes\n", read_num);
         const auto [ec, num_read] = co_await boost::asio::async_read(
             socket,
             boost::asio::buffer(data),
@@ -331,15 +342,52 @@ handle_multi_part_msg(
 
     if (!ok)
     {
-        std::cout
-            << std::format("umb_echo_server ERROR: msg->from_bytes failed for MessageType {}\n",
-                           static_cast<int>(type));
+        g_logger->error("umb_echo_server ERROR: msg->from_bytes failed for MessageType {}\n",
+                        static_cast<int>(type));
     }
 
     // TODO: what the fuck is going on here?
-    std::wcout << std::format(L"*** received message: {} ***\n\n\n", msg->to_string()) << std::endl;
-    std::wcout << std::endl;
-    std::cout << std::endl;
+    // std::wcout << std::format(L"*** received message: {} ***\n\n\n", msg->to_string()) << std::endl;
+    // std::wcout << std::endl;
+    // std::cout << std::endl;
+
+    const auto log_msg = std::format(L"*** received message: {} ***\n\n\n", msg->to_string());
+#if UMB_WINDOWS
+    const auto log_msg_icu = icu::UnicodeString(log_msg.c_str(), log_msg.size());
+    std::string log_msg_str;
+    log_msg_icu.toUTF8String(log_msg_str);
+#else
+    // TODO: this might not work properly. Have to actually test the server on Linux!
+    UErrorCode u_err = U_ZERO_ERROR;
+    const UChar* size_needed_result = u_strFromWCS(
+        nullptr,
+        0,
+        nullptr,
+        log_msg.c_str(),
+        static_cast<int32_t>(log_msg.size()),
+        &u_err);
+    if (U_FAILURE(u_err))
+    {
+        g_logger->error("ICU error: {}", u_errorName(u_err));
+        // TODO: bail here? Error code? Exit?
+    }
+    int32_t len;
+    const auto size_needed = *size_needed_result;
+    std::vector<UChar> buffer(size_needed);
+    u_strFromWCS(
+        buffer.data(),
+        size_needed,
+        &len,
+        log_msg.c_str(),
+        static_cast<int32_t>(log_msg.size()),
+        &u_err);
+    const auto log_msg_icu = icu::UnicodeString(
+        buffer.data(),
+        static_cast<int32_t>(buffer.size()));
+    std::string log_msg_str;
+    log_msg_icu.toUTF8String(log_msg_str);
+#endif
+    g_logger->info(log_msg_str);
 
     const auto bytes_out = msg->to_bytes();
     // Only count the number of payload bytes left here.
@@ -368,9 +416,8 @@ handle_multi_part_msg(
         std::copy_n(it_bytes_out, num_from_buf, send_buf.begin() + umb::g_header_size);
         it_bytes_out += send_size;
 
-        std::cout << std::format(
-            "sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}\n",
-            send_size, send_part, bytes_left, num_from_buf);
+        g_logger->info("sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}\n",
+                       send_size, send_part, bytes_left, num_from_buf);
         // TODO: check ec.
         co_await async_write(
             socket,
@@ -394,9 +441,8 @@ handle_multi_part_msg(
         std::copy_n(it_bytes_out, num_from_buf, send_buf.begin() + umb::g_header_size);
         it_bytes_out += send_size;
 
-        std::cout << std::format(
-            "sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}\n",
-            send_size, send_part, bytes_left, num_from_buf);
+        g_logger->info("sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}\n",
+                       send_size, send_part, bytes_left, num_from_buf);
         // TODO: check ec.
         co_await async_write(
             socket,
@@ -405,9 +451,8 @@ handle_multi_part_msg(
     }
     else
     {
-        std::cout << std::format(
-            "ERROR: invalid number of bytes left for last part: {}!\n",
-            bytes_left);
+        g_logger->error("ERROR: invalid number of bytes left for last part: {}!\n",
+                        bytes_left);
     }
 
     // TODO: check bytes left is 0 here.
@@ -418,11 +463,9 @@ awaitable<void> echo(tcp::socket socket)
 {
     try
     {
-        std::cout
-            << std::format("connection: {}:{}",
-                           socket.remote_endpoint().address().to_string(),
-                           socket.remote_endpoint().port())
-            << std::endl;
+        g_logger->info("connection: {}:{}\n",
+                       socket.remote_endpoint().address().to_string(),
+                       socket.remote_endpoint().port());
 
         // TODO: should we read into a larger buffer?
         std::array<umb::byte, umb::g_packet_size> data{};
@@ -443,8 +486,8 @@ awaitable<void> echo(tcp::socket socket)
             {
                 const auto err = result.error();
                 // TODO: error messages.
-                std::cout << std::format("error: {}, closing connection\n",
-                                         static_cast<int>(err));
+                g_logger->error("error: {}, closing connection\n",
+                                static_cast<int>(err));
                 break;
             }
 
@@ -486,14 +529,14 @@ awaitable<void> echo(tcp::socket socket)
             }
             else
             {
-                std::cout << std::format("error: unexpected part: {}\n", header.part);
+                g_logger->error("error: unexpected part: {}\n", header.part);
                 continue; // Close conn?
             }
         }
     }
     catch (const std::exception& e)
     {
-        std::cout << std::format("echo Exception: {}\n", e.what());
+        g_logger->error("echo error: {}\n", e.what());
     }
 }
 
@@ -510,8 +553,26 @@ awaitable<void> listener()
 
 int main()
 {
-    std::cout << std::unitbuf;
-    std::wcout << std::unitbuf;
+    try
+    {
+        spdlog::init_thread_pool(8192, 1);
+        constexpr auto max_log_size = 1024 * 1024 * 10;
+        auto stdout_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+        auto rotating_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+            "umb_echo_server.log", max_log_size, 3);
+        const auto sinks = std::vector<spdlog::sink_ptr>{stdout_sink, rotating_sink};
+        g_logger = std::make_shared<spdlog::async_logger>(
+            "umb_echo_server", sinks.begin(), sinks.end(), spdlog::thread_pool(),
+            spdlog::async_overflow_policy::block);
+        spdlog::register_logger(g_logger);
+        g_logger->set_level(spdlog::level::debug);
+        g_logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e%z] [%n] [%^%l%$] [thread %t] %v");
+    }
+    catch (const std::exception& e)
+    {
+        g_logger->error("failed to set up logging: {}", e.what());
+        return EXIT_FAILURE;
+    }
 
     try
     {
@@ -520,7 +581,7 @@ int main()
         boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
         signals.async_wait([&](auto, auto)
                            {
-                               std::cout << "exiting" << std::endl;
+                               g_logger->info("exiting");
                                io_context.stop();
                            });
 
@@ -530,6 +591,9 @@ int main()
     }
     catch (const std::exception& e)
     {
-        std::cout << std::format("Exception: {}\n", e.what());
+        g_logger->error("error: {}\n", e.what());
+        return EXIT_FAILURE;
     }
+
+    return EXIT_SUCCESS;
 }

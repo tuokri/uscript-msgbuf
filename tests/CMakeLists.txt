@@ -105,8 +105,13 @@ target_link_libraries(
     umb_echo_server
     PRIVATE
     Boost::boost
-    umb
+    ICU::dt
+    ICU::in
+    ICU::io
+    ICU::uc
+    spdlog::spdlog
     test_msg_library
+    umb
 )
 
 set_property(
@@ -118,6 +123,11 @@ if (MSVC)
     set(
         UMB_ECHO_SERVER_COMPILE_OPTIONS
         /await:strict
+    )
+    target_compile_options(
+        test_randomized
+        PRIVATE
+        /Zc:lambda
     )
 else ()
     set(

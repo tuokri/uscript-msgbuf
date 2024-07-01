@@ -11,6 +11,7 @@
     "boost-program-options",
     "doctest",
     "icu",
-    "inja"
+    "inja",
+    "spdlog"
   ]
 }

@@ -52,6 +52,11 @@ find_package(
     REQUIRED
 )
 
+find_package(
+    spdlog
+    REQUIRED
+)
+
 add_library(umb INTERFACE)
 
 set_property(
