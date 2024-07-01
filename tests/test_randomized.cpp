@@ -84,7 +84,7 @@ template<
     auto RngInteration,
     typename IndexType = size_t,
     IndexType... Is>
-std::vector<::umb::byte> get_rand_bytes(std::integer_sequence<IndexType, Is...> blen_seq)
+constexpr std::vector<::umb::byte> get_rand_bytes(std::integer_sequence<IndexType, Is...> blen_seq)
 {
     std::vector<::umb::byte> bytes;
     bytes.reserve(blen_seq.size());
