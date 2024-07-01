@@ -355,7 +355,7 @@ handle_multi_part_msg(
 #if UMB_WINDOWS
     const auto log_msg_icu = icu::UnicodeString(
         log_msg.c_str(),
-        static_cast<uint32_t>(log_msg.size()));
+        static_cast<int32_t>(log_msg.size()));
     std::string log_msg_str;
     log_msg_icu.toUTF8String(log_msg_str);
 #else
