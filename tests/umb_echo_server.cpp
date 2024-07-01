@@ -51,7 +51,6 @@
 #include <boost/asio/write.hpp>
 
 #include <unicode/unistr.h>
-#include <unicode/ustream.h>
 #include <unicode/ustring.h>
 
 #include "spdlog/async.h"
@@ -238,11 +237,17 @@ handle_multi_part_msg(
     auto read_num = size - umb::g_header_size;
     auto d = std::span{data.begin() + umb::g_header_size, data.size() - umb::g_header_size};
     g_logger->info("reading {} bytes\n");
-    const auto [ec, num_read] = co_await boost::asio::async_read(
+    const auto [read_ec, num_read_actual] = co_await boost::asio::async_read(
         socket,
         boost::asio::buffer(d),
         boost::asio::transfer_exactly(read_num),
         as_tuple(deferred));
+
+    if (read_ec != std::errc())
+    {
+        g_logger->error("async_read failed: {}, num_read_actual: {}",
+                        read_ec.message(), read_num);
+    }
 
     msg_buf.reserve(read_num);
     msg_buf.insert(msg_buf.end(), data.cbegin(), data.cend());
@@ -285,6 +290,12 @@ handle_multi_part_msg(
             boost::asio::buffer(data),
             boost::asio::transfer_exactly(read_num),
             as_tuple(deferred));
+
+        if (ec != std::errc())
+        {
+            g_logger->error("async_read failed: {}, num_read: {}",
+                            ec.message(), num_read);
+        }
 
         msg_buf.reserve(msg_buf.size() + read_num);
         msg_buf.insert(msg_buf.end(), data.cbegin(), data.cend());
@@ -371,7 +382,7 @@ handle_multi_part_msg(
     if (U_FAILURE(u_err))
     {
         g_logger->error("ICU error: {}", u_errorName(u_err));
-        // TODO: bail here? Error code? Exit?
+        co_return std::unexpected(Error::todo);
     }
     int32_t len;
     const auto size_needed = *size_needed_result;
@@ -420,11 +431,16 @@ handle_multi_part_msg(
 
         g_logger->info("sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}\n",
                        send_size, send_part, bytes_left, num_from_buf);
-        // TODO: check ec.
-        co_await async_write(
+        const auto [sent_ec, num_sent] = co_await async_write(
             socket,
             boost::asio::buffer(send_buf, send_size),
-            deferred);
+            as_tuple(deferred));
+
+        if (sent_ec != std::errc())
+        {
+            g_logger->error("async_write failed: {}, num_sent: {}",
+                            sent_ec.message(), num_sent);
+        }
 
         bytes_left -= send_size;
     }
@@ -445,11 +461,16 @@ handle_multi_part_msg(
 
         g_logger->info("sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}\n",
                        send_size, send_part, bytes_left, num_from_buf);
-        // TODO: check ec.
-        co_await async_write(
+        const auto [sent_ec, num_sent] = co_await async_write(
             socket,
             boost::asio::buffer(send_buf, send_size),
             deferred);
+
+        if (sent_ec != std::errc())
+        {
+            g_logger->error("async_write failed: {}, num_sent: {}",
+                            sent_ec.message(), num_sent);
+        }
     }
     else
     {
@@ -572,7 +593,7 @@ int main()
     }
     catch (const std::exception& e)
     {
-        g_logger->error("failed to set up logging: {}", e.what());
+        std::cout << std::format("failed to set up logging: {}\n", e.what());
         return EXIT_FAILURE;
     }
 
