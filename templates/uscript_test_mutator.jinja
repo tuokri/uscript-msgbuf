@@ -38,6 +38,8 @@ var {{ message.name }} CmpMsg_{{ message.name }};
 enum ETestState
 {
     ETS_None,
+    ETS_EarlyTests_Sending, // Manual early tests for debugging dynamic message issues.
+    ETS_EarlyTests_Receiving, // Manual early tests for debugging dynamic message issues.
 {% for message in messages %}
     ETS_Sending_{{ message.name }},
     ETS_WaitingFor_{{ message.name }},
@@ -55,6 +57,10 @@ var bool bDone;
 var bool bLocalDone;
 var array<byte> BytesToSend;
 
+// Dynamic message issue manual tests.
+var private TestMessages.testmsg Manual_TestMsg;
+var private TestMessages.testmsg Manual_TestMsgFromSocket;
+
 event Tick(float DeltaTime)
 {
     super.Tick(DeltaTime);
@@ -66,6 +72,25 @@ event Tick(float DeltaTime)
 
     switch (TestState)
     {
+    case ETS_EarlyTests_Sending:
+        `ulog("--- --- --- PERFORMING MANUAL EARLY TESTS (SENDING)! --- --- ---");
+        SendMsg_Manual_testmsg();
+        break;
+    case ETS_EarlyTests_Receiving:
+        `ulog("--- --- --- PERFORMING MANUAL EARLY TESTS (RECEIVING)! --- --- ---");
+        if (MessageReady_Manual_testmsg())
+        {
+            TotalFailures += CheckMessage_Manual_testmsg();
+            if (TotalFailures > 0)
+            {
+                `uerror("failed client-server tests (EARLY TESTS), bailing");
+                TestState = ETS_None;
+                bDone = True;
+                ConsoleCommand("QUIT", True);
+                return;
+            }
+        }
+        break;
 {% for message in messages %}
     case ETS_Sending_{{ message.name }}:
         `ulog("MsgQueue_{{ message.name }}.Length:" @ MsgQueue_{{ message.name }}.Length);
@@ -455,6 +480,131 @@ function PostBeginPlay()
     RunClientServerTests();
 }
 
+final function SendMsg_Manual_testmsg()
+{
+    local array<byte> ManualBytesOut;
+
+    `ulog("Len(Manual_TestMsg.Ffffff):" @ Len(Manual_TestMsg.Ffffff));
+    `ulog("Manual_TestMsg.A_field_with_some_bytes_that_do_some_things.Length:" @ Manual_TestMsg.A_field_with_some_bytes_that_do_some_things.Length);
+
+    class'TestMessages'.static.testmsg_ToMultiBytes(Manual_TestMsg, ManualBytesOut);
+    `ulog("manual test bytes to send:" @ ManualBytesOut.Length);
+    Link.SendBytes(ManualBytesOut);
+
+    TestState = ETS_EarlyTests_Receiving;
+}
+
+final function bool MessageReady_Manual_testmsg()
+{
+    return (Link.In_MessageType == class'TestMessages'.const.EMT_testmsg);
+}
+
+final function int CheckMessage_Manual_testmsg()
+{
+    local int Failures;
+
+    Failures = 0;
+
+    `ulog("Link.RecvMsgBufMulti.Length:" @ Link.RecvMsgBufMulti.Length);
+    `ulog("Link.RecvMsgBufMulti:" @ BytesToString(Link.RecvMsgBufMulti));
+
+    class'TestMessages'.static.testmsg_FromMultiBytes(Manual_TestMsgFromSocket, Link.RecvMsgBufMulti);
+
+    if (class'TestMessages'.static.testmsg_NEQ(Manual_TestMsgFromSocket, Manual_TestMsg))
+    {
+        `ulog("##CHECK FAILED##: DYNAMIC CODING (EARLY TESTS): Manual_TestMsgFromSocket != Manual_TestMsg");
+        `ulog(" ##CMP##: one:"
+            @ string(Manual_TestMsgFromSocket.one)
+            @ "?"
+            @ string(Manual_TestMsg.one)
+        );
+        `ulog(" ##CMP##: asd:"
+            @ string(Manual_TestMsgFromSocket.asd)
+            @ "?"
+            @ string(Manual_TestMsg.asd)
+        );
+        `ulog(" ##CMP##: fasd:"
+            @ string(Manual_TestMsgFromSocket.fasd)
+            @ "?"
+            @ string(Manual_TestMsg.fasd)
+        );
+        `ulog(" ##CMP##: sdf:"
+            @ string(Manual_TestMsgFromSocket.sdf)
+            @ "?"
+            @ string(Manual_TestMsg.sdf)
+        );
+        `ulog(" ##CMP##: dger:"
+            @ string(Manual_TestMsgFromSocket.dger)
+            @ "?"
+            @ string(Manual_TestMsg.dger)
+        );
+        `ulog(" ##CMP##: dfgdf3:"
+            @ string(Manual_TestMsgFromSocket.dfgdf3)
+            @ "?"
+            @ string(Manual_TestMsg.dfgdf3)
+        );
+        `ulog(" ##CMP##: vbnvbn3:"
+            @ string(Manual_TestMsgFromSocket.vbnvbn3)
+            @ "?"
+            @ string(Manual_TestMsg.vbnvbn3)
+        );
+        `ulog(" ##CMP##: sdfg345:"
+            @ string(Manual_TestMsgFromSocket.sdfg345)
+            @ "?"
+            @ string(Manual_TestMsg.sdfg345)
+        );
+        `ulog(" ##CMP##: nnnffgg:"
+            @ string(Manual_TestMsgFromSocket.nnnffgg)
+            @ "?"
+            @ string(Manual_TestMsg.nnnffgg)
+        );
+        `ulog(" ##CMP##: adssdassdaads:"
+            @ string(Manual_TestMsgFromSocket.adssdassdaads)
+            @ "?"
+            @ string(Manual_TestMsg.adssdassdaads)
+        );
+        `ulog(" ##CMP##: dyhrthrs556t:"
+            @ string(Manual_TestMsgFromSocket.dyhrthrs556t)
+            @ "?"
+            @ string(Manual_TestMsg.dyhrthrs556t)
+        );
+        `ulog(" ##CMP##: nfghmfghj3452345:"
+            @ string(Manual_TestMsgFromSocket.nfghmfghj3452345)
+            @ "?"
+            @ string(Manual_TestMsg.nfghmfghj3452345)
+        );
+        `ulog(" ##CMP##: nmmmgfgg234:"
+            @ string(int(Manual_TestMsgFromSocket.nmmmgfgg234))
+            @ "?"
+            @ string(int(Manual_TestMsg.nmmmgfgg234))
+        );
+        `ulog(" ##CMP##: aa:"
+            @ string(Manual_TestMsgFromSocket.aa)
+            @ "?"
+            @ string(Manual_TestMsg.aa)
+        );
+        `ulog(" ##CMP##: ffffff:"
+            @ (Manual_TestMsgFromSocket.ffffff)
+            @ "?"
+            @ (Manual_TestMsg.ffffff)
+        );
+        `ulog(" ##CMP##: a_field_with_some_bytes_that_do_some_things:"
+            @ BytesToString(Manual_TestMsgFromSocket.a_field_with_some_bytes_that_do_some_things)
+            @ "?"
+            @ BytesToString(Manual_TestMsg.a_field_with_some_bytes_that_do_some_things)
+        );
+        ++Failures;
+    }
+
+    Link.In_MessageType = class'TestMessages'.const.EMT_None;
+    Link.In_Size = 0;
+    Link.In_Part = 0;
+
+    TestState = ETS_Sending_{{ messages.0.name }};
+
+    return Failures;
+}
+
 {% for message in messages %}
 final function SendMsg_{{ message.name }}()
 {
@@ -639,7 +789,8 @@ final function RunClientServerTests()
 {% endfor %}
     `ulog("TotalMessagesToSend:" @ TotalMessagesToSend);
 
-    TestState = ETS_Sending_{{ messages.0.name }};
+    TestState = ETS_EarlyTests_Sending;
+    // TestState = ETS_Sending_{{ messages.0.name }};
 }
 
 final function Quit()
@@ -660,4 +811,29 @@ DefaultProperties
 {% for message in messages %}
     bClientServerDone_{{ message.name }}=False
 {% endfor %}
+
+    Manual_TestMsg={(
+        One=-26972.2578,
+        Asd=18132055016024084000000000000.0000,
+        Fasd=-9825164448416027600000000000.0000,
+        Sdf=-2818.3843,
+        Dger=7152087790253596400000000000.0000,
+        Dfgdf3=-2505879206801095200000000000.0000,
+        Vbnvbn3=3091587828417503300000000000.0000,
+        Sdfg345=20992059467861186000000000000.0000,
+        Nnnffgg=-10309100759664302000000000000.0000,
+        Adssdassdaads=25810655973735507000000000000.0000,
+        Dyhrthrs556t=3938.4138,
+        Nfghmfghj3452345=-19455.5488,
+        Nmmmgfgg234=94,
+        Aa=1954414592,
+        Ffffff="some_weird_ass_string_here_that_is_very_long_indeed!!!!",
+        A_field_with_some_bytes_that_do_some_things=(
+            37,157,248,120,42,94,212,231,205,211,205,152,245,94,255,247,
+            191,7,183,100,161,47,252,51,48,50,48,213,25,179,194,85,224,98,
+            35,111,59,52,104,66,104,32,28,90,177,255,3,248,49,105,44,247,
+            199,231,239,237,87,111,31,183,187,141,57,20,156,24,206,125,139,
+            239,0,212,136,148,74,40,104,18,105,28,42,31,163
+        )
+    )}
 }
