@@ -24,7 +24,7 @@ jobs:
         os: [ ubuntu-24.04, windows-latest ]
         include:
           - os: windows-latest
-            vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
+            vcpkg_commit_id: 'f61a294e765b257926ae9e9d85f96468a0af74e7'
             umb_include_meta: OFF  # TODO: fix later. Boost Hana (and other) issues on MSVC.
             umb_run_clang_format: OFF # TODO: seems to cause issues on the runner.
             cxx_compiler: cl
