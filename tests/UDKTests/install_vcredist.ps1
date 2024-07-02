@@ -1,5 +1,7 @@
 $ErrorView = 'NormalView'
 
+New-Item "C:\Temp\" -ItemType Directory -ErrorAction SilentlyContinue
+
 Install-Module -Name VcRedist -Force
 New-Item -Path C:\Temp\VcRedist -ItemType Directory -Force
 $VcList = Get-VcList -Release "2012"

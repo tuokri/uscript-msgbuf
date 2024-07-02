@@ -2,6 +2,8 @@ $ErrorView = 'NormalView'
 
 $DX_WEB_SETUP = "C:\Temp\dxwebsetup.exe"
 
+New-Item "C:\Temp\" -ItemType Directory -ErrorAction SilentlyContinue
+
 if (Test-Path $DX_WEB_SETUP)
 {
     Write-Output "'$DX_WEB_SETUP' exists"

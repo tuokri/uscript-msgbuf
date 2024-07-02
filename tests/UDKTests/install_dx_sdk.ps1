@@ -2,6 +2,8 @@ $ErrorView = 'NormalView'
 
 $DX_SDK_EXE = "C:\Temp\dx_sdk.exe"
 
+New-Item "C:\Temp\" -ItemType Directory -ErrorAction SilentlyContinue
+
 if (Test-Path $DX_SDK_EXE)
 {
     Write-Output "'$DX_SDK_EXE' exists"
