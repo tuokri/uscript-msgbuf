@@ -23,6 +23,12 @@ jobs:
         build_type: [ Debug, Release ]
 
     steps:
+      - name: Change default cmd.exe codepage on Windows
+        run: REG ADD HKCU\Console\%SystemRoot^%_system32_cmd.exe /v CodePage /t REG_DWORD /d 65001
+
+      - name: Change default PowerShell codepage on Windows
+        run: REG ADD HKCU\Console\%SystemRoot^%_System32_WindowsPowerShell_v1.0_powershell.exe /v CodePage /t REG_DWORD /d 65001
+
       - name: Check out UMB repository
         uses: actions/checkout@v4
         with:
