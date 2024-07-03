@@ -85,7 +85,7 @@ std::string bytes_to_string(const std::span<const ::umb::byte> bytes, size_t num
 
     std::stringstream ss;
     ss << "[";
-    for (auto i = 0; i < num_to_take; ++i)
+    for (size_t i = 0; i < num_to_take; ++i)
     {
         const auto byte = bytes[i];
         // ss << std::format("{:x},", +byte);
