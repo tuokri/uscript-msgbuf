@@ -32,6 +32,7 @@ import httpx
 import psutil
 import py7zr
 import tqdm
+import unicodedata
 import watchdog.events
 import watchdog.observers
 from udk_configparser import UDKConfigParser
@@ -50,6 +51,7 @@ UDK_FW_SCRIPT_PATH = SCRIPT_DIR / "allow_udk_fw.ps1"
 UDK_TEST_TIMEOUT = defaults.UDK_TEST_TIMEOUT
 
 LOG_RE = re.compile(r"^\[[\d.]+]\s(\w+):(.*)$")
+ARRAY_OOB_ACCESS_RE = re.compile(r"^.*ScriptWarning:\sAccessed\sarray\s'\w+'\sout\sof\sbounds\s\([\d/]+\)")
 
 BUILDING_EVENT: threading.Event | None = None
 TESTING_EVENT: threading.Event | None = None
@@ -122,6 +124,7 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
             log_end = False
             # TODO: detect partial lines. Just read the entire
             #   file again in the end to get fully intact data?
+            #   Or is this unnecessary due to using -FORCELOGFLUSH?
             while line := self._fh.readline():
                 self._pos = self._fh.tell()
 
@@ -131,10 +134,14 @@ class LogWatcher(watchdog.events.FileSystemEventHandler):
                             self._errors.append(line)
                     elif "##ERROR##" in match.group(2):
                         self._errors.append(line)
+                    elif ARRAY_OOB_ACCESS_RE.match(line):
+                        self._errors.append(line)
                     elif match.group(1).lower() == "warning":
                         if match.group(2):
                             self._warnings.append(line)
 
+                if os.getenv("GITHUB_ACTIONS"):
+                    line = unicodedata.normalize("NFKD", line)
                 print(line.strip())
 
                 if self._state == State.BUILDING:
