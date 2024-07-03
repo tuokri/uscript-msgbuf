@@ -395,7 +395,7 @@ final function SendBytes(const out array<byte> Bytes)
             @ "NumToSend:" @ NumToSend
             @ "BytesSent:" @ BytesSent);
 
-        // `ulog("Buffer:" @ class'UMBTestsMutator'.static.StaticBytesToString(OutBuf, NumToSend));
+        `ulog("Buffer:" @ class'UMBTestsMutator'.static.StaticBytesToString(OutBuf, NumToSend));
     }
 }
 

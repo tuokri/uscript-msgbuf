@@ -75,14 +75,20 @@ namespace this_coro = boost::asio::this_coro;
 
 std::shared_ptr<spdlog::async_logger> g_logger;
 
-template<size_t Size>
-std::string bytes_to_string(const std::array<::umb::byte, Size>& bytes)
+std::string bytes_to_string(const std::span<const ::umb::byte> bytes, size_t num_to_take)
 {
+    if (num_to_take > bytes.size())
+    {
+        throw std::runtime_error(std::format(
+            "num_to_take larger than array ({} > {})", num_to_take, bytes.size()));
+    }
+
     std::stringstream ss;
     ss << "[";
-    for (const auto& byte: bytes)
+    for (auto i = 0; i < num_to_take; ++i)
     {
-        // ss << std::format("{:x},", byte);
+        const auto byte = bytes[i];
+        // ss << std::format("{:x},", +byte);
         ss << std::format("{},", +byte);
     }
     ss << "]";
@@ -243,7 +249,7 @@ handle_multi_part_msg(
     //   assumed to be "skipped" by the caller?
     auto read_num = size - umb::g_header_size;
     auto d = std::span{data.begin() + umb::g_header_size, data.size() - umb::g_header_size};
-    g_logger->info("reading {} bytes");
+    g_logger->info("reading {} bytes", read_num);
     const auto [read_ec, num_read_actual] = co_await boost::asio::async_read(
         socket,
         boost::asio::buffer(d),
@@ -257,7 +263,11 @@ handle_multi_part_msg(
     }
 
     msg_buf.reserve(read_num);
-    msg_buf.insert(msg_buf.end(), data.cbegin(), data.cend());
+    msg_buf.insert(
+        msg_buf.end(),
+        data.cbegin(),
+        // Header bytes are also included in the first part.
+        data.cbegin() + static_cast<std::ptrdiff_t>(read_num) + umb::g_header_size);
 
     next_part = part + 1;
     while (part != umb::g_part_multi_part_end)
@@ -305,11 +315,16 @@ handle_multi_part_msg(
         }
 
         msg_buf.reserve(msg_buf.size() + read_num);
-        msg_buf.insert(msg_buf.end(), data.cbegin(), data.cend());
+        msg_buf.insert(
+            msg_buf.end(),
+            data.cbegin(),
+            data.cbegin() + static_cast<std::ptrdiff_t>(read_num));
 
         part = header.part;
         next_part = part + 1;
     }
+
+    g_logger->info("received msg_buf: {}", bytes_to_string(msg_buf, msg_buf.size()));
 
     std::shared_ptr<umb::Message> msg;
     bool ok = false;
@@ -410,8 +425,10 @@ handle_multi_part_msg(
     g_logger->info(log_msg_str);
 
     const auto bytes_out = msg->to_bytes();
+    g_logger->info("bytes_out: {}", bytes_to_string(bytes_out, bytes_out.size()));
+    g_logger->info("bytes_out size: {}", bytes_out.size());
     // Only count the number of payload bytes left here.
-    auto bytes_left = bytes_out.size() - umb::g_header_size;
+    auto payload_bytes_left = bytes_out.size() - umb::g_header_size;
     auto it_bytes_out = bytes_out.cbegin();
 
     // Cache message type values, will be reused for all headers.
@@ -427,7 +444,7 @@ handle_multi_part_msg(
     //       ALREADY IN THE ENCODING PHASE. THIS IS A LOT OF ADDED COMPLEXITY
     //       TO PERFORM THE PACKAGE SPLITTING HERE.
     // Send full parts while we have enough bytes left for them.
-    while ((bytes_left + umb::g_header_size) > umb::g_packet_size)
+    while (payload_bytes_left > umb::g_packet_size)
     {
         send_size = static_cast<umb::byte>(umb::g_packet_size);
         send_buf[0] = send_size;
@@ -440,10 +457,10 @@ handle_multi_part_msg(
             it_bytes_out + umb::g_header_size,
             num_from_buf,
             send_buf.begin() + umb::g_header_size);
-        it_bytes_out += send_size;
+        it_bytes_out += static_cast<umb::byte>(send_size - umb::g_header_size);
 
-        g_logger->info("sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}",
-                       send_size, send_part, bytes_left, num_from_buf);
+        g_logger->info("sending {} bytes, send_part: {}, payload_bytes_left: {}, num_from_buf: {}",
+                       send_size, send_part, payload_bytes_left, num_from_buf);
         const auto [sent_ec, num_sent] = co_await async_write(
             socket,
             boost::asio::buffer(send_buf, send_size),
@@ -455,15 +472,17 @@ handle_multi_part_msg(
                             sent_ec.message(), num_sent);
         }
 
-        g_logger->info("send_buf: {}", bytes_to_string(send_buf));
+        g_logger->info("send_buf: {}", bytes_to_string(send_buf, send_size));
 
-        bytes_left -= send_size;
+        payload_bytes_left -= num_from_buf;
     }
 
     // Send the final non-full part.
-    if ((bytes_left > 0) && (bytes_left <= (umb::g_packet_size - umb::g_header_size)))
+    // TODO: what is the 2nd check here?
+    if ((payload_bytes_left > 0) &&
+        (payload_bytes_left <= (umb::g_packet_size - umb::g_header_size)))
     {
-        send_size = static_cast<umb::byte>(bytes_left) + umb::g_header_size;
+        send_size = static_cast<umb::byte>(payload_bytes_left) + umb::g_header_size;
         send_part = umb::g_part_multi_part_end;
         send_buf[0] = send_size;
         send_buf[1] = send_part;
@@ -471,17 +490,23 @@ handle_multi_part_msg(
         send_buf[3] = mt1;
 
         num_from_buf = send_size - umb::g_header_size;
-        std::copy_n(it_bytes_out, num_from_buf, send_buf.begin() + umb::g_header_size);
+        std::copy_n(
+            it_bytes_out + umb::g_header_size,
+            num_from_buf,
+            send_buf.begin() + umb::g_header_size);
+
+        // TODO: don't need to do this for last part?
+        //       Keep here to detect access beyond end (in debug builds?)?
         it_bytes_out += send_size;
 
-        g_logger->info("sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}",
-                       send_size, send_part, bytes_left, num_from_buf);
+        g_logger->info("sending {} bytes, send_part: {}, payload_bytes_left: {}, num_from_buf: {}",
+                       send_size, send_part, payload_bytes_left, num_from_buf);
         const auto [sent_ec, num_sent] = co_await async_write(
             socket,
             boost::asio::buffer(send_buf, send_size),
             deferred);
 
-        g_logger->info("send_buf: {}", bytes_to_string(send_buf));
+        g_logger->info("send_buf: {}", bytes_to_string(send_buf, send_size));
 
         if (sent_ec != std::errc())
         {
@@ -492,7 +517,7 @@ handle_multi_part_msg(
     else
     {
         g_logger->error("ERROR: invalid number of bytes left for last part: {}!",
-                        bytes_left);
+                        payload_bytes_left);
     }
 
     // TODO: check bytes left is 0 here.

@@ -488,7 +488,8 @@ final function SendMsg_Manual_testmsg()
     `ulog("Manual_TestMsg.A_field_with_some_bytes_that_do_some_things.Length:" @ Manual_TestMsg.A_field_with_some_bytes_that_do_some_things.Length);
 
     class'TestMessages'.static.testmsg_ToMultiBytes(Manual_TestMsg, ManualBytesOut);
-    `ulog("manual test bytes to send:" @ ManualBytesOut.Length);
+    `ulog("ManualBytesOut.Length:" @ ManualBytesOut.Length);
+    `ulog("ManualBytesOut:" @ BytesToString(ManualBytesOut));
     Link.SendBytes(ManualBytesOut);
 
     TestState = ETS_EarlyTests_Receiving;
