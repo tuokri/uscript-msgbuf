@@ -444,7 +444,7 @@ handle_multi_part_msg(
     //       ALREADY IN THE ENCODING PHASE. THIS IS A LOT OF ADDED COMPLEXITY
     //       TO PERFORM THE PACKAGE SPLITTING HERE.
     // Send full parts while we have enough bytes left for them.
-    while (payload_bytes_left > umb::g_packet_size)
+    while (payload_bytes_left > (umb::g_packet_size - umb::g_header_size))
     {
         send_size = static_cast<umb::byte>(umb::g_packet_size);
         send_buf[0] = send_size;
