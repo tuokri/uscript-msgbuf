@@ -109,3 +109,4 @@ jobs:
             tests/UDKTests/UDK-Lite/UDKGame/Logs/
             tests/UDKTests/UDK-Lite/UDKGame/Script/UMB*
             tests/UDKTests/UDK-Lite/UDKGame/Script/Manifest.txt
+            ${{ github.workspace }}/build/*.log
