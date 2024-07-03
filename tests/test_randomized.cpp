@@ -294,4 +294,4 @@ TEST_CASE("skipping randomized tests")
     CHECK(true);
 }
 
-#endif
+#endif // UMB_INCLUDE_META

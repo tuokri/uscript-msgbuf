@@ -115,7 +115,13 @@ void print_header(const Header& header)
 {
     g_logger->info("size: {}", header.size);
     g_logger->info("part: {}", header.part);
+
+#ifdef UMB_INCLUDE_META
     const auto mt_str = testmessages::umb::meta::to_string(header.type);
+#else
+    const auto mt_str = std::to_string(static_cast<uint16_t>(header.type));
+#endif
+
     g_logger->info("type: {}", mt_str);
 }
 
