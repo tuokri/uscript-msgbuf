@@ -22,16 +22,12 @@
  *
  */
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#include "umb/umb.hpp"
 
-#define WINDOWS 1
+#if UMB_WINDOWS
 
 // Silence "Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately".
 #include <SDKDDKVer.h>
-
-#else
-
-#define WINDOWS 0
 
 #endif
 
@@ -58,8 +54,10 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
-#include "umb/umb.hpp"
 #include "TestMessages.umb.hpp"
+
+namespace
+{
 
 using boost::asio::ip::tcp;
 using boost::asio::awaitable;
@@ -76,6 +74,20 @@ namespace this_coro = boost::asio::this_coro;
 #endif
 
 std::shared_ptr<spdlog::async_logger> g_logger;
+
+template<size_t Size>
+std::string bytes_to_string(const std::array<::umb::byte, Size>& bytes)
+{
+    std::stringstream ss;
+    ss << "[";
+    for (const auto& byte: bytes)
+    {
+        // ss << std::format("{:x},", byte);
+        ss << std::format("{},", +byte);
+    }
+    ss << "]";
+    return ss.str();
+}
 
 enum class Error
 {
@@ -97,12 +109,7 @@ void print_header(const Header& header)
 {
     g_logger->info("size: {}", header.size);
     g_logger->info("part: {}", header.part);
-
-#if WINDOWS
-    const auto mt_str = std::to_string(static_cast<uint16_t>(header.type));
-#else
     const auto mt_str = testmessages::umb::meta::to_string(header.type);
-#endif
     g_logger->info("type: {}", mt_str);
 }
 
@@ -416,6 +423,9 @@ handle_multi_part_msg(
     umb::byte send_part = 0;
     unsigned num_from_buf = 0;
 
+    // TODO: REALLY CONSIDER ADDING HEADERS TO MULTIPART MESSAGE ENCODING
+    //       ALREADY IN THE ENCODING PHASE. THIS IS A LOT OF ADDED COMPLEXITY
+    //       TO PERFORM THE PACKAGE SPLITTING HERE.
     // Send full parts while we have enough bytes left for them.
     while ((bytes_left + umb::g_header_size) > umb::g_packet_size)
     {
@@ -426,7 +436,10 @@ handle_multi_part_msg(
         send_buf[3] = mt1;
 
         num_from_buf = send_size - umb::g_header_size;
-        std::copy_n(it_bytes_out, num_from_buf, send_buf.begin() + umb::g_header_size);
+        std::copy_n(
+            it_bytes_out + umb::g_header_size,
+            num_from_buf,
+            send_buf.begin() + umb::g_header_size);
         it_bytes_out += send_size;
 
         g_logger->info("sending {} bytes, send_part: {}, bytes_left: {}, num_from_buf: {}",
@@ -441,6 +454,8 @@ handle_multi_part_msg(
             g_logger->error("async_write failed: {}, num_sent: {}",
                             sent_ec.message(), num_sent);
         }
+
+        g_logger->info("send_buf: {}", bytes_to_string(send_buf));
 
         bytes_left -= send_size;
     }
@@ -465,6 +480,8 @@ handle_multi_part_msg(
             socket,
             boost::asio::buffer(send_buf, send_size),
             deferred);
+
+        g_logger->info("send_buf: {}", bytes_to_string(send_buf));
 
         if (sent_ec != std::errc())
         {
@@ -573,6 +590,8 @@ awaitable<void> listener()
         co_spawn(executor, echo(std::move(socket)), detached);
     }
 }
+
+} // namespace
 
 int main()
 {
