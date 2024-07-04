@@ -24,3 +24,8 @@ in [defaults.py](defaults.py).
 # TODO
 
 ```
+
+## TODO
+
+Ignore changes in UDK-Lite done during test runtime. Do this by updating
+UDK-Lite .gitignore?
