@@ -5,7 +5,7 @@ on: [ workflow_call ]
 # TODO: unify GH env vars with local UDKTests env vars somehow.
 env:
   UDK_LITE_CACHE: ${{ github.workspace }}/tests/UDKTests/.cache/
-  UDK_LITE_TAG: 1.0.1
+  UDK_LITE_TAG: 1.0.2
   UDK_USCRIPT_MESSAGE_FILES: ${{ github.workspace }}/build/generated/*.uc
   # Timeout for individual steps in the test script. Not a total timeout.
   UDK_TEST_TIMEOUT: 300
