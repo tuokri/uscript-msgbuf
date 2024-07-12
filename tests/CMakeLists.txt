@@ -119,7 +119,7 @@ set_property(
     PROPERTY INTERPROCEDURAL_OPTIMIZATION ${UMB_IPO_SUPPORTED}
 )
 
-if (MSVC)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(
         UMB_ECHO_SERVER_COMPILE_OPTIONS
         /await:strict
@@ -129,10 +129,14 @@ if (MSVC)
         PRIVATE
         /Zc:lambda
     )
-else ()
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(
         UMB_ECHO_SERVER_COMPILE_OPTIONS
         -fcoroutines
+    )
+else ()
+    set(
+        UMB_ECHO_SERVER_COMPILE_OPTIONS
     )
 endif ()
 
