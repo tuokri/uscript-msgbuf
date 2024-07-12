@@ -68,6 +68,20 @@ vcpkg install inja boost doctest icu
 
 - Investigate floating point edge cases. C++ inf/nan <-> UScript inf/nan?
 
+## Possible future major refactor/rewrite points:
+
+- Get rid of abstract base class Message, use std::variant instead.
+    - All metadata regarding messages (data types, layout) is known at
+      code generation time, abstract base class may not be necessary.
+    - Better performance (although a low priority since the major bottleneck
+      is the UnrealScript counterpart.)
+
+- Make multipart messages to_bytes() write out data that is ready to be
+  sent to a socket (bake headers in the serialized format). Update from_bytes()
+  similarly. This should make sending out multipart messages much simpler, while
+  making serialization/deserialization code a bit more complex. This data format
+  is also much more coherent (IMO).
+
 # License
 
 ```
