@@ -34,6 +34,13 @@
 #include <utility>
 #include <vector>
 
+#ifdef __clang__
+#define JSON_HAS_RANGES 0
+#define MAYBE_CONSTEXPR
+#else
+#define MAYBE_CONSTEXPR constexpr
+#endif
+
 #include <inja/inja.hpp>
 
 #include <boost/algorithm/string.hpp>
@@ -471,7 +478,7 @@ constexpr auto uscript_type = [](const inja::Arguments& args)
     return ::umb::g_type_to_uscript_type.at(type);
 };
 
-constexpr auto bp_is_packed = [](const inja::Arguments& args) constexpr
+constexpr auto bp_is_packed = [](const inja::Arguments& args) MAYBE_CONSTEXPR
 {
     const auto& msg = args.at(0)->get<inja::json>();
     const auto& name = args.at(1)->get<std::string>();
@@ -496,21 +503,21 @@ constexpr T bp_get(const inja::json& bps, const std::string& field_name, const s
     throw std::invalid_argument(std::format("cannot find '{}' in '{}'", key, field_name));
 }
 
-constexpr auto bp_pack_index = [](const inja::Arguments& args) constexpr
+constexpr auto bp_pack_index = [](const inja::Arguments& args) MAYBE_CONSTEXPR
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
     return bp_get<int>(bps, name, "pack_index");
 };
 
-constexpr auto bp_is_last = [](const inja::Arguments& args) constexpr
+constexpr auto bp_is_last = [](const inja::Arguments& args) MAYBE_CONSTEXPR
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
     return bp_get<bool>(bps, name, "last");
 };
 
-constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args) constexpr
+constexpr auto bp_is_multi_pack_boundary = [](const inja::Arguments& args) MAYBE_CONSTEXPR
 {
     const auto& bps = args.at(0)->get<std::vector<inja::json>>();
     const auto& name = args.at(1)->get<std::string>();
