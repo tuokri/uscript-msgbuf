@@ -85,11 +85,10 @@ namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace bp = boost::process::v2;
 
-// Utility class for setting and getting global Inja
+// Utility struct for setting and getting global Inja
 // variables and passing them to and from included templates.
-class Var
+struct Var
 {
-public:
     Var(std::function<std::any(void)> getter,
         std::function<std::any(std::any)> setter)
         : get(std::move(getter)), set(std::move(setter))
