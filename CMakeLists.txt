@@ -37,6 +37,14 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions("BOOST_ASIO_ENABLE_BUFFER_DEBUGGING")
 endif ()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    message(STATUS "using -lc++")
+    set(CMAKE_EXE_LINKER_FLAGS "\"${CMAKE_EXE_LINKER_FLAGS} -lc++\"")
+    set(VCPKG_LINKER_FLAGS "\"${VCPKG_LINKER_FLAGS} -lc++\"")
+    set(CMAKE_CXX_FLAGS "\"${CMAKE_CXX_FLAGS} -stdlib=libc++\"")
+    set(VCPKG_CXX_FLAGS "\"${VCPKG_CXX_FLAGS} -stdlib=libc++\"")
+endif ()
+
 find_package(
     inja
     CONFIG

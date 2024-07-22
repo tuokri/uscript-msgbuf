@@ -23,7 +23,7 @@ constexpr std::string_view meta_field_{{ message.name }}_{{ field.name }}_name =
 
 // TODO: why take field name as a string here? Just use field index?
 template<MessageType MT, ::umb::meta::FieldType FT, const auto& FN, auto Value>
-constexpr void set_field(std::shared_ptr<::umb::Message> msg)
+UMB_CLANG_CONSTEXPR void set_field(std::shared_ptr<::umb::Message> msg)
 {
     if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
     {
@@ -58,7 +58,7 @@ constexpr void set_field(std::shared_ptr<::umb::Message> msg)
 
 // TODO: why take field name as a string here? Just use field index?
 template<MessageType MT, ::umb::meta::FieldType FT, const auto& FN, typename DynType>
-constexpr void set_field_dynamic(std::shared_ptr<::umb::Message> msg, const DynType& value)
+UMB_CLANG_CONSTEXPR void set_field_dynamic(std::shared_ptr<::umb::Message> msg, const DynType& value)
 {
     if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
     {
@@ -94,7 +94,7 @@ constexpr void set_field_dynamic(std::shared_ptr<::umb::Message> msg, const DynT
 }
 
 template<MessageType MT, ::umb::meta::FieldType FT, const auto& FN>
-constexpr auto get_field(std::shared_ptr<::umb::Message> msg)
+UMB_CLANG_CONSTEXPR auto get_field(std::shared_ptr<::umb::Message> msg)
 {
     if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
     {
@@ -128,7 +128,7 @@ constexpr auto get_field(std::shared_ptr<::umb::Message> msg)
 }
 
 template<MessageType MT>
-[[nodiscard]] constexpr std::shared_ptr<::umb::Message> make_shared_message()
+[[nodiscard]] UMB_CLANG_CONSTEXPR std::shared_ptr<::umb::Message> make_shared_message()
 {
     if constexpr (MT == ::{{ cpp_namespace }}::MessageType::None)
     {

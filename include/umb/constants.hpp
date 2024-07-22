@@ -42,6 +42,12 @@ namespace umb
 #define UMB_CONSTEXPR constexpr
 #endif
 
+#if __clang__
+#define UMB_CLANG_CONSTEXPR
+#else
+#define UMB_CLANG_CONSTEXPR constexpr
+#endif
+
 using byte = uint8_t;
 
 constexpr auto g_template_dir = "templates";
