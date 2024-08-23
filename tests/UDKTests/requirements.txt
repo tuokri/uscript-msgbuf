@@ -3,4 +3,4 @@ psutil==6.0.0
 py7zr==0.22.0
 tqdm==4.66.4
 udk_configparser==1.1.1
-watchdog==4.0.1
+watchdog==4.0.2
