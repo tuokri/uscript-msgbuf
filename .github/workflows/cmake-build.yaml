@@ -24,14 +24,14 @@ jobs:
         os: [ ubuntu-24.04, windows-latest ]
         include:
           - os: windows-latest
-            vcpkg_commit_id: 'f61a294e765b257926ae9e9d85f96468a0af74e7'
+            vcpkg_commit_id: '4e08971f3ddc13018ca858a692efe92d3b6b9fce'
             umb_include_meta: ON
             umb_run_clang_format: ON
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
             cmake_extra_args: -A x64
           - os: ubuntu-24.04
-            vcpkg_commit_id: 'fe1e9f508ee13ed3d0a7d318beac7efe1ec4f9d7'
+            vcpkg_commit_id: '4e08971f3ddc13018ca858a692efe92d3b6b9fce'
             umb_include_meta: ON
             umb_run_clang_format: ON
             cxx_compiler: g++
