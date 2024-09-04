@@ -574,7 +574,9 @@ void clang_format(const std::vector<fs::path>& paths)
         const auto path_canonical = fs::canonical(path);
         const auto& pstr = path_canonical.string();
         std::cout << std::format("running clang-format on '{}'\n", pstr);
-        bp::execute(bp::process(ctx, cf_prog, {pstr, style_arg, "-i", "--Werror"}));
+        const auto exit_code = bp::execute(
+            bp::process(ctx, cf_prog, {pstr, style_arg, "-i", "--Werror"}));
+        std::cout << std::format("clang-format exited with code: {}\n", exit_code);
         // TODO: check exit code and throw on clang_format failure?
     }
     ctx.run();
