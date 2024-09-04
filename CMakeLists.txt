@@ -236,7 +236,7 @@ if (UMB_INCLUDE_META)
 endif ()
 
 # Avoid executable not being found in later targets due to
-# MSVC added /Debug /Release paths.
+# MSVC-added /Debug /Release paths.
 if (MSVC)
     set_target_properties(uscript_msgbuf_generator
         PROPERTIES
