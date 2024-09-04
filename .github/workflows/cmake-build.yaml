@@ -108,7 +108,7 @@ jobs:
         run: gcc --version
         if: matrix.os == 'ubuntu-24.04'
 
-      # Install clang-format from PyPi on Windows.
+      # Install clang-format from PyPI on Windows.
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -116,7 +116,7 @@ jobs:
           cache: 'pip'
         if: matrix.os == 'windows-latest'
 
-      - name: Install clang-format from PyPi on Windows
+      - name: Install clang-format from PyPI on Windows
         run: pip install clang-format
         if: matrix.os == 'windows-latest'
 
