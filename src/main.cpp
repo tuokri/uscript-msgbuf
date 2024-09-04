@@ -571,7 +571,7 @@ void clang_format(const std::vector<fs::path>& paths)
     for (const auto& path: paths)
     {
         const auto style_arg = std::format("--style=file:{}", cf_cfg_file.string());
-        const auto& pstr = path.string();
+        const auto& pstr = fs::canonical(path).string();
         std::cout << std::format("running clang-format on '{}'\n", pstr);
         bp::execute(bp::process(ctx, cf_prog, {pstr, style_arg, "-i", "--Werror"}));
         // TODO: check exit code and throw on clang_format failure?
