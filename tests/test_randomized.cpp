@@ -21,10 +21,15 @@
 
 #include <doctest/doctest.h>
 
+#include <format>
 #include <iostream>
 
+#include "umb/umb.hpp"
+
 // Only possible with reflection.
-#ifdef UMB_INCLUDE_META
+// TODO: disabled entirely on Windows due to a compiler bug.
+// https://developercommunity.visualstudio.com/t/Capture-of-constexpr-variable-not-workin/10190629?sort=active&topics=windows+10.0
+#if defined(UMB_INCLUDE_META) && !UMB_WINDOWS
 
 #include <algorithm>
 #include <cmath>
@@ -38,8 +43,6 @@
 
 #include <unicode/unistr.h>
 #include <unicode/ustream.h>
-
-#include "umb/umb.hpp"
 
 #include "MoreMessage.umb.hpp"
 #include "TestMessages.umb.hpp"
@@ -290,8 +293,11 @@ TEST_CASE("test TestMessages messages with randomized data")
 
 TEST_CASE("skipping randomized tests")
 {
-    std::cout << "UMB_INCLUDE_META not set, skipping randomized tests\n";
+    std::cout << std::format(
+        "UMB_INCLUDE_META={}, UMB_WINDOWS={}, skipping randomized tests\n",
+        std::to_string(UMB_INCLUDE_META),
+        std::to_string(UMB_WINDOWS));
     CHECK(true);
 }
 
-#endif // UMB_INCLUDE_META
+#endif // defined(UMB_INCLUDE_META) && !UMB_WINDOWS
