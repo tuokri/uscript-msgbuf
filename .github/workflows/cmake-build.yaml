@@ -26,7 +26,7 @@ jobs:
           - os: windows-latest
             vcpkg_commit_id: 'f61a294e765b257926ae9e9d85f96468a0af74e7'
             umb_include_meta: ON
-            umb_run_clang_format: OFF # TODO: seems to cause issues on the runner.
+            umb_run_clang_format: ON
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
             cmake_extra_args: -A x64
