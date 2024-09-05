@@ -26,7 +26,7 @@ jobs:
           - os: windows-latest
             vcpkg_commit_id: '4e08971f3ddc13018ca858a692efe92d3b6b9fce'
             umb_include_meta: ON
-            umb_run_clang_format: ON
+            umb_run_clang_format: OFF # TODO: this fails due to permission error on CI.
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
             cmake_extra_args: -A x64
