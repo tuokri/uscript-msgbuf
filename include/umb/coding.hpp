@@ -52,10 +52,12 @@ inline constexpr bool
 _check_bounds_no_throw_impl(
     const typename std::span<T>::const_iterator& i,
     const std::span<T> bytes,
-    size_t field_size) noexcept
+    std::size_t field_size) noexcept
 {
     const auto bsize = bytes.size();
-    const auto d = std::distance(bytes.cbegin(), i) + field_size;
+    // TODO: should we error here for negative distance?
+    const auto dist = std::distance(bytes.cbegin(), i);
+    const std::size_t d = static_cast<std::size_t>(dist) + field_size;
     return (d > 0 && (d <= bsize));
 }
 
@@ -64,7 +66,7 @@ inline constexpr bool
 check_bounds_no_throw(
     const typename std::span<T>::const_iterator& i,
     const std::span<T> bytes,
-    size_t field_size) noexcept
+    std::size_t field_size) noexcept
 {
     return _check_bounds_no_throw_impl(i, bytes, field_size);
 }
@@ -74,7 +76,7 @@ inline constexpr bool
 check_bounds_no_throw(
     const typename std::span<T>::const_iterator&& i,
     const std::span<T> bytes,
-    size_t field_size) noexcept
+    std::size_t field_size) noexcept
 {
     return _check_bounds_no_throw_impl(
         std::forward<const typename std::span<T>::const_iterator>(i),
@@ -87,13 +89,15 @@ inline constexpr void
 check_bounds(
     const typename std::span<T>::const_iterator& i,
     const std::span<T> bytes,
-    size_t field_size,
+    std::size_t field_size,
     const std::string& caller = __builtin_FUNCTION())
 {
     if (!check_bounds_no_throw(i, bytes, field_size))
     {
         const auto bsize = bytes.size();
-        const auto d = std::distance(bytes.cbegin(), i) + field_size;
+        // TODO: should we error here for negative distance?
+        const auto dist = std::distance(bytes.cbegin(), i);
+        const long long d = dist + static_cast<long long>(field_size);
         const auto msg = std::format("{}: not enough bytes {} {}", caller, d, bsize);
         throw std::out_of_range(msg);
     }
@@ -104,7 +108,7 @@ inline constexpr void
 check_bounds(
     const typename std::span<T>::const_iterator&& i,
     const std::span<T> bytes,
-    size_t field_size,
+    std::size_t field_size,
     const std::string& caller = __builtin_FUNCTION())
 {
     check_bounds(
@@ -115,7 +119,7 @@ check_bounds(
 }
 
 inline constexpr void
-check_dynamic_length(size_t str_size)
+check_dynamic_length(std::size_t str_size)
 {
     // Max string payload is (g_max_dynamic_size * g_sizeof_uscript_char).
     // Max bytes payload is simply g_max_dynamic_size.
@@ -168,11 +172,11 @@ decode_packed_bools(
     const std::span<const byte> bytes,
     Bools& ... out)
 {
-    constexpr size_t num_bools = sizeof...(out);
-    constexpr size_t bytes_to_read = (num_bools / g_bools_in_byte) + 1;
+    constexpr std::size_t num_bools = sizeof...(out);
+    constexpr std::size_t bytes_to_read = (num_bools / g_bools_in_byte) + 1;
     check_bounds(i, bytes, bytes_to_read);
     auto b = *i++;
-    auto index = 0;
+    std::size_t index = 0;
 
     // Get bit as bool.
     if constexpr (bytes_to_read > 1)
@@ -323,15 +327,15 @@ decode_string(
 
     char16_t previous = 0x00;
     byte shift = 0;
-    for (const auto& byte: byte_buf)
+    for (const auto& bb: byte_buf)
     {
         if (shift == 8)
         {
-            char_buf.emplace_back(static_cast<char16_t>(previous | (byte << shift)));
+            char_buf.emplace_back(static_cast<char16_t>(previous | (bb << shift)));
         }
         else
         {
-            previous = static_cast<char16_t>(byte);
+            previous = static_cast<char16_t>(bb);
         }
         // [0, 8, 0, 8, 0, 8, ...]
         shift = (shift + 8) % 16;
@@ -399,9 +403,9 @@ inline constexpr void
 encode_packed_bools(std::span<byte>::iterator& bytes, Bools... bools)
 {
     auto byte_out = std::ref(*bytes++);
-    constexpr size_t num_bools = sizeof...(bools);
-    constexpr size_t bytes_to_write = (num_bools / g_bools_in_byte) + 1;
-    auto index = 0;
+    constexpr std::size_t num_bools = sizeof...(bools);
+    constexpr std::size_t bytes_to_write = (num_bools / g_bools_in_byte) + 1;
+    std::size_t index = 0;
 
     if constexpr (bytes_to_write > 1)
     {

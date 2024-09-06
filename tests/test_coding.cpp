@@ -27,6 +27,7 @@
 #include <doctest/doctest.h>
 
 #include "umb/umb.hpp"
+#include "umb/meta.hpp"
 
 #include "MoreMessage.umb.hpp"
 #include "TestMessages.umb.hpp"
@@ -430,7 +431,24 @@ TEST_CASE("shared pointer testmsg")
     std::vector<umb::byte> msg_buf;
     // Empty buffer.
     auto msg = std::make_shared<testmessages::umb::testmsg>();
-    bool ok = msg->from_bytes(msg_buf);
+    const bool ok = msg->from_bytes(msg_buf);
     // Should fail.
     CHECK_FALSE(ok);
+}
+
+// TODO: this test case is a good example of why the current
+//   meta/reflection implementation is cumbersome.
+TEST_CASE("test meta get")
+{
+    std::shared_ptr<testmessages::umb::JustAnotherTestMessage> msg;
+    msg = std::make_shared<testmessages::umb::JustAnotherTestMessage>();
+    const auto asd = 1234.567f;
+    msg->set_some_floatVAR(asd);
+
+    const float val = testmessages::umb::meta::get_field<
+        testmessages::umb::JustAnotherTestMessage::message_type(),
+        umb::meta::FieldType::Float,
+        testmessages::umb::meta::meta_field_JustAnotherTestMessage_some_floatVAR_name>(msg);
+
+    REQUIRE((asd == doctest::Approx(val)));
 }

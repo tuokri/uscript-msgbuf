@@ -149,7 +149,7 @@ struct BoolPack
     // Name of this field in the message.
     std::string field_name{};
     // Index of this field in the message.
-    size_t field_index{0};
+    std::size_t field_index{0};
     // Index into the packed byte. 0-7.
     ::umb::byte pack_index{0};
     // Indicates which byte this bool belongs to.
@@ -177,11 +177,11 @@ struct MsgAnalysisResult
     bool has_static_size{false};
     // Message's calculated static size. Sum of header size + static field sizes.
     // Always 0 if message is dynamic. Always non-zero if message is static.
-    size_t static_size{0};
+    std::size_t static_size{0};
     // Size of the static part for dynamic messages. 0 for fully static messages.
     // This includes the sizes of all known static fields plus the sizes of all
     // size header fields for dynamic fields. (See: g_dynamic_field_header_size).
-    size_t static_part{0};
+    std::size_t static_part{0};
     // True if message has static size and is always guaranteed to fit in a single packet.
     bool always_single_part{false};
     // True if message has float fields. Indicates the need for temporary
@@ -227,10 +227,10 @@ MsgAnalysisResult analyze_message(const inja::json& data)
     const auto& fields = data["fields"];
 
     std::deque<BoolPack> bool_packs;
-    auto consecutive = 0; // Length of current consecutive bool pack.
-    auto consecutive_all = 0; // Total length of all bool packs AND "LONE" BOOLS.
+    std::size_t consecutive = 0; // Length of current consecutive bool pack.
+    std::size_t consecutive_all = 0; // Total length of all bool packs AND "LONE" BOOLS.
     ::umb::byte pack_idx = 0; // Index of this bool in this pack i.e. nth bit.
-    auto i = 0;
+    std::size_t i = 0;
     for (const auto& field: fields)
     {
         if (field["type"] == "bool")
@@ -291,7 +291,7 @@ MsgAnalysisResult analyze_message(const inja::json& data)
         {
             return first.byte < second.byte;
         });
-    auto num_packed_bytes = 0;
+    std::size_t num_packed_bytes = 0;
     if (max_byte_bp != bool_packs.cend())
     {
         // Byte refers to index here, add 1 to get total amount of them.
@@ -377,8 +377,8 @@ constexpr auto capitalize = [](const inja::Arguments& args)
 // Bytes[101]
 constexpr auto pad = [](const inja::Arguments& args) constexpr
 {
-    const auto& index = args.at(0)->get<size_t>();
-    const auto& size = args.at(1)->get<size_t>();
+    const auto& index = args.at(0)->get<std::size_t>();
+    const auto& size = args.at(1)->get<std::size_t>();
     std::string ret;
 
     if (size < 10)

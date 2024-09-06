@@ -33,7 +33,7 @@ namespace umb::fmt
 template<typename T>
 inline std::wstring to_wstring(const T& t)
 {
-    return std::to_wstring(t);
+    return std::to_wstring(static_cast<int>(t));
 }
 
 template<>

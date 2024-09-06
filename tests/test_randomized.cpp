@@ -171,8 +171,9 @@ TEST_CASE("test TestMessages messages with randomized data")
             if constexpr (index > 0)
             {
                 std::cout << std::format("index={}, mt={}, field_count={}\n",
-                                         std::to_string(idx),
-                                         meta::to_string<mt>(), field_count);
+                                         idx,
+                                         meta::to_string<mt>(),
+                                         field_count);
 
                 std::shared_ptr<::umb::Message> message = meta::make_shared_message<mt>();
 

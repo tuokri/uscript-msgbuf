@@ -29,7 +29,7 @@
 namespace umb
 {
 
-#if _MSC_VER && !__INTEL_COMPILER
+#if defined(_MSC_VER) && !__INTEL_COMPILER
 // Workaround for C3615. Some constexpr functions
 // do not compile on MSVC, but compile without errors
 // on Clang and GCC.
@@ -42,7 +42,7 @@ namespace umb
 #define UMB_CONSTEXPR constexpr
 #endif
 
-#if __clang__
+#if defined(__clang__)
 #define UMB_CLANG_CONSTEXPR
 #else
 #define UMB_CLANG_CONSTEXPR constexpr
