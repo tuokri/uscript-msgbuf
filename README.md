@@ -82,6 +82,8 @@ vcpkg install inja boost doctest icu
   making serialization/deserialization code a bit more complex. This data format
   is also much more coherent (IMO).
 
+- Consider this: https://www.youtube.com/watch?v=algDLvbl1YY
+
 # License
 
 ```
