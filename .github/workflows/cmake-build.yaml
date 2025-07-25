@@ -24,14 +24,14 @@ jobs:
         os: [ ubuntu-24.04, windows-latest ]
         include:
           - os: windows-latest
-            vcpkg_commit_id: '4e08971f3ddc13018ca858a692efe92d3b6b9fce'
+            vcpkg_commit_id: 'dd3097e305afa53f7b4312371f62058d2e665320'
             umb_include_meta: ON
             umb_run_clang_format: OFF # TODO: this fails due to permission error on CI.
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
             cmake_extra_args: -A x64
           - os: ubuntu-24.04
-            vcpkg_commit_id: '4e08971f3ddc13018ca858a692efe92d3b6b9fce'
+            vcpkg_commit_id: 'dd3097e305afa53f7b4312371f62058d2e665320'
             umb_include_meta: ON
             umb_run_clang_format: ON
             cxx_compiler: g++
