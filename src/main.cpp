@@ -48,7 +48,7 @@
 #include <boost/dll.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <boost/process/v2.hpp>
+#include <boost/process.hpp>
 #include <boost/program_options.hpp>
 
 namespace

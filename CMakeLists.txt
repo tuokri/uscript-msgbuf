@@ -54,9 +54,10 @@ find_package(
 find_package(
     Boost
     COMPONENTS
-    system
     filesystem
+    process
     program_options
+    system
     REQUIRED
 )
 
@@ -90,9 +91,10 @@ if (MSVC)
         umb
         pantor::inja
         Boost::boost
-        Boost::system
         Boost::filesystem
+        Boost::process
         Boost::program_options
+        Boost::system
     )
 else ()
     set(
@@ -100,9 +102,10 @@ else ()
         umb
         pantor::inja
         Boost::boost
-        Boost::system
         Boost::filesystem
+        Boost::process
         Boost::program_options
+        Boost::system
         dl
     )
 endif ()
