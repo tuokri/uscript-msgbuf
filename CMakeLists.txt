@@ -178,7 +178,6 @@ else ()
     set(
         UMB_COMPILE_OPTIONS
         -Wall
-        -pedantic
         -Wpedantic
         -Wextra
         -Wcast-align
