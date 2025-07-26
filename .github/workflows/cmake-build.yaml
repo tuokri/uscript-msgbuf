@@ -7,6 +7,7 @@ on: [ push ]
 # https://github.com/actions/runner/issues/382
 env:
   ErrorView: NormalView
+  VCPKG_ROOT: ${{ github.workspace }}/submodules/vcpkg
 
 jobs:
   build:
@@ -24,14 +25,12 @@ jobs:
         os: [ ubuntu-24.04, windows-latest ]
         include:
           - os: windows-latest
-            vcpkg_commit_id: 'dd3097e305afa53f7b4312371f62058d2e665320'
             umb_include_meta: ON
             umb_run_clang_format: OFF # TODO: this fails due to permission error on CI.
             cxx_compiler: cl
             cmake_generator: Visual Studio 17 2022
             cmake_extra_args: -A x64
           - os: ubuntu-24.04
-            vcpkg_commit_id: 'dd3097e305afa53f7b4312371f62058d2e665320'
             umb_include_meta: ON
             umb_run_clang_format: ON
             cxx_compiler: g++
@@ -134,19 +133,7 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{ github.workspace }}/build
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@main
-        id: runvcpkg
-        with:
-          vcpkgDirectory: '${{ runner.workspace }}/build/vcpkg'
-          vcpkgGitCommitId: '${{ matrix.vcpkg_commit_id }}'
-          # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
-          runVcpkgInstall: true
-          vcpkgJsonGlob: '**/vcpkg.json'
-
-      - name: Print output of run-vcpkg's action.
-        run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
-
+      # TODO: use CMake presets!
       - name: Configure CMake
         working-directory: ${{ github.workspace }}/build
         run: cmake -G "${{ matrix.cmake_generator }}" ${{ env.cmake_extra_args }} ${{ github.workspace }}

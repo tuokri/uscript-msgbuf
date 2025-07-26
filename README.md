@@ -25,15 +25,10 @@ could also work on older compilers, depending on their C++23 support status.
 
 - [Inja](https://github.com/pantor/inja)
 - [Boost](https://www.boost.org/)
-    - Tested with Boost versions 1.82 and 1.83.
 - [doctest](https://github.com/doctest/doctest) (for testing)
 - ICU (TODO: DOCUMENT ME)
 
-Install using vcpkg:
-
-```shell
-vcpkg install inja boost doctest icu
-```
+Dependencies are installed automatically via vcpkg during build.
 
 ## TODO:
 
@@ -94,6 +89,8 @@ vcpkg install inja boost doctest icu
 - TODO: clarify license and license of generated code!
 
 - Add static code analysis (CI)!
+
+- Build using CMake presets!
 
 # License
 

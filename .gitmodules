@@ -1,3 +1,6 @@
 [submodule "tests/UDKTests/UDK-Lite"]
 	path = tests/UDKTests/UDK-Lite
 	url = https://github.com/tuokri/UDK-Lite.git
+[submodule "submodules/vcpkg"]
+	path = submodules/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
