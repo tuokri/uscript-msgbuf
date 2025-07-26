@@ -93,6 +93,8 @@ vcpkg install inja boost doctest icu
 
 - TODO: clarify license and license of generated code!
 
+- Add static code analysis (CI)!
+
 # License
 
 ```
