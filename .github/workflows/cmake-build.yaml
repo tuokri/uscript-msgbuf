@@ -133,6 +133,9 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{ github.workspace }}/build
 
+      - name: Print VCPKG_ROOT
+        run: echo VCPKG_ROOT="${{ env.VCPKG_ROOT }}"
+
       # TODO: use CMake presets!
       - name: Configure CMake
         working-directory: ${{ github.workspace }}/build
