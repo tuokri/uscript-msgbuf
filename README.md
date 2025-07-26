@@ -84,10 +84,19 @@ vcpkg install inja boost doctest icu
 
 - Consider this: https://www.youtube.com/watch?v=algDLvbl1YY
 
+- Benchmark generated UScript, compare byte array packets vs. just building
+  a plain old string out of various different messages.
+
+- Use GitHub actions to generate pre-release binaries for each commit on master.
+
+- Make the master branch protected at some point and work via PRs!
+
+- TODO: clarify license and license of generated code!
+
 # License
 
 ```
-Copyright (C) 2023-2024  Tuomo Kriikkula
+Copyright (C) 2023-2025 Tuomo Kriikkula
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
 by the Free Software Foundation, either version 3 of the License, or
