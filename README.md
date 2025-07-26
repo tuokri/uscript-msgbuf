@@ -92,6 +92,8 @@ Dependencies are installed automatically via vcpkg during build.
 
 - Build using CMake presets!
 
+- Sync "version" in vcpkg.json with the actual project version somehow dynamically!
+
 # License
 
 ```
