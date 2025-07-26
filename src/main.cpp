@@ -101,6 +101,8 @@ struct Var
 
 constexpr auto g_key_x = "x";
 constexpr auto g_key_in_pack = "in_pack";
+// Internal storage for global, shared variables during Inja
+// template rendering. String_key -> default_value.
 std::unordered_map<std::string, std::any> g_var_store{
     {g_key_x,       0},
     {g_key_in_pack, false},
