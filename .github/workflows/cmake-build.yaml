@@ -7,7 +7,6 @@ on: [ push ]
 # https://github.com/actions/runner/issues/382
 env:
   ErrorView: NormalView
-  VCPKG_ROOT: ${{ github.workspace }}/submodules/vcpkg
 
 jobs:
   build:
@@ -133,16 +132,13 @@ jobs:
       - name: Create Build Environment
         run: cmake -E make_directory ${{ github.workspace }}/build
 
-      - name: Print VCPKG_ROOT
-        run: echo VCPKG_ROOT="${{ env.VCPKG_ROOT }}"
-
       # TODO: use CMake presets!
       - name: Configure CMake
         working-directory: ${{ github.workspace }}/build
         run: cmake -G "${{ matrix.cmake_generator }}" ${{ env.cmake_extra_args }} ${{ github.workspace }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
-          -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake"
+          -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake"
           -DBUILD_TESTS=ON
           -DUMB_INCLUDE_META=${{ matrix.umb_include_meta }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
