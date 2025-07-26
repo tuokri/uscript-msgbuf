@@ -139,7 +139,7 @@ jobs:
         run: cmake -G "${{ matrix.cmake_generator }}" ${{ env.cmake_extra_args }} ${{ github.workspace }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
-          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake
+          -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake"
           -DBUILD_TESTS=ON
           -DUMB_INCLUDE_META=${{ matrix.umb_include_meta }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}
