@@ -1,5 +1,5 @@
 httpx==0.28.1
-psutil==7.0.0
+psutil==7.1.2
 py7zr==1.0.0
 tqdm==4.67.1
 udk_configparser==1.1.1
